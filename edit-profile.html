@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: #fff; text-align: center; }
+        .box { max-width: 400px; margin: auto; }
+        #preview { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 2px solid #f0f0f0; margin-bottom: 10px; background: #eee; }
+        input, textarea { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .save-btn { width: 100%; padding: 15px; background: #000; color: #fff; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .save-btn:disabled { background: #666; }
+        .del-btn { margin-top: 30px; background: none; border: none; color: #ff3b30; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 12px 22px;
+            border-radius: 30px;
+            font-size: 14px;
+            z-index: 9999;
+            transition: 0.4s;
+        }
+        .toast.show { top: 25px; }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast"></div>
+
+    <div class="box">
+        <h3>Edit Profile</h3>
+        <img id="preview" src="https://via.placeholder.com/110">
+        <input type="file" id="fIn" accept="image/*" style="display:none">
+        <button onclick="document.getElementById('fIn').click()" style="color:#1DA1F2; background:none; border:none; cursor:pointer; font-weight:bold; margin-bottom:20px; display:block; width:100%;">Change Profile Photo</button>
+        
+        <input type="text" id="user" placeholder="Username">
+        <textarea id="bio" placeholder="Bio" rows="3"></textarea>
+        
+        <button class="save-btn" id="saveBtn">Save Changes</button>
+        
+        <br>
+        <button class="del-btn" id="delAccBtn">Delete Account</button>
+        
+        <p><a href="./profile.html" style="color:#999; text-decoration:none; font-size:14px;">Cancel</a></p>
+    </div>
+
+    <script type="module">
+        import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+        const supabase = createClient(
+            "https://spnvgymmrlyqtfrbjjsg.supabase.co",
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI"
+        );
+
+        const myId = localStorage.getItem("user_id");
+        if (!myId) location.href = "./index.html";
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 2200);
+        }
+
+        async function load() {
+            const { data } = await supabase.from('profiles').select('*').eq('id', myId).single();
+            if (data) {
+                document.getElementById('user').value = data.username || '';
+                document.getElementById('bio').value = data.bio || '';
+                if (data.avatar_url) document.getElementById('preview').src = data.avatar_url;
+            }
+        }
+
+        document.getElementById('fIn').onchange = e => {
+            if (e.target.files[0]) {
+                document.getElementById('preview').src = URL.createObjectURL(e.target.files[0]);
+            }
+        };
+
+        document.getElementById('saveBtn').onclick = async () => {
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = "Saving...";
+            btn.disabled = true;
+
+            let avatarUrl = document.getElementById('preview').src;
+            const file = document.getElementById('fIn').files[0];
+
+            if (file) {
+                const path = `avatar_${myId}_${Date.now()}.png`;
+                const { error: upErr } = await supabase.storage.from('avatars').upload(path, file);
+                if (!upErr) {
+                    avatarUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+                }
+            }
+
+            const { error } = await supabase.from('profiles').upsert({
+                id: myId,
+                username: document.getElementById('user').value,
+                bio: document.getElementById('bio').value,
+                avatar_url: avatarUrl
+            });
+
+            if (!error) {
+                showToast("Profile updated");
+                setTimeout(() => location.href = './profile.html', 800);
+            } else {
+                showToast(error.message);
+                btn.disabled = false;
+                btn.innerText = "Save Changes";
+            }
+        };
+
+        // DELETE ACCOUNT
+        document.getElementById('delAccBtn').onclick = async () => {
+            const sure = confirm("Are you sure? This will permanently delete your account.");
+            if (!sure) return;
+
+            const { error } = await supabase.from('profiles').delete().eq('id', myId);
+            if (!error) {
+                showToast("Account deleted");
+                localStorage.clear();
+                setTimeout(() => location.href = './index.html', 1000);
+            } else {
+                showToast(error.message);
+            }
+        };
+
+        load();
+    </script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Post photo • Globaltrends</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+<style>
+    :root { --primary: #ff2d55; --bg: #fff; --border: #efefef; }
+    body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: #fff; z-index: 100; }
+    .header b { font-size: 17px; }
+    .header span { color: #666; cursor: pointer; }
+    .post-btn-text { color: var(--primary); font-weight: 700; cursor: pointer; }
+    .container { padding: 20px; }
+    .upload-box { border: 2px dashed #ddd; border-radius: 12px; padding: 40px 20px; text-align: center; background: #fafafa; cursor: pointer; }
+    .upload-box i { font-size: 30px; color: var(--primary); margin-bottom: 10px; }
+    .preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px; }
+    .preview-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid #eee; }
+    .caption { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 20px; font-size: 15px; outline: none; resize: none; background: #fafafa; }
+    .post-btn { width: 100%; margin-top: 25px; padding: 16px; border: none; border-radius: 12px; background: #000; color: #fff; font-weight: 700; font-size: 16px; }
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 12px 24px; border-radius: 30px; display: none; z-index: 1000; }
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<div class="header">
+    <span onclick="history.back()">Cancel</span>
+    <b>New Photo Post</b>
+    <span class="post-btn-text" onclick="upload()">Post</span>
+</div>
+
+<div class="container">
+    <label class="upload-box">
+        <input type="file" id="photos" accept="image/*" multiple hidden>
+        <i class="fa fa-images"></i>
+        <div style="font-weight:600">Select Photos</div>
+        <div style="font-size:12px; color:#888">1-10 photos allowed</div>
+    </label>
+
+    <div class="preview-grid" id="previewGrid"></div>
+    <textarea id="caption" class="caption" rows="4" placeholder="Write a caption..."></textarea>
+    <button id="mainBtn" class="post-btn" onclick="upload()">Share Post</button>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
+
+const myId = localStorage.getItem("user_id");
+if (!myId) { alert("Please log in to post"); location.href="index.html"; }
+
+let files = [];
+const input = document.getElementById("photos");
+const grid = document.getElementById("previewGrid");
+
+input.onchange = (e) => {
+    grid.innerHTML = "";
+    files = Array.from(e.target.files).slice(0, 10);
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = document.createElement('img');
+            img.src = ev.target.result;
+            grid.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+window.upload = async () => {
+    if(files.length === 0) return;
+    const btn = document.getElementById("mainBtn");
+    btn.disabled = true; btn.innerText = "Posting...";
+    
+    const urls = [];
+    for(const file of files) {
+        const path = `${myId}/${Date.now()}_${file.name}`;
+        const { data, error } = await supabase.storage.from("photos").upload(path, file);
+        if(!error) {
+            const { data: pUrl } = supabase.storage.from("photos").getPublicUrl(path);
+            urls.push(pUrl.publicUrl);
+        }
+    }
+
+    await supabase.from("posts").insert({
+        user_id: myId,
+        media_type: 'photo',
+        media_urls: urls, // Array of URLs
+        caption: document.getElementById("caption").value,
+        likes: 0
+    });
+
+    location.href = "profile.html";
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login • Globaltrends</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .card {
+      background: #111;
+      padding: 30px;
+      width: 100%;
+      max-width: 380px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.5);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: calc(100% - 28px);
+      padding: 14px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .signup {
+      background: #24b47e;
+      color: #fff;
+    }
+
+    .login {
+      background: #3498db;
+      color: #fff;
+    }
+
+    /* TOAST NOTIFICATION STYLES */
+    .toast {
+      position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
+      background: #fff; color: #000; padding: 12px 25px; border-radius: 50px;
+      font-size: 14px; font-weight: bold; transition: 0.5s; z-index: 10000;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .toast.show { top: 20px; }
+  </style>
+</head>
+
+<body>
+  <div id="toast" class="toast"></div>
+
+  <div class="card">
+    <h2>Welcome 👋</h2>
+
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+
+    <button class="signup" id="signupBtn">Sign Up</button>
+    <button class="login" id="loginBtn">Login</button>
+  </div>
+
+  <script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  const supabase = createClient(
+    "https://spnvgymmrlyqtfrbjjsg.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI"
+  );
+
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+  }
+
+  document.getElementById("signupBtn").onclick = async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      showToast("Email and password are required");
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
+
+    if (error) {
+      showToast(error.message);
+    } else {
+      // Create empty profile so 'Profile Not Found' error is avoided
+      if (data.user) {
+         await supabase.from('profiles').insert([
+           { id: data.user.id, username: email.split('@')[0], bio: '' }
+         ]);
+      }
+      showToast("Signup successful! Check email to confirm.");
+    }
+  };
+
+  document.getElementById("loginBtn").onclick = async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      showToast("Email and password are required");
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      showToast(error.message);
+    } else {
+      const userId = data.user.id;
+      localStorage.setItem("user_id", userId);
+      
+      showToast("Login Successful! Redirecting...");
+      
+      // Redirect to Profile with the ID attached
+      setTimeout(() => {
+        location.href = `profile.html?id=${userId}`;
+      }, 1000);
+    }
+  };
+</script>
+
+</body>
+</html>

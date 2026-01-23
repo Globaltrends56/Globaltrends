@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Search • Globaltrends</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+    <style>
+        :root { --primary: #ff2d55; --bg: #fff; --border: #efefef; --text-main: #1a1a1a; --text-grey: #8e8e8e; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text-main); }
+
+        /* HEADER & SEARCH BAR */
+        .header { 
+            position: sticky; top: 0; background: #fff; z-index: 1000;
+            padding: 10px 16px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .back-btn { font-size: 20px; color: #000; cursor: pointer; display: flex; align-items: center; }
+        
+        .search-wrapper {
+            flex: 1; display: flex; align-items: center; background: #efefef;
+            padding: 8px 12px; border-radius: 10px; position: relative;
+        }
+        .search-wrapper i.fa-search { color: var(--text-grey); margin-right: 8px; font-size: 14px; }
+        
+        .search-input {
+            width: 100%; border: none; background: none; outline: none;
+            font-size: 16px; color: #000; padding: 2px 25px 2px 0;
+        }
+
+        /* CLEAR BUTTON (X) */
+        #clearSearch {
+            position: absolute; right: 10px; color: #ccc; 
+            font-size: 18px; cursor: pointer; display: none;
+        }
+
+        /* RESULTS SECTION */
+        .results-container { padding: 5px 0 100px 0; }
+        
+        .user-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 16px; cursor: pointer;
+            text-decoration: none; color: inherit;
+        }
+        .user-card:active { background: #fafafa; }
+        
+        .avatar {
+            width: 56px; height: 56px; border-radius: 50%;
+            object-fit: cover; border: 0.5px solid var(--border);
+        }
+        
+        .user-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .un-row { display: flex; align-items: center; gap: 4px; font-weight: 600; font-size: 15px; }
+        .verified-icon { color: #0095f6; font-size: 13px; }
+        .full-name { color: var(--text-grey); font-size: 14px; margin-top: 2px; }
+
+        /* EMPTY STATES */
+        .empty-state { 
+            text-align: center; color: var(--text-grey); 
+            margin-top: 100px; padding: 0 50px; 
+        }
+        .empty-state i { font-size: 50px; color: #f0f0f0; margin-bottom: 15px; display: block; }
+        .empty-state b { color: #000; display: block; margin-bottom: 5px; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="back-btn" onclick="history.back()"><i class="fa fa-angle-left"></i></div>
+    <div class="search-wrapper">
+        <i class="fa fa-search"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search" autocomplete="off" autofocus>
+        <i class="fa fa-times-circle" id="clearSearch"></i>
+    </div>
+</div>
+
+<div id="results" class="results-container">
+    <div class="empty-state">
+        <i class="fa fa-search"></i>
+        <b>Search for creators</b>
+        Find your favorite people and explore their photos and videos.
+    </div>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const supabase = createClient(
+    "https://spnvgymmrlyqtfrbjjsg.supabase.co", 
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI"
+);
+
+const searchInput = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearSearch');
+const resultsDiv = document.getElementById('results');
+
+let debounceTimer;
+
+// Handle X button visibility and functionality
+searchInput.addEventListener('input', () => {
+    const val = searchInput.value.trim();
+    clearBtn.style.display = val.length > 0 ? 'block' : 'none';
+    
+    clearTimeout(debounceTimer);
+
+    if (!val) {
+        resultsDiv.innerHTML = `
+            <div class="empty-state">
+                <i class="fa fa-search"></i>
+                <b>Search for creators</b>
+                Find your favorite people and explore their photos and videos.
+            </div>`;
+        return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url, verified, bio')
+            .ilike('username', `%${val}%`)
+            .limit(25);
+
+        if (error || !data.length) {
+            resultsDiv.innerHTML = '<div class="empty-state"><b>No results found</b>Check the spelling or try searching for someone else.</div>';
+            return;
+        }
+
+        resultsDiv.innerHTML = data.map(user => `
+            <a class="user-card" href="profile.html?id=${user.id}">
+                <img class="avatar" src="${user.avatar_url || 'https://via.placeholder.com/150'}">
+                <div class="user-info">
+                    <div class="un-row">
+                        ${user.username}
+                        ${user.verified ? '<i class="fa fa-check-circle verified-icon"></i>' : ''}
+                    </div>
+                    <div class="full-name">${user.bio ? user.bio.substring(0, 35) : 'Globaltrends Creator'}</div>
+                </div>
+            </a>
+        `).join("");
+    }, 200); // Very fast debounce for snappy feel
+});
+
+// Clear input when X is clicked
+clearBtn.onclick = () => {
+    searchInput.value = '';
+    clearBtn.style.display = 'none';
+    searchInput.focus();
+    resultsDiv.innerHTML = `
+        <div class="empty-state">
+            <i class="fa fa-search"></i>
+            <b>Search for creators</b>
+            Find your favorite people and explore their photos and videos.
+        </div>`;
+};
+</script>
+
+</body>
+</html>
