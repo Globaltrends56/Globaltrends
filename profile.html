@@ -8,11 +8,11 @@
 <style>
     body { margin:0; font-family:-apple-system, sans-serif; background:#fff; -webkit-touch-callout: none; user-select: none; }
     video { pointer-events: auto; -webkit-touch-callout: none !important; }
-
+    
     /* NAV & HEADER */
     .nav { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index: 1000; }
-    .nav-right { display: flex; align-items: center; gap: 12px; position: relative; }
-
+    .nav-right { display: flex; align-items: center; gap: 18px; position: relative; }
+    
     /* NOTIFICATION BELL STYLE */
     .notif-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; }
     .notif-badge { 
@@ -40,7 +40,7 @@
     .logout-item:active { background: #f9f9f9; }
 
     .profile-hdr { text-align:center; padding:20px; }
-
+    
     /* GREY CIRCLE & BLACK USER ICON DESIGN */
     .p-avatar-container {
         width: 85px; height: 85px;
@@ -81,7 +81,7 @@
     #mediaContent { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
     .fs-video, .fs-img { max-width: 100%; max-height: 100%; object-fit: contain; }
     .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; z-index: 5100; }
-    .fs-dots { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; cursor:pointer; }
+    .fs-dots { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; }
     .slide-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: #fff; border: none; padding: 20px 10px; font-size: 20px; z-index: 5200; border-radius: 5px; }
     .prev-btn { left: 10px; }
     .next-btn { right: 10px; }
@@ -95,11 +95,7 @@
     .fs-btn { font-size: 30px; margin-bottom: 5px; cursor: pointer; }
     .liked { color: #ff2d55; }
     #delMenu { position: absolute; top: 60px; right: 20px; background: #fff; color: red; padding: 12px 20px; border-radius: 8px; font-weight: bold; display: none; z-index: 5200; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-
-    /* TOAST */
-    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 16px 20px; border-radius: 12px; display: none; z-index: 9999; min-width: 250px; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.25); text-align: center; font-size: 14px; }
-    .toast div { margin-bottom: 12px; }
-    .toast button { padding: 6px 14px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+    .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#000; color:#fff; padding: 12px 24px; border-radius:30px; display:none; z-index:9999; }
 </style>
 </head>
 <body>
@@ -109,7 +105,7 @@
 <div id="fsPlayer">
     <i class="fa fa-times fs-close" onclick="closeFS()"></i>
     <i id="dotsBtn" class="fa fa-ellipsis-v fs-dots" onclick="toggleDelMenu()"></i>
-    <div id="delMenu"></div>
+    <div id="delMenu" onclick="confirmDelete()">Delete Post</div>
     <div id="mediaContent"></div>
     <button id="prevBtn" class="slide-btn prev-btn" onclick="changeSlide(-1)" style="display:none">❮</button>
     <button id="nextBtn" class="slide-btn next-btn" onclick="changeSlide(1)" style="display:none">❯</button>
@@ -134,7 +130,7 @@
     <div class="nav-right">
         <i class="fa fa-share-alt"></i>
 
-        <div id="notifBtn" class="notif-wrapper" style="display:none;">
+        <div id="notifBtn" class="notif-wrapper" style="display:none;" onclick="location.href='notifications.html'">
             <i class="fa fa-bell"></i>
             <span id="notifDot" class="notif-badge"></span>
         </div>
@@ -142,7 +138,7 @@
         <div id="logoutMenuContainer" style="display:none;">
             <i class="fa fa-ellipsis-v" onclick="toggleLogoutDropdown(event)"></i>
             <div id="logoutDropdown" class="logout-dropdown">
-                <div class="logout-item" onclick="showLogoutConfirm()">
+                <div class="logout-item" onclick="doLogout()">
                     <i class="fa fa-sign-out-alt"></i> Log out
                 </div>
             </div>
@@ -176,7 +172,6 @@
 <div id="grid" class="grid"></div>
 
 <script type="module">
-// SUPABASE INIT
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
 
@@ -187,51 +182,199 @@ const profileId = new URLSearchParams(location.search).get("id") || myId;
 let isFollowing = false, rawSubs = 0, currentPost = null, profileData = null;
 let currentSlide = 0, currentMedia = [];
 
-// --- TOAST / MODAL UTILS ---
-const toastEl = document.getElementById("toast");
-const showToast = (content, okCb=null, cancelCb=null) => {
-    toastEl.innerHTML = "";
-    const msg = document.createElement("div");
-    msg.innerText = content;
-    toastEl.appendChild(msg);
-    if(okCb){
-        const btnRow = document.createElement("div");
-        btnRow.style.display = "flex"; btnRow.style.justifyContent = "flex-end"; btnRow.style.gap = "10px";
-        const cancelBtn = document.createElement("button"); cancelBtn.innerText = "Cancel"; cancelBtn.style.background="#ccc"; cancelBtn.style.color="#000"; cancelBtn.onclick = () => { toastEl.style.display="none"; if(cancelCb) cancelCb(); }; btnRow.appendChild(cancelBtn);
-        const okBtn = document.createElement("button"); okBtn.innerText="OK"; okBtn.style.background="#ff2d55"; okBtn.style.color="#fff"; okBtn.onclick = () => { toastEl.style.display="none"; okCb(); }; btnRow.appendChild(okBtn);
-        toastEl.appendChild(btnRow);
+// --- UTILS ---
+const toast = m => { const t = document.getElementById("toast"); t.innerText = m; t.style.display="block"; setTimeout(()=>t.style.display="none", 2000); };
+
+// --- NOTIFICATIONS LOGIC ---
+async function checkNotifications() {
+    if (myId !== profileId) return;
+    document.getElementById('notifBtn').style.display = 'flex';
+    const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', myId).eq('is_read', false);
+    if (count > 0) {
+        const dot = document.getElementById('notifDot');
+        dot.style.display = 'flex';
+        dot.innerText = count > 9 ? '9+' : count;
     }
-    toastEl.style.display="block";
+}
+
+async function sendNotification(targetId, type, postId = null) {
+    if (myId === targetId) return;
+    await supabase.from('notifications').insert({ user_id: targetId, sender_id: myId, type: type, post_id: postId });
+}
+
+// --- LOGOUT LOGIC ---
+window.toggleLogoutDropdown = (e) => {
+    e.stopPropagation();
+    const d = document.getElementById('logoutDropdown');
+    d.style.display = (d.style.display === 'flex') ? 'none' : 'flex';
 };
 
-// --- NOTIFICATIONS ---
-async function checkNotifications(){
-    if(myId!==profileId) return;
-    const notifBtn = document.getElementById('notifBtn');
-    notifBtn.style.display='flex';
-    const {count} = await supabase.from('notifications').select('*',{count:'exact', head:true}).eq('user_id',myId).eq('is_read',false);
-    const dot = document.getElementById('notifDot');
-    if(count>0){ dot.style.display='flex'; dot.innerText=count>9?'9+':count; } else dot.style.display='none';
+window.doLogout = () => {
+    if(confirm("Are you sure you want to log out?")) {
+        localStorage.clear();
+        location.href = "https://globaltrends56.blogspot.com";
+    }
+};
 
-    notifBtn.onclick = async ()=>{
-        dot.style.display='none';
-        await supabase.from('notifications').update({is_read:true}).eq('user_id',myId).eq('is_read',false);
-        location.href='notifications.html';
-    };
+document.addEventListener('click', () => { 
+    const d = document.getElementById('logoutDropdown'); 
+    if(d) d.style.display = 'none'; 
+});
+
+// --- CORE LOADING ---
+async function load() {
+    const [pRes, sRes, vRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", profileId).single(),
+        supabase.from("follows").select("*", { count:"exact", head:true }).eq("user_id", profileId),
+        supabase.from("posts").select("*").eq("user_id", profileId).order('created_at', {ascending: false})
+    ]);
+
+    if (!pRes.data) return;
+    profileData = pRes.data;
+    
+    // Avatar Logic: Show image if exists, else keep grey circle icon
+    const avImg = document.getElementById('pAv');
+    const avIcon = document.getElementById('defaultUserIcon');
+    if(profileData.avatar_url) {
+        avImg.src = profileData.avatar_url;
+        avImg.style.display = 'block';
+        avIcon.style.display = 'none';
+    }
+
+    document.getElementById('pUn').innerHTML = `@${profileData.username} ${profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : ''}`;
+    document.getElementById('pBio').innerText = profileData.bio || "";
+    rawSubs = sRes.count || 0;
+    document.getElementById('sCount').innerText = rawSubs;
+    const totalLikes = vRes.data?.reduce((acc, post) => acc + (parseInt(post.likes) || 0), 0) || 0;
+    document.getElementById('lCount').innerText = totalLikes;
+
+    document.getElementById('grid').innerHTML = vRes.data?.map(v => {
+        const isPhoto = v.media_type === 'photo';
+        const thumb = isPhoto ? v.media_urls[0] : v.video_url + "#t=0.1";
+        return `
+            <div class="grid-item" onclick='openFS(${JSON.stringify(v)})'>
+                <div class="media-indicator">${isPhoto ? '🖼️' : '🎞️'}</div>
+                ${isPhoto ? `<img src="${thumb}">` : `<video src="${thumb}" muted playsinline></video>`}
+            </div>
+        `;
+    }).join("") || "";
+
+    if (myId === profileId) {
+        document.getElementById('logoutMenuContainer').style.display = 'block';
+        document.getElementById('goalBox').style.display = 'block';
+        checkNotifications();
+        let pct = Math.min((rawSubs/10000)*100, 100);
+        document.getElementById('bar').style.width = pct+'%';
+        document.getElementById('gPct').innerText = Math.floor(pct)+'%';
+        document.getElementById('btns').innerHTML = `<button class="btn grey-btn" onclick="location.href='edit-profile.html'">Edit Profile</button>`;
+    } else {
+        const { data } = await supabase.from("follows").select("*").eq("follower_id", myId).eq("user_id", profileId).single();
+        isFollowing = !!data;
+        renderSubBtn();
+    }
 }
-async function addNotification(targetId, type, postId=null){
-    if(myId===targetId) return;
-    await supabase.from('notifications').insert({ user_id: targetId, sender_id: myId, type, post_id: postId });
-    if(targetId===myId){ const dot=document.getElementById('notifDot'); dot.style.display='flex'; dot.innerText=parseInt(dot.innerText||'0')+1; }
+
+function renderSubBtn() {
+    document.getElementById('btns').innerHTML = `<button onclick="doSub()" class="btn ${isFollowing?'sub-btn-red':'sub-btn-black'}">${isFollowing?'💟 Subscribed':'Subscribe'}</button>`;
 }
 
-// --- LOGOUT ---
-window.toggleLogoutDropdown=(e)=>{ e.stopPropagation(); const d=document.getElementById('logoutDropdown'); d.style.display=(d.style.display==='flex')?'none':'flex'; };
-window.showLogoutConfirm = ()=> showToast("Are you sure you want to log out?", ()=>{ localStorage.clear(); location.href="https://globaltrends56.blogspot.com"; }, ()=>{});
-document.addEventListener('click',()=>{ const d=document.getElementById('logoutDropdown'); if(d) d.style.display='none'; });
+window.doSub = async () => {
+    if (!isFollowing) {
+        isFollowing = true; rawSubs++;
+        await supabase.from("follows").insert({ follower_id: myId, user_id: profileId });
+        sendNotification(profileId, 'subscribe');
+    } else {
+        isFollowing = false; rawSubs--;
+        await supabase.from("follows").delete().match({ follower_id: myId, user_id: profileId });
+    }
+    document.getElementById('sCount').innerText = rawSubs;
+    renderSubBtn();
+};
 
-// --- CORE LOADING & GRID / FS LOGIC ---
-// (Your existing load(), renderSubBtn(), doSub(), openFS(), toggleLike(), toggleDelMenu(), confirmDelete(), closeFS(), changeSlide(), updateDots() remain the same, just integrate toast for confirmDelete)
+window.openFS = (post) => {
+    currentPost = post;
+    currentSlide = 0;
+    const player = document.getElementById('fsPlayer');
+    const content = document.getElementById('mediaContent');
+    player.style.display = 'flex';
+    content.innerHTML = '';
+    if (post.media_type === 'photo') {
+        currentMedia = post.media_urls;
+        currentMedia.forEach((url, i) => {
+            const img = document.createElement('img');
+            img.src = url; img.className = 'fs-img';
+            img.style.display = i === 0 ? 'block' : 'none';
+            content.appendChild(img);
+        });
+        const isMulti = currentMedia.length > 1;
+        document.getElementById('prevBtn').style.display = isMulti ? 'block' : 'none';
+        document.getElementById('nextBtn').style.display = isMulti ? 'block' : 'none';
+        updateDots();
+    } else {
+        content.innerHTML = `<video id="mainVid" class="fs-video" src="${post.video_url}" loop playsinline autoplay></video>`;
+        document.getElementById('prevBtn').style.display = 'none';
+        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('slideDots').innerHTML = '';
+    }
+    document.getElementById('fsAv').src = profileData.avatar_url || "https://via.placeholder.com/50";
+    document.getElementById('fsUn').innerText = `@${profileData.username}`;
+    document.getElementById('fsBadge').innerHTML = profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
+    document.getElementById('fsCap').innerText = post.caption || "";
+    document.getElementById('fsLikeCount').innerText = post.likes || 0;
+    document.getElementById('dotsBtn').style.display = (myId === profileId) ? 'block' : 'none';
+    const isLiked = localStorage.getItem('liked_'+post.id);
+    document.getElementById('likeHeart').className = isLiked ? 'fa fa-heart fs-btn liked' : 'fa fa-heart fs-btn';
+};
+
+window.changeSlide = (dir) => {
+    const images = document.querySelectorAll('.fs-img');
+    images[currentSlide].style.display = 'none';
+    currentSlide = (currentSlide + dir + currentMedia.length) % currentMedia.length;
+    images[currentSlide].style.display = 'block';
+    updateDots();
+};
+
+function updateDots() {
+    const dots = document.getElementById('slideDots');
+    dots.innerHTML = currentMedia.map((_, i) => `<div class="dot ${i === currentSlide ? 'active' : ''}"></div>`).join("");
+}
+
+window.toggleLike = async () => {
+    const heart = document.getElementById('likeHeart');
+    let count = parseInt(currentPost.likes) || 0;
+    if (!heart.classList.contains('liked')) {
+        heart.classList.add('liked'); count++;
+        localStorage.setItem('liked_'+currentPost.id, 'true');
+        sendNotification(profileId, 'like', currentPost.id);
+    } else {
+        heart.classList.remove('liked'); count--;
+        localStorage.removeItem('liked_'+currentPost.id);
+    }
+    document.getElementById('fsLikeCount').innerText = count;
+    currentPost.likes = count;
+    await supabase.from("posts").update({ likes: count }).eq('id', currentPost.id);
+};
+
+window.toggleDelMenu = () => {
+    const m = document.getElementById('delMenu');
+    m.style.display = (m.style.display === 'block') ? 'none' : 'block';
+};
+
+window.confirmDelete = async () => {
+    if (confirm("Delete this post?")) {
+        await supabase.from("posts").delete().eq('id', currentPost.id);
+        location.reload();
+    }
+};
+
+window.closeFS = () => {
+    document.getElementById('fsPlayer').style.display = 'none';
+    const v = document.getElementById('mainVid');
+    if(v) v.pause();
+    document.getElementById('delMenu').style.display = 'none';
+};
+
+load();
 </script>
 </body>
-                                           </html>
+    </html>
