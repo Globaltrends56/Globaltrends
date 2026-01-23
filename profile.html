@@ -157,7 +157,7 @@
 
     <div id="goalBox">
         <div style="font-size:10px; color:#888; display:flex; justify-content:space-between; font-weight:bold;">
-            <span>Dashboard</span><span id="gPct">0%</span>
+            <span>Subscriber Goal</span><span id="gPct">0%</span>
         </div>
         <div class="bar-bg"><div id="bar" class="bar-fill"></div></div>
     </div>
@@ -182,8 +182,46 @@ const profileId = new URLSearchParams(location.search).get("id") || myId;
 let isFollowing = false, rawSubs = 0, currentPost = null, profileData = null;
 let currentSlide = 0, currentMedia = [];
 
-// --- UTILS ---
-const toast = m => { const t = document.getElementById("toast"); t.innerText = m; t.style.display="block"; setTimeout(()=>t.style.display="none", 2000); };
+// --- TOAST UTIL ---
+const toastEl = document.getElementById("toast");
+const showToast = (content, okCb=null, cancelCb=null) => {
+    toastEl.innerHTML = "";
+    const msg = document.createElement("div");
+    msg.innerText = content;
+    msg.style.marginBottom = "10px";
+    toastEl.appendChild(msg);
+
+    if(okCb) {
+        const btnRow = document.createElement("div");
+        btnRow.style.display = "flex";
+        btnRow.style.justifyContent = "flex-end";
+        btnRow.style.gap = "8px";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.innerText = "Cancel";
+        cancelBtn.style.background = "#ccc";
+        cancelBtn.style.color = "#000";
+        cancelBtn.style.padding = "6px 12px";
+        cancelBtn.style.border = "none";
+        cancelBtn.style.borderRadius = "6px";
+        cancelBtn.onclick = () => { toastEl.style.display="none"; if(cancelCb) cancelCb(); };
+        btnRow.appendChild(cancelBtn);
+
+        const okBtn = document.createElement("button");
+        okBtn.innerText = "OK";
+        okBtn.style.background = "#ff2d55";
+        okBtn.style.color = "#fff";
+        okBtn.style.padding = "6px 12px";
+        okBtn.style.border = "none";
+        okBtn.style.borderRadius = "6px";
+        okBtn.onclick = () => { toastEl.style.display="none"; okCb(); };
+        btnRow.appendChild(okBtn);
+
+        toastEl.appendChild(btnRow);
+    }
+
+    toastEl.style.display = "block";
+};
 
 // --- NOTIFICATIONS LOGIC ---
 async function checkNotifications() {
@@ -210,12 +248,28 @@ window.toggleLogoutDropdown = (e) => {
 };
 
 window.doLogout = () => {
-    if(confirm("Are you sure you want to log out?")) {
+    showToast("Are you sure you want to log out?", () => {
+        // OK callback
         localStorage.clear();
-        location.href = "https://globaltrends56.blogspot.com";
-    }
+        resetProfileUI();
+    });
 };
 
+// Reset UI for logged out state
+function resetProfileUI() {
+    document.getElementById('pAv').style.display = 'none';
+    document.getElementById('defaultUserIcon').style.display = 'block';
+    document.getElementById('pUn').innerText = "";
+    document.getElementById('pBio').innerText = "";
+    document.getElementById('sCount').innerText = 0;
+    document.getElementById('lCount').innerText = 0;
+    document.getElementById('goalBox').style.display = 'none';
+    document.getElementById('logoutMenuContainer').style.display = 'none';
+    document.getElementById('btns').innerHTML = `<button class="btn sub-btn-black" onclick="location.reload()">Login</button>`;
+    document.getElementById('notifBtn').style.display = 'none';
+}
+
+// Hide logout dropdown on outside click
 document.addEventListener('click', () => { 
     const d = document.getElementById('logoutDropdown'); 
     if(d) d.style.display = 'none'; 
@@ -232,7 +286,6 @@ async function load() {
     if (!pRes.data) return;
     profileData = pRes.data;
     
-    // Avatar Logic: Show image if exists, else keep grey circle icon
     const avImg = document.getElementById('pAv');
     const avIcon = document.getElementById('defaultUserIcon');
     if(profileData.avatar_url) {
@@ -260,7 +313,7 @@ async function load() {
     }).join("") || "";
 
     if (myId === profileId) {
-        document.getElementById('logoutMenuContainer').style.display = 'block';
+        document.getElementById('logoutMenuContainer').style.display = 'flex';
         document.getElementById('goalBox').style.display = 'block';
         checkNotifications();
         let pct = Math.min((rawSubs/10000)*100, 100);
@@ -272,6 +325,9 @@ async function load() {
         isFollowing = !!data;
         renderSubBtn();
     }
+
+    // Add spacing between top-right icons
+    document.querySelectorAll('.nav-right i').forEach((el, idx) => { el.style.marginLeft = idx>0 ? '12px' : '0'; });
 }
 
 function renderSubBtn() {
@@ -291,13 +347,14 @@ window.doSub = async () => {
     renderSubBtn();
 };
 
+// --- FULLSCREEN LOGIC ---
 window.openFS = (post) => {
     currentPost = post;
-    currentSlide = 0;
     const player = document.getElementById('fsPlayer');
     const content = document.getElementById('mediaContent');
     player.style.display = 'flex';
     content.innerHTML = '';
+
     if (post.media_type === 'photo') {
         currentMedia = post.media_urls;
         currentMedia.forEach((url, i) => {
@@ -306,9 +363,8 @@ window.openFS = (post) => {
             img.style.display = i === 0 ? 'block' : 'none';
             content.appendChild(img);
         });
-        const isMulti = currentMedia.length > 1;
-        document.getElementById('prevBtn').style.display = isMulti ? 'block' : 'none';
-        document.getElementById('nextBtn').style.display = isMulti ? 'block' : 'none';
+        document.getElementById('prevBtn').style.display = currentMedia.length>1 ? 'block' : 'none';
+        document.getElementById('nextBtn').style.display = currentMedia.length>1 ? 'block' : 'none';
         updateDots();
     } else {
         content.innerHTML = `<video id="mainVid" class="fs-video" src="${post.video_url}" loop playsinline autoplay></video>`;
@@ -316,54 +372,24 @@ window.openFS = (post) => {
         document.getElementById('nextBtn').style.display = 'none';
         document.getElementById('slideDots').innerHTML = '';
     }
+
     document.getElementById('fsAv').src = profileData.avatar_url || "https://via.placeholder.com/50";
     document.getElementById('fsUn').innerText = `@${profileData.username}`;
     document.getElementById('fsBadge').innerHTML = profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
     document.getElementById('fsCap').innerText = post.caption || "";
     document.getElementById('fsLikeCount').innerText = post.likes || 0;
-    document.getElementById('dotsBtn').style.display = (myId === profileId) ? 'block' : 'none';
-    const isLiked = localStorage.getItem('liked_'+post.id);
-    document.getElementById('likeHeart').className = isLiked ? 'fa fa-heart fs-btn liked' : 'fa fa-heart fs-btn';
+    document.getElementById('dotsBtn').style.display = (myId===profileId)?'block':'none';
 };
 
-window.changeSlide = (dir) => {
-    const images = document.querySelectorAll('.fs-img');
-    images[currentSlide].style.display = 'none';
-    currentSlide = (currentSlide + dir + currentMedia.length) % currentMedia.length;
-    images[currentSlide].style.display = 'block';
-    updateDots();
-};
-
-function updateDots() {
-    const dots = document.getElementById('slideDots');
-    dots.innerHTML = currentMedia.map((_, i) => `<div class="dot ${i === currentSlide ? 'active' : ''}"></div>`).join("");
-}
-
-window.toggleLike = async () => {
-    const heart = document.getElementById('likeHeart');
-    let count = parseInt(currentPost.likes) || 0;
-    if (!heart.classList.contains('liked')) {
-        heart.classList.add('liked'); count++;
-        localStorage.setItem('liked_'+currentPost.id, 'true');
-        sendNotification(profileId, 'like', currentPost.id);
-    } else {
-        heart.classList.remove('liked'); count--;
-        localStorage.removeItem('liked_'+currentPost.id);
-    }
-    document.getElementById('fsLikeCount').innerText = count;
-    currentPost.likes = count;
-    await supabase.from("posts").update({ likes: count }).eq('id', currentPost.id);
-};
-
+// Delete video toast
 window.toggleDelMenu = () => {
     const m = document.getElementById('delMenu');
-    m.style.display = (m.style.display === 'block') ? 'none' : 'block';
-};
-
-window.confirmDelete = async () => {
-    if (confirm("Delete this post?")) {
-        await supabase.from("posts").delete().eq('id', currentPost.id);
-        location.reload();
+    if(m.style.display==='block'){ m.style.display='none'; return; }
+    if(myId===profileId){
+        showToast("Confirm delete video?", async ()=>{
+            await supabase.from("posts").delete().eq('id', currentPost.id);
+            location.reload();
+        }, ()=>{} );
     }
 };
 
@@ -371,9 +397,7 @@ window.closeFS = () => {
     document.getElementById('fsPlayer').style.display = 'none';
     const v = document.getElementById('mainVid');
     if(v) v.pause();
-    document.getElementById('delMenu').style.display = 'none';
 };
-
 load();
 </script>
 </body>
