@@ -1,27 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Notifications</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
-<style>
-    body { margin:0; font-family:-apple-system, sans-serif; background:#fff; }
-    .nav { display:flex; justify-content:space-between; align-items:center; padding:15px 20px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index:100; }
-    .item { display:flex; align-items:center; padding:16px 20px; gap:14px; border-bottom:1px solid #f8f8f8; cursor:pointer; }
-    .item.unread { background: #fff1f3; }
-    .av { width:48px; height:48px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-    .av i { font-size: 20px; color: #000; }
-    .txt { flex:1; font-size:14px; line-height:1.4; }
-    .time { font-size:11px; color:#aaa; margin-top:4px; }
-    .icon-box { color: #ff2d55; font-size: 14px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+    <style>
+        body { margin:0; font-family:-apple-system, sans-serif; background: #fff; }
+        .nav { display:flex; align-items:center; padding:15px 20px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; gap:15px; }
+        .item { display:flex; align-items:center; padding:16px 20px; gap:12px; border-bottom:1px solid #f9f9f9; text-decoration: none; color: inherit; }
+        .av { width:44px; height:44px; border-radius:50%; background:#eee; overflow:hidden; display: flex; align-items: center; justify-content: center; }
+        .av img { width: 100%; height: 100%; object-fit: cover; }
+        .txt { font-size: 14px; line-height: 1.4; }
+    </style>
 </head>
 <body>
-<div class="nav">
-    <div style="display:flex; align-items:center; gap:15px;"><i class="fa fa-arrow-left" onclick="history.back()"></i><b>Activity</b></div>
-    <div onclick="clearAll()" style="font-size:13px; color:#ff2d55; font-weight:700;">Clear</div>
-</div>
+<div class="nav"><i class="fa fa-arrow-left" onclick="history.back()"></i><b>Activity</b></div>
 <div id="list"></div>
 
 <script type="module">
@@ -31,26 +25,36 @@ const myId = localStorage.getItem("user_id");
 
 async function load() {
     if (!myId) return;
+    
+    // 1. Immediately clear the notification batch (mark all as read)
+    await supabase.from('notifications').update({ is_read: true }).eq('user_id', myId);
+    
+    // 2. Fetch the notification list
     const { data: n } = await supabase.from('notifications').select('*').eq('user_id', myId).order('created_at', {ascending:false});
     const cont = document.getElementById('list');
-    if (!n?.length) { cont.innerHTML = '<div style="text-align:center; padding:100px; color:#ccc;">No activity yet</div>'; return; }
+    if (!n?.length) { cont.innerHTML = '<p style="text-align:center;color:#999;margin-top:60px;">No activity yet.</p>'; return; }
     
-    await supabase.from('notifications').update({is_read:true}).eq('user_id', myId);
-    let h = '';
-    for (const item of n) {
-        const { data: u } = await supabase.from('profiles').select('username, avatar_url').eq('id', item.sender_id).single();
-        h += `
-        <div class="item ${item.is_read?'':'unread'}" onclick="location.href='profile.html?id=${item.sender_id}'">
-            <div class="av">${u?.avatar_url ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="fa fa-user"></i>`}</div>
-            <div class="txt"><b>@${u?.username||'User'}</b> ${item.type==='like'?'liked your post':'subscribed to you'}
-                <div class="time">${new Date(item.created_at).toLocaleDateString()}</div>
+    for (const i of n) {
+        let name = "Anonymous", avatar = '<i class="fa fa-user" style="color:#aaa"></i>';
+        
+        // 3. Handle @anonymous logic
+        if (i.sender_id && i.sender_id !== "anon") {
+            const { data: u } = await supabase.from('profiles').select('username, avatar_url').eq('id', i.sender_id).single();
+            if (u) {
+                name = `@${u.username}`;
+                if (u.avatar_url) avatar = `<img src="${u.avatar_url}">`;
+            }
+        }
+
+        cont.innerHTML += `
+        <a href="profile.html?id=${i.sender_id}" class="item">
+            <div class="av">${avatar}</div>
+            <div class="txt"><b>${name}</b> ${i.type==='like'?'liked your post':'followed you'}
+                <div style="font-size:11px; color:#aaa; margin-top:3px;">${new Date(i.created_at).toLocaleDateString()}</div>
             </div>
-            <div class="icon-box"><i class="fa ${item.type==='like'?'fa-heart':'fa-user-plus'}"></i></div>
-        </div>`;
+        </a>`;
     }
-    cont.innerHTML = h;
 }
-window.clearAll = async () => { if(confirm("Clear all?")) { await supabase.from('notifications').delete().eq('user_id', myId); load(); } };
 load();
 </script>
 </body>
