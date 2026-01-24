@@ -38,6 +38,12 @@
     }
     .dropdown-item:last-child { border-bottom: none; color: #ff2d55; }
 
+    /* BUTTONS */
+    .btn-sub { width: 80%; max-width: 280px; padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; }
+    .btn-black { background: #000; color: #fff; }
+    .btn-grey { background: #f2f2f2; color: #555; }
+    .btn-sub:active { transform: scale(0.96); }
+
     /* TOAST MODAL */
     .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); z-index: 10000; padding: 25px 20px; transition: bottom 0.3s ease-out; text-align: center; box-sizing: border-box; }
     .confirm-toast.active { bottom: 0; }
@@ -61,7 +67,7 @@
     .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: -webkit-optimize-contrast; }
     .media-indicator { position: absolute; top: 5px; right: 5px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; font-size: 11px; z-index: 5; }
 
-    /* FULL SCREEN PLAYER & CAROUSEL */
+    /* FULL SCREEN PLAYER */
     #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; }
     .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; z-index: 5100; text-shadow: 0 0 4px #000; }
     .fs-dots-menu { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; cursor: pointer; }
@@ -169,7 +175,7 @@ const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhb
 
 let myId = localStorage.getItem("user_id");
 const profileId = new URLSearchParams(location.search).get("id") || myId;
-let currentPost = null, profileData = null;
+let currentPost = null, profileData = null, isSubscribed = false;
 
 // UI UTILS
 window.showToast = (msg, onYes) => { document.getElementById('toastMsg').innerText = msg; document.getElementById('confirmToast').classList.add('active'); document.getElementById('toastYes').onclick = () => { onYes(); closeToast(); }; };
@@ -181,14 +187,16 @@ window.toggleDelMenu = (e) => { e.stopPropagation(); const m = document.getEleme
 document.addEventListener('click', () => { if(document.getElementById('logoutDropdown')) document.getElementById('logoutDropdown').style.display = 'none'; if(document.getElementById('delMenu')) document.getElementById('delMenu').style.display = 'none'; });
 
 async function load() {
-    const [pRes, sRes, vRes] = await Promise.all([
+    const [pRes, sRes, vRes, fCheck] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", profileId).single(),
         supabase.from("follows").select("*", { count:"exact", head:true }).eq("user_id", profileId),
-        supabase.from("posts").select("*").eq("user_id", profileId).order('created_at', {ascending: false})
+        supabase.from("posts").select("*").eq("user_id", profileId).order('created_at', {ascending: false}),
+        myId ? supabase.from("follows").select("*").eq("user_id", profileId).eq("follower_id", myId).single() : {data: null}
     ]);
 
     if (!pRes.data) return;
     profileData = pRes.data;
+    isSubscribed = !!fCheck.data;
     
     if(profileData.avatar_url) {
         document.getElementById('pAv').src = profileData.avatar_url;
@@ -204,9 +212,11 @@ async function load() {
         bioEl.style.display = 'block';
     }
 
-    document.getElementById('sCount').innerText = sRes.count || 0;
+    let subCount = sRes.count || 0;
+    document.getElementById('sCount').innerText = subCount;
     document.getElementById('lCount').innerText = vRes.data?.reduce((acc, p) => acc + (parseInt(p.likes) || 0), 0) || 0;
 
+    // Grid Construction
     document.getElementById('grid').innerHTML = vRes.data?.map(v => {
         const isPhoto = v.media_type === 'photo';
         const hasMultiple = isPhoto && v.media_urls && v.media_urls.length > 1;
@@ -217,18 +227,56 @@ async function load() {
         </div>`;
     }).join("");
 
+    const btnContainer = document.getElementById('btns');
     if (myId === profileId) {
         document.getElementById('logoutMenuContainer').style.display = 'flex';
         document.getElementById('goalBox').style.display = 'block';
-        let pct = Math.min(((sRes.count||0)/10000)*100, 100);
+        let pct = Math.min((subCount/10000)*100, 100);
         document.getElementById('bar').style.width = pct+'%';
         document.getElementById('gPct').innerText = Math.floor(pct)+'%';
-        document.getElementById('btns').innerHTML = `<button onclick="location.href='edit-profile.html'" style="padding:10px 40px; border-radius:6px; border:none; background:#f2f2f2; font-weight:600; min-width:130px;">Edit Profile</button>`;
+        btnContainer.innerHTML = `<button onclick="location.href='edit-profile.html'" class="btn-sub btn-grey" style="min-width:130px;">Edit Profile</button>`;
         checkNotifications();
+    } else {
+        // VIEWING SOMEONE ELSE OR ANONYMOUS
+        renderSubButton();
     }
 }
 
+function renderSubButton() {
+    const btnContainer = document.getElementById('btns');
+    if (isSubscribed) {
+        btnContainer.innerHTML = `<button class="btn-sub btn-grey">💟 Subscribed</button>`;
+    } else {
+        btnContainer.innerHTML = `<button onclick="handleSubscribe()" class="btn-sub btn-black">Subscribe</button>`;
+    }
+}
+
+window.handleSubscribe = async () => {
+    if (!myId) {
+        showToast("Login to subscribe!", () => { location.href = "login.html"; });
+        return;
+    }
+    
+    // UI Update immediately
+    isSubscribed = true;
+    let countEl = document.getElementById('sCount');
+    countEl.innerText = parseInt(countEl.innerText) + 1;
+    renderSubButton();
+
+    // Database Update
+    await supabase.from("follows").insert([{ user_id: profileId, follower_id: myId }]);
+    
+    // Create Notification for the user
+    await supabase.from("notifications").insert([{
+        user_id: profileId,
+        type: 'follow',
+        from_id: myId,
+        content: 'started following you'
+    }]);
+};
+
 async function checkNotifications() {
+    if (!myId) return;
     const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', myId).eq('is_read', false);
     if (count > 0) {
         document.getElementById('notifBtn').style.display = 'flex';
@@ -256,12 +304,9 @@ window.openFS = (post) => {
     dotsBox.innerHTML = "";
 
     if (post.media_type === 'photo' && post.media_urls) {
-        // LIMIT TO 10 SLIDES ONLY
         const limitedUrls = post.media_urls.slice(0, 10);
         const slides = limitedUrls.map(url => `<div class="carousel-item"><img src="${url}"></div>`).join("");
         content.innerHTML = `<div class="carousel-container" id="carousel">${slides}</div>`;
-        
-        // Build dots for limited slides
         if(limitedUrls.length > 1) {
             dotsBox.innerHTML = limitedUrls.map((_, i) => `<div class="dot ${i === 0 ? 'active' : ''}"></div>`).join("");
             const carousel = document.getElementById('carousel');
@@ -288,4 +333,4 @@ window.closeFS = () => { document.getElementById('fsPlayer').style.display = 'no
 load();
 </script>
 </body>
-                                            </html>
+            </html>
