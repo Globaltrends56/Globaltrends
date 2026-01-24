@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard • Globaltrends</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+    <style>
+        :root { --primary: #ff2d55; --bg: #f8f9fa; }
+        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: #000; }
+        
+        /* Nav */
+        .nav { display: flex; align-items: center; padding: 15px 20px; background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+        .nav b { flex: 1; text-align: center; font-size: 18px; margin-right: 25px; }
+
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .card { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; }
+        .card i { color: var(--primary); font-size: 20px; margin-bottom: 10px; }
+        .card h2 { margin: 5px 0; font-size: 24px; }
+        .card span { color: #888; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+
+        /* Table Section */
+        .section-title { font-size: 16px; font-weight: 700; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+        .data-list { background: #fff; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .data-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f5f5f5; gap: 12px; }
+        .data-item:last-child { border-bottom: none; }
+        
+        .post-preview { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: #eee; }
+        .item-info { flex: 1; }
+        .item-info b { font-size: 14px; display: block; }
+        .item-info small { color: #888; font-size: 12px; }
+        
+        .stat-badge { background: #fff0f3; color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+        /* Loading Overlay */
+        #loader { position: fixed; inset: 0; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.3s; }
+    </style>
+</head>
+<body>
+
+<div id="loader"><i class="fa fa-spinner fa-spin" style="font-size: 30px; color: var(--primary);"></i></div>
+
+<div class="nav">
+    <i class="fa fa-arrow-left" onclick="location.href='profile.html'"></i>
+    <b>Creator Analytics</b>
+</div>
+
+<div class="container">
+    <div class="stats-grid">
+        <div class="card">
+            <i class="fa fa-users"></i>
+            <h2 id="totalSubs">0</h2>
+            <span>Subscribers</span>
+        </div>
+        <div class="card">
+            <i class="fa fa-heart"></i>
+            <h2 id="totalLikes">0</h2>
+            <span>Total Likes</span>
+        </div>
+    </div>
+
+    <div class="section-title"><i class="fa fa-chart-line" style="color:#007bff"></i> Top Performing Content</div>
+    <div id="postList" class="data-list">
+        </div>
+
+    <div class="section-title"><i class="fa fa-user-plus" style="color:#28a745"></i> Recent Followers</div>
+    <div id="followerList" class="data-list" style="margin-bottom: 50px;">
+        </div>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
+
+const myId = localStorage.getItem("user_id");
+if (!myId) location.href = "login.html";
+
+async function loadDashboard() {
+    try {
+        // 1. Fetch Subscriber Count
+        const { count: subCount } = await supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', myId);
+        
+        document.getElementById('totalSubs').innerText = subCount || 0;
+
+        // 2. Fetch Posts and Calculate Total Likes
+        const { data: posts } = await supabase
+            .from('posts')
+            .select('*')
+            .eq('user_id', myId)
+            .order('likes', { ascending: false });
+
+        let totalLikes = 0;
+        if (posts) {
+            totalLikes = posts.reduce((acc, p) => acc + (p.likes || 0), 0);
+            document.getElementById('postList').innerHTML = posts.slice(0, 5).map(p => `
+                <div class="data-item">
+                    <img class="post-preview" src="${p.media_type === 'photo' ? p.media_urls[0] : p.video_url + '#t=0.5'}">
+                    <div class="item-info">
+                        <b>${p.caption ? p.caption.substring(0, 20) + '...' : 'Post'}</b>
+                        <small>${new Date(p.created_at).toLocaleDateString()}</small>
+                    </div>
+                    <div class="stat-badge">${p.likes || 0} Likes</div>
+                </div>
+            `).join('');
+        }
+        document.getElementById('totalLikes').innerText = totalLikes;
+
+        // 3. Fetch Recent Followers
+        const { data: follows } = await supabase
+            .from('follows')
+            .select('follower_id, created_at, profiles!follows_follower_id_fkey(username, avatar_url)')
+            .eq('user_id', myId)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        if (follows && follows.length > 0) {
+            document.getElementById('followerList').innerHTML = follows.map(f => `
+                <div class="data-item">
+                    <img class="post-preview" style="border-radius: 50%" src="${f.profiles.avatar_url || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}">
+                    <div class="item-info">
+                        <b>@${f.profiles.username}</b>
+                        <small>Started following you</small>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            document.getElementById('followerList').innerHTML = `<div style="padding:20px; text-align:center; color:#888;">No followers yet.</div>`;
+        }
+
+    } catch (err) {
+        console.error(err);
+    } finally {
+        document.getElementById('loader').style.opacity = '0';
+        setTimeout(() => document.getElementById('loader').style.display = 'none', 300);
+    }
+}
+
+loadDashboard();
+</script>
+</body>
+  </html>
