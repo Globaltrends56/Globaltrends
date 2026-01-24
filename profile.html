@@ -8,38 +8,60 @@
 <style>
     body { margin:0; font-family:-apple-system, sans-serif; background:#fff; -webkit-touch-callout: none; user-select: none; }
     
-    /* NAV & HEADER */
+    /* NAV FIX: Separating the icons clearly */
     .nav { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index: 1000; }
-    .nav-right { display: flex; align-items: center; gap: 22px; position: relative; }
+    .nav-right { display: flex; align-items: center; gap: 20px; } /* Increased gap */
     
-    /* DROPDOWNS & BADGES */
-    .notif-badge { position: absolute; top: -7px; right: -7px; background: #ff2d55; color: #fff; font-size: 10px; width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid #fff; font-weight: bold; }
-    .logout-dropdown { position: absolute; top: 35px; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 2000; min-width: 160px; overflow: hidden; border: 1px solid #eee; }
-    .dropdown-item { padding: 14px 18px; font-size: 14px; color: #000; font-weight: 600; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid #f5f5f5; }
+    /* Notification Bell stays separate */
+    .notif-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; padding: 5px; }
+    .notif-badge { 
+        position: absolute; top: 0px; right: -2px; 
+        background: #ff2d55; color: #fff; font-size: 10px; 
+        width: 16px; height: 16px; border-radius: 50%; 
+        display: none; align-items: center; justify-content: center; 
+        border: 2px solid #fff; font-weight: bold;
+    }
 
-    /* TOAST MODAL */
+    /* Dropdown container stays separate */
+    .menu-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; padding: 5px; }
+
+    .logout-dropdown {
+        position: absolute; top: 40px; right: 0;
+        background: #fff; border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        display: none; flex-direction: column;
+        z-index: 2000; min-width: 170px;
+        overflow: hidden; border: 1px solid #eee;
+    }
+    .dropdown-item {
+        padding: 14px 18px; font-size: 14px;
+        color: #000; font-weight: 600;
+        display: flex; align-items: center; gap: 12px; cursor: pointer;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .dropdown-item:active { background: #f9f9f9; }
+    .dropdown-item:last-child { border-bottom: none; color: #ff2d55; }
+
+    /* CONFIRM TOAST */
     .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -5px 25px rgba(0,0,0,0.2); z-index: 10000; padding: 25px 20px; transition: bottom 0.4s ease; text-align: center; box-sizing: border-box; }
     .confirm-toast.active { bottom: 0; }
-    .t-btn { padding: 12px 30px; border-radius: 10px; border: none; font-weight: bold; flex: 1; max-width: 150px; }
+    .t-btn { padding: 12px 30px; border-radius: 10px; border: none; font-weight: bold; flex: 1; max-width: 150px; cursor: pointer; }
     .t-btn-no { background: #eee; color: #000; }
     .t-btn-yes { background: #ff2d55; color: #fff; }
 
-    /* GRID DESIGN */
+    /* GRID */
     .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background:#eee; }
     .grid-item { aspect-ratio: 9/16; background:#000; position: relative; overflow: hidden; }
     .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: -webkit-optimize-contrast; }
     .media-indicator { position: absolute; top: 5px; right: 5px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; font-size: 12px; z-index: 5; }
 
-    /* FULL SCREEN OVERLAY INFO */
+    /* FULL SCREEN PLAYER */
     #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; }
     .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; z-index: 5100; text-shadow: 0 0 4px #000; }
     .fs-dots { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; cursor: pointer; text-shadow: 0 0 4px #000; }
-    
     .fs-info { position: absolute; bottom: 30px; left: 15px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); pointer-events: none; z-index: 5100; max-width: 80%; }
     .fs-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .fs-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; background: #333; }
-    .fs-caption { font-size: 14px; line-height: 1.4; }
-
     .fs-actions { position: absolute; right: 15px; bottom: 100px; color: #fff; text-align: center; z-index: 5100; }
     #delMenu { position: absolute; top: 60px; right: 20px; background: #fff; color: #ff2d55; padding: 12px 20px; border-radius: 10px; font-weight: bold; display: none; z-index: 5200; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
@@ -64,18 +86,15 @@
     <i class="fa fa-times fs-close" onclick="closeFS()"></i>
     <i id="dotsBtn" class="fa fa-ellipsis-v fs-dots" onclick="toggleDelMenu(event)"></i>
     <div id="delMenu" onclick="askDelete()">Delete Post</div>
-    
     <div id="mediaContent" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
-    
     <div class="fs-info">
         <div class="fs-user-row">
-            <img id="fsAv" class="fs-avatar" src="">
+            <img id="fsAv" class="fs-avatar">
             <span id="fsUn" style="font-weight:bold;"></span>
             <span id="fsBadge"></span>
         </div>
         <div id="fsCap" class="fs-caption"></div>
     </div>
-
     <div class="fs-actions">
         <i id="likeHeart" class="fa fa-heart" style="font-size:30px; cursor:pointer;" onclick="toggleLike()"></i>
         <div id="fsLikeCount" style="font-weight:bold; font-size:12px; margin-top:5px;">0</div>
@@ -86,12 +105,14 @@
     <i class="fa fa-arrow-left" onclick="history.back()"></i>
     <b>Profile</b>
     <div class="nav-right">
-        <i class="fa fa-share-alt"></i>
+        <i class="fa fa-share-alt" onclick="navigator.share({url: window.location.href})"></i>
+        
         <div id="notifBtn" class="notif-wrapper" style="display:none;" onclick="location.href='notifications.html'">
             <i class="fa fa-bell"></i>
             <span id="notifDot" class="notif-badge"></span>
         </div>
-        <div id="logoutMenuContainer" style="display:none;">
+        
+        <div id="logoutMenuContainer" class="menu-wrapper" style="display:none;">
             <i class="fa fa-ellipsis-v" onclick="toggleLogoutDropdown(event)"></i>
             <div id="logoutDropdown" class="logout-dropdown">
                 <div class="dropdown-item" onclick="location.href='dashboard.html'">
@@ -145,28 +166,18 @@ async function load() {
         supabase.from("follows").select("*", { count:"exact", head:true }).eq("user_id", profileId),
         supabase.from("posts").select("*").eq("user_id", profileId).order('created_at', {ascending: false})
     ]);
-
     if (!pRes.data) return;
     profileData = pRes.data;
-    
-    if(profileData.avatar_url) {
-        document.getElementById('pAv').src = profileData.avatar_url;
-        document.getElementById('pAv').style.display = 'block';
-        document.getElementById('defaultUserIcon').style.display = 'none';
-    }
-
-    const checkHtml = profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
-    document.getElementById('pUn').innerHTML = `@${profileData.username} ${checkHtml}`;
+    if(profileData.avatar_url) { document.getElementById('pAv').src = profileData.avatar_url; document.getElementById('pAv').style.display = 'block'; document.getElementById('defaultUserIcon').style.display = 'none'; }
+    document.getElementById('pUn').innerHTML = `@${profileData.username} ${profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : ''}`;
     document.getElementById('sCount').innerText = sRes.count || 0;
     document.getElementById('lCount').innerText = vRes.data?.reduce((acc, p) => acc + (parseInt(p.likes) || 0), 0) || 0;
-
     document.getElementById('grid').innerHTML = vRes.data?.map(v => {
         const isPhoto = v.media_type === 'photo';
         return `<div class="grid-item" onclick='openFS(${JSON.stringify(v)})'><div class="media-indicator">${isPhoto ? '🖼️' : '🎞️'}</div>${isPhoto ? `<img src="${v.media_urls[0]}">` : `<video src="${v.video_url}#t=0.5" muted playsinline></video>`}</div>`;
     }).join("");
-
     if (myId === profileId) {
-        document.getElementById('logoutMenuContainer').style.display = 'block';
+        document.getElementById('logoutMenuContainer').style.display = 'flex';
         document.getElementById('goalBox').style.display = 'block';
         let pct = Math.min(((sRes.count||0)/10000)*100, 100);
         document.getElementById('bar').style.width = pct+'%';
@@ -186,8 +197,6 @@ window.openFS = (post) => {
     document.getElementById('fsPlayer').style.display = 'flex';
     const content = document.getElementById('mediaContent');
     content.innerHTML = post.media_type === 'photo' ? `<img src="${post.media_urls[0]}" style="max-width:100%; max-height:100%; object-fit:contain;">` : `<video src="${post.video_url}" autoplay loop playsinline style="width:100%; max-height:100%;"></video>`;
-    
-    // RESTORE DATA
     document.getElementById('fsAv').src = profileData.avatar_url || "";
     document.getElementById('fsUn').innerText = `@${profileData.username}`;
     document.getElementById('fsBadge').innerHTML = profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
@@ -201,4 +210,4 @@ window.closeFS = () => { document.getElementById('fsPlayer').style.display = 'no
 load();
 </script>
 </body>
-    </html>
+    </html> 
