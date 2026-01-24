@@ -51,6 +51,8 @@
     .profile-hdr { text-align:center; padding:20px; }
     .p-avatar-container { width: 85px; height: 85px; background-color: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; overflow: hidden; border: 1px solid #eee; }
     .p-avatar-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .p-bio { font-size: 13.5px; color: #444; margin: 8px auto; max-width: 80%; line-height: 1.4; white-space: pre-wrap; display: none; }
+    
     #goalBox { width: 85%; max-width: 280px; margin: 10px auto; display: none; background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
     .bar-bg { width: 100%; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; margin-top:5px;}
     .bar-fill { height: 100%; width: 0%; background: #ff2d55; transition: width 1s; }
@@ -138,6 +140,9 @@
 <div class="profile-hdr">
     <div class="p-avatar-container"><i id="defaultUserIcon" class="fa fa-user" style="color:#000; font-size:40px;"></i><img id="pAv" class="p-avatar-img"></div>
     <div id="pUn" style="font-size:18px; font-weight:700; margin:10px 0 4px; display:flex; justify-content:center; align-items:center; gap:4px;"></div>
+    
+    <div id="pBio" class="p-bio"></div>
+
     <div id="goalBox">
         <div style="font-size:10px; color:#888; display:flex; justify-content:space-between; font-weight:bold;"><span>10K SUBS GOAL</span><span id="gPct">0%</span></div>
         <div class="bar-bg"><div id="bar" class="bar-fill"></div></div>
@@ -205,17 +210,29 @@ async function load() {
     if (!pRes.data) return;
     profileData = pRes.data;
     
+    // Avatar
     if(profileData.avatar_url) {
         document.getElementById('pAv').src = profileData.avatar_url;
         document.getElementById('pAv').style.display = 'block';
         document.getElementById('defaultUserIcon').style.display = 'none';
     }
 
+    // Username & Badge
     const badge = profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
     document.getElementById('pUn').innerHTML = `@${profileData.username} ${badge}`;
+
+    // Bio
+    if (profileData.bio) {
+        const bioEl = document.getElementById('pBio');
+        bioEl.innerText = profileData.bio;
+        bioEl.style.display = 'block';
+    }
+
+    // Stats
     document.getElementById('sCount').innerText = sRes.count || 0;
     document.getElementById('lCount').innerText = vRes.data?.reduce((acc, p) => acc + (parseInt(p.likes) || 0), 0) || 0;
 
+    // Grid
     document.getElementById('grid').innerHTML = vRes.data?.map(v => {
         const isPhoto = v.media_type === 'photo';
         return `
@@ -225,6 +242,7 @@ async function load() {
         </div>`;
     }).join("");
 
+    // Owner specific UI
     if (myId === profileId) {
         document.getElementById('logoutMenuContainer').style.display = 'flex';
         document.getElementById('goalBox').style.display = 'block';
@@ -289,4 +307,4 @@ window.closeFS = () => {
 load();
 </script>
 </body>
-    </html>
+                                                                                                                              </html>
