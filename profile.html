@@ -6,234 +6,120 @@
 <title>Profile • Globaltrends</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 <style>
-    :root { --accent: #ff2d55; --bg: #ffffff; --grey: #f2f2f2; --text: #1a1a1a; }
-    body { margin:0; font-family:-apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); user-select: none; -webkit-tap-highlight-color: transparent; }
-    
-    /* Navigation */
-    .nav { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; position:sticky; top:0; background:rgba(255,255,255,0.9); backdrop-filter:blur(10px); z-index: 1000; }
-    .nav-right { display: flex; align-items: center; gap: 20px; position: relative; }
-    .notif-badge { position: absolute; top: -5px; right: -5px; background: var(--accent); color: #fff; font-size: 10px; width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid #fff; font-weight: bold; }
+body{margin:0;font-family:-apple-system,sans-serif;background:#fff}
+video{pointer-events:auto}
 
-    /* Custom Toast Pop-up */
-    #logoutToast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.2); padding: 24px; z-index: 9000; display: none; text-align: center; width: 85%; max-width: 320px; border: 1px solid #eee; animation: pop 0.3s ease; }
-    @keyframes pop { from { transform: translate(-50%, -50%) scale(0.9); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
-    .toast-btns { display: flex; gap: 12px; margin-top: 20px; }
-    .t-btn { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; }
+/* NAV */
+.nav{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:1000}
+.nav-right{display:flex;align-items:center;gap:18px;position:relative}
 
-    /* Profile Header */
-    .profile-hdr { text-align:center; padding:25px 20px; }
-    .p-avatar-box { width: 90px; height: 90px; background: var(--grey); border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .p-avatar-box i { font-size: 45px; color: #000; }
-    .p-avatar-img { width: 100%; height: 100%; object-fit: cover; }
-    .username-tag { font-size: 20px; font-weight: 800; margin: 12px 0 4px; }
-    
-    /* Stats & Goals (Hidden for logged out) */
-    .stats-row { display:flex; justify-content:center; gap:40px; margin:20px 0; }
-    .stat-item { text-align: center; }
-    .stat-v { font-weight: 800; font-size: 18px; display: block; }
-    .stat-l { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+/* NOTIFICATION */
+.notif-wrapper{position:relative;display:flex;align-items:center;cursor:pointer}
+.notif-badge{position:absolute;top:-7px;right:-7px;background:#ff2d55;color:#fff;font-size:10px;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid #fff;font-weight:bold}
 
-    .goal-container { margin: 15px 25px 25px; padding: 15px; background: #fafafa; border-radius: 14px; border: 1px solid #f0f0f0; display: none; }
-    .goal-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
-    .progress-track { width: 100%; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #ff2d55, #ff7b92); width: 0%; transition: width 1s ease-in-out; }
+/* DROPDOWN */
+.logout-dropdown{position:absolute;top:35px;right:0;background:#fff;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:2000;min-width:160px;border:1px solid #eee}
+.logout-item{padding:12px 15px;font-size:14px;font-weight:600;display:flex;gap:10px;cursor:pointer}
+.logout-item:active{background:#f5f5f5}
+.logout-red{color:#ff2d55}
 
-    /* Action Buttons */
-    .btn-wrap { display: flex; justify-content: center; padding-bottom: 25px; }
-    .main-btn { padding: 12px 40px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 15px; }
-    .btn-red { background: var(--accent); color: #fff; box-shadow: 0 4px 15px rgba(255,45,85,0.3); }
-    .btn-dark { background: #000; color: #fff; }
-    .btn-grey { background: var(--grey); color: #000; }
+/* PROFILE */
+.profile-hdr{text-align:center;padding:20px}
+.p-avatar-container{width:85px;height:85px;background:#e0e0e0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;overflow:hidden}
+.p-avatar-container i{font-size:40px}
+.p-avatar-img{width:100%;height:100%;object-fit:cover;display:none}
+.username-row{font-size:18px;font-weight:700;margin:10px 0 4px;display:flex;justify-content:center;gap:4px}
+.p-bio{font-size:14px;color:#444;margin-bottom:12px}
 
-    /* Grid */
-    .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background:#f0f0f0; }
-    .grid-item { aspect-ratio: 1/1; background:#000; position: relative; overflow: hidden; }
-    .media-badge { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.5); color: #fff; padding: 3px 5px; border-radius: 5px; font-size: 10px; z-index: 5; }
+/* STATS */
+.stats{display:flex;justify-content:center;gap:30px;margin:15px 0}
+.stat-val{font-weight:800;font-size:17px}
+.stat-lbl{font-size:12px;color:#888}
 
-    /* Carousel Player */
-    #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; flex-direction: column; }
-    .dots { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
-    .dot { width: 6px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 50%; }
-    .dot.active { background: #fff; transform: scale(1.2); }
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#eee}
+.grid-item{aspect-ratio:9/16;background:#000;position:relative}
+.grid-item img,.grid-item video{width:100%;height:100%;object-fit:cover}
+.media-indicator{position:absolute;top:5px;right:5px;color:#fff;background:rgba(0,0,0,.4);padding:2px 5px;border-radius:4px;font-size:12px}
+
+/* FULLSCREEN */
+#fsPlayer{position:fixed;inset:0;background:#000;z-index:5000;display:none}
+.fs-close{position:absolute;top:20px;left:20px;color:#fff;font-size:24px}
+.fs-dots{position:absolute;top:20px;right:20px;color:#fff;font-size:20px}
+#delMenu{position:absolute;top:60px;right:20px;background:#fff;color:red;padding:12px 20px;border-radius:8px;font-weight:bold;display:none}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:14px 22px;border-radius:30px;display:none;z-index:9999;text-align:center}
+.toast button{margin:8px 6px;padding:6px 12px;border:none;border-radius:20px;font-weight:bold}
+.toast-ok{background:#ff2d55;color:#fff}
+.toast-cancel{background:#555;color:#fff}
 </style>
 </head>
+
 <body>
 
-<div id="logoutToast">
-    <p>Are you sure you want to logout?</p>
-    <div class="toast-btns">
-        <button class="t-btn btn-grey" onclick="hideLogoutToast()">No</button>
-        <button class="t-btn btn-yes btn-red" onclick="confirmLogout()">Yes</button>
-    </div>
-</div>
-
-<div id="fsPlayer">
-    <i class="fa fa-times" style="position:absolute; top:25px; left:20px; color:#fff; font-size:26px; z-index:100;" onclick="closeFS()"></i>
-    <div id="mediaContent" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden;" ontouchstart="handleTS(event)" ontouchend="handleTE(event)"></div>
-    <div id="slideDots" class="dots"></div>
-    <div style="position:absolute; right:20px; bottom:110px; color:#fff; text-align:center;">
-        <i id="likeHeart" class="fa fa-heart" style="font-size:32px;" onclick="toggleLike()"></i>
-        <div id="fsLikeCount" style="font-size:13px; font-weight:700; margin-top:6px;">0</div>
-    </div>
-</div>
+<div id="toast" class="toast"></div>
 
 <div class="nav">
-    <i class="fa fa-chevron-left" onclick="history.back()"></i>
-    <b id="navTitle">Profile</b>
-    <div class="nav-right">
-        <div id="notifBtn" style="display:none; position:relative;" onclick="location.href='notifications.html'">
-            <i class="fa fa-bell" style="font-size:20px;"></i>
-            <span id="notifDot" class="notif-badge"></span>
-        </div>
-        <div id="menuBtn" style="display:none;" onclick="showLogoutToast()">
-            <i class="fa fa-sign-out-alt" style="font-size:20px; color:var(--accent);"></i>
-        </div>
-    </div>
+<i class="fa fa-arrow-left" onclick="history.back()"></i>
+<b>Profile</b>
+
+<div class="nav-right">
+<i class="fa fa-share-alt"></i>
+
+<div id="notifBtn" class="notif-wrapper" onclick="location.href='notifications.html'">
+<i class="fa fa-bell"></i>
+<span id="notifDot" class="notif-badge"></span>
 </div>
 
-<div class="profile-hdr">
-    <div class="p-avatar-box">
-        <i id="defIcon" class="fa fa-user"></i>
-        <img id="pAv" class="p-avatar-img" style="display:none;">
-    </div>
-    <div id="pUn" class="username-tag">@Globaluser</div>
-    <div id="pBio" style="font-size:14px; color:#666; margin-bottom:15px; padding:0 30px;"></div>
-
-    <div id="goalDash" class="goal-container">
-        <div class="goal-head"><span>Creator Progress</span><span id="gPct">0%</span></div>
-        <div class="progress-track"><div id="gFill" class="progress-fill"></div></div>
-        <div style="font-size:10px; color:#888; margin-top:6px; font-weight:600;">GOAL: 10,000 SUBSCRIBERS</div>
-    </div>
-
-    <div class="stats-row">
-        <div class="stat-item"><span id="sCount" class="stat-v">0</span><span class="stat-l">Subscribers</span></div>
-        <div class="stat-item"><span id="lCount" class="stat-v">0</span><span class="stat-l">Total Likes</span></div>
-    </div>
-    <div id="btnArea" class="btn-wrap"></div>
+<div id="logoutMenuContainer">
+<i class="fa fa-ellipsis-v" onclick="toggleMenu(event)"></i>
+<div id="logoutDropdown" class="logout-dropdown">
+<div class="logout-item" onclick="location.href='dashboard.html'">
+<i class="fa fa-chart-line"></i> View dashboard
 </div>
-
-<div id="grid" class="grid"></div>
+<div class="logout-item logout-red" onclick="askLogout()">
+<i class="fa fa-sign-out-alt"></i> Log out
+</div>
+</div>
+</div>
+</div>
+</div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
+const supabase=createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
 
-const myId = localStorage.getItem("user_id");
-const profId = new URLSearchParams(location.search).get("id") || myId;
-let curPost = null, curIdx = 0, startX = 0;
+const toastBox=document.getElementById("toast");
 
-window.showLogoutToast = () => document.getElementById('logoutToast').style.display = 'block';
-window.hideLogoutToast = () => document.getElementById('logoutToast').style.display = 'none';
-window.confirmLogout = () => { localStorage.clear(); location.href = "https://globaltrends56.blogspot.com"; };
-
-async function load() {
-    const [p, s, v] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", profId).single(),
-        supabase.from("follows").select("*", {count:"exact", head:true}).eq("user_id", profId),
-        supabase.from("posts").select("*").eq("user_id", profId).order('created_at', {ascending:false})
-    ]);
-
-    if (!p.data) return;
-    const user = p.data;
-    if (user.avatar_url) { document.getElementById('pAv').src = user.avatar_url; document.getElementById('pAv').style.display='block'; document.getElementById('defIcon').style.display='none'; }
-    document.getElementById('pUn').innerText = `@${user.username}`;
-    document.getElementById('pBio').innerText = user.bio || "";
-    
-    const subs = s.count || 0;
-    document.getElementById('sCount').innerText = subs.toLocaleString();
-    document.getElementById('lCount').innerText = v.data?.reduce((a, b) => a + (parseInt(b.likes)||0), 0).toLocaleString() || 0;
-
-    const area = document.getElementById('btnArea');
-    if (myId === profId) {
-        // My Profile
-        document.getElementById('goalDash').style.display = 'block';
-        document.getElementById('menuBtn').style.display = 'block';
-        document.getElementById('notifBtn').style.display = 'block';
-        const pct = Math.min((subs / 10000) * 100, 100).toFixed(1);
-        document.getElementById('gFill').style.width = pct + "%";
-        document.getElementById('gPct').innerText = pct + "%";
-        area.innerHTML = `<button class="main-btn btn-grey" onclick="location.href='edit-profile.html'">Edit Profile</button>`;
-        checkNotifs();
-    } else if (!myId && !new URLSearchParams(location.search).get("id")) {
-        // Logged out
-        document.getElementById('goalDash').style.display = 'none';
-        area.innerHTML = `<button class="main-btn btn-red" onclick="location.href='login.html'">Log In</button>`;
-    } else {
-        // Visitor
-        const { data:f } = await supabase.from("follows").select("*").eq("follower_id", myId || "anon").eq("user_id", profId).single();
-        area.innerHTML = `<button onclick="doSub(${!!f})" class="main-btn ${f?'btn-grey':'btn-dark'}">${f?'Subscribed':'Subscribe'}</button>`;
-    }
-
-    document.getElementById('grid').innerHTML = v.data?.map(i => `
-        <div class="grid-item" onclick='openFS(${JSON.stringify(i)})'>
-            <div class="media-badge">${i.media_type==='photo'?'🖼️':'🎞️'}</div>
-            ${i.media_type==='photo' ? `<img src="${i.media_urls[0]}" style="width:100%; height:100%; object-fit:cover;">` : `<video src="${i.video_url}#t=0.1" style="width:100%; height:100%; object-fit:cover;" muted></video>`}
-        </div>`).join("") || "";
+function showToast(html){
+toastBox.innerHTML=html;
+toastBox.style.display="block";
 }
 
-window.openFS = (post) => {
-    curPost = post; curIdx = 0;
-    document.getElementById('fsPlayer').style.display = 'flex';
-    const cont = document.getElementById('mediaContent');
-    cont.innerHTML = '';
-    if (post.media_type === 'photo') {
-        post.media_urls.slice(0, 10).forEach((u, i) => {
-            const img = document.createElement('img');
-            img.src = u; img.style.cssText = `max-width:100%; max-height:100%; display:${i===0?'block':'none'}`;
-            img.className = 'fs-item';
-            cont.appendChild(img);
-        });
-        updateDots();
-    } else {
-        cont.innerHTML = `<video src="${post.video_url}" style="max-width:100%; max-height:100%;" autoplay loop playsinline></video>`;
-        document.getElementById('slideDots').innerHTML = '';
-    }
-    document.getElementById('fsLikeCount').innerText = post.likes || 0;
-    document.getElementById('likeHeart').style.color = localStorage.getItem('l_'+post.id) ? '#ff2d55' : '#fff';
-};
-
-window.handleTS = (e) => startX = e.touches[0].clientX;
-window.handleTE = (e) => {
-    if (curPost.media_type !== 'photo') return;
-    const diff = startX - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) {
-        const items = document.querySelectorAll('.fs-item');
-        if (items.length <= 1) return;
-        items[curIdx].style.display = 'none';
-        curIdx = (curIdx + (diff > 0 ? 1 : -1) + items.length) % items.length;
-        items[curIdx].style.display = 'block';
-        updateDots();
-    }
-};
-
-function updateDots() {
-    const d = document.getElementById('slideDots');
-    d.innerHTML = Array.from({length: curPost.media_urls.slice(0, 10).length}).map((_, i) => `<div class="dot ${i===curIdx?'active':''}"></div>`).join("");
+window.askLogout=()=>{
+showToast(`
+Are you sure you want to log out?<br>
+<button class="toast-cancel" onclick="toastBox.style.display='none'">Cancel</button>
+<button class="toast-ok" onclick="doLogout()">Log out</button>
+`);
 }
 
-window.toggleLike = async () => {
-    const h = document.getElementById('likeHeart');
-    let l = parseInt(curPost.likes) || 0;
-    if (h.style.color !== 'rgb(255, 45, 85)') {
-        h.style.color = '#ff2d55'; l++;
-        localStorage.setItem('l_'+curPost.id, '1');
-        if (myId !== profId) await supabase.from('notifications').insert({ user_id: profId, sender_id: myId || "anon", type: 'like', post_id: curPost.id });
-    } else {
-        h.style.color = '#fff'; l--;
-        localStorage.removeItem('l_'+curPost.id);
-    }
-    document.getElementById('fsLikeCount').innerText = l;
-    await supabase.from("posts").update({ likes: l }).eq('id', curPost.id);
-};
-
-window.closeFS = () => document.getElementById('fsPlayer').style.display = 'none';
-
-async function checkNotifs() {
-    const { count } = await supabase.from('notifications').select('*', {count:'exact', head:true}).eq('user_id', myId).eq('is_read', false);
-    if (count > 0) { const d = document.getElementById('notifDot'); d.style.display = 'flex'; d.innerText = count > 9 ? '9+' : count; }
+window.doLogout=()=>{
+localStorage.clear();
+location.href="https://globaltrends56.blogspot.com";
 }
 
-load();
+window.toggleMenu=e=>{
+e.stopPropagation();
+const d=document.getElementById("logoutDropdown");
+d.style.display=d.style.display==="flex"?"none":"flex";
+}
+
+document.addEventListener("click",()=>{
+document.getElementById("logoutDropdown").style.display="none";
+});
 </script>
+
 </body>
-                                                                                </html> 
+    </html>
