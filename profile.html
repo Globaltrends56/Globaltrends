@@ -6,7 +6,14 @@
 <title>Profile • Globaltrends</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 <style>
-    body { margin:0; font-family:-apple-system, sans-serif; background:#fff; -webkit-touch-callout: none; user-select: none; overflow-x: hidden; }
+    body { 
+        margin:0; font-family:-apple-system, sans-serif; background:#fff; 
+        /* Disables the long-press menu system-wide */
+        -webkit-touch-callout: none; 
+        -webkit-user-select: none;
+        user-select: none; 
+        overflow-x: hidden; 
+    }
     
     /* NAVIGATION */
     .nav { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index: 1000; }
@@ -44,11 +51,11 @@
     .btn-grey { background: #f2f2f2; color: #555; }
     .btn-sub:active { transform: scale(0.96); }
 
-    /* TOAST MODAL FIXES */
+    /* TOAST MODAL */
     .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); z-index: 10000; padding: 30px 20px; transition: bottom 0.3s ease-out; text-align: center; box-sizing: border-box; }
     .confirm-toast.active { bottom: 0; }
     .toast-msg { font-weight: 600; font-size: 17px; margin-bottom: 25px; color: #000; }
-    .toast-btns { display: flex; justify-content: center; gap: 15px; } /* Space between buttons */
+    .toast-btns { display: flex; justify-content: center; gap: 15px; }
     .t-btn { padding: 14px; border-radius: 12px; border: none; font-weight: bold; flex: 1; max-width: 140px; cursor: pointer; font-size: 15px; }
     .t-btn-no { background: #f0f0f0; color: #000; }
     .t-btn-yes { background: #ff2d55; color: #fff; }
@@ -63,13 +70,17 @@
     .bar-bg { width: 100%; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; margin-top:5px;}
     .bar-fill { height: 100%; width: 0%; background: #ff2d55; transition: width 1s; }
 
-    /* GRID DESIGN */
+    /* GRID DESIGN - ANTI DOWNLOAD */
     .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background:#eee; }
     .grid-item { aspect-ratio: 9/16; background:#000; position: relative; overflow: hidden; }
-    .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: -webkit-optimize-contrast; }
+    .grid-item img, .grid-item video { 
+        width: 100%; height: 100%; object-fit: cover; display: block; 
+        image-rendering: -webkit-optimize-contrast;
+        pointer-events: none; /* Prevents long-press on the image itself */
+    }
     .media-indicator { position: absolute; top: 5px; right: 5px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; font-size: 11px; z-index: 5; }
 
-    /* FULL SCREEN PLAYER */
+    /* FULL SCREEN PLAYER - ANTI DOWNLOAD */
     #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; }
     .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; z-index: 5100; text-shadow: 0 0 4px #000; }
     .fs-dots-menu { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; cursor: pointer; }
@@ -77,7 +88,13 @@
     .carousel-container { width: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; height: 100%; }
     .carousel-container::-webkit-scrollbar { display: none; }
     .carousel-item { min-width: 100%; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; height: 100%; }
-    .carousel-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    
+    /* Strict protection for viewed media */
+    .carousel-item img, .carousel-item video { 
+        max-width: 100%; max-height: 100%; object-fit: contain; 
+        pointer-events: none; 
+        -webkit-touch-callout: none;
+    }
 
     .nav-dots { display: flex; justify-content: center; gap: 6px; position: absolute; bottom: 120px; width: 100%; z-index: 5100; pointer-events: none; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); transition: 0.3s; }
@@ -97,9 +114,7 @@
     #delMenu { position: absolute; top: 65px; right: 20px; background: #fff; color: #ff2d55; padding: 12px 20px; border-radius: 10px; font-weight: bold; display: none; z-index: 5200; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 </style>
 </head>
-<body>
-
-<div id="confirmToast" class="confirm-toast">
+<body oncontextmenu="return false;"> <div id="confirmToast" class="confirm-toast">
     <div id="toastMsg" class="toast-msg">Are you sure?</div>
     <div class="toast-btns">
         <button class="t-btn t-btn-no" onclick="closeToast()">No</button>
@@ -179,7 +194,6 @@ let myId = localStorage.getItem("user_id");
 const profileId = new URLSearchParams(location.search).get("id") || myId;
 let currentPost = null, profileData = null, isSubscribed = false;
 
-// UI UTILS
 window.showToast = (msg, onYes) => { 
     document.getElementById('toastMsg').innerText = msg; 
     document.getElementById('confirmToast').classList.add('active'); 
@@ -211,12 +225,7 @@ async function load() {
     }
 
     document.getElementById('pUn').innerHTML = `@${profileData.username} ${profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : ''}`;
-    
-    if (profileData.bio) {
-        const bioEl = document.getElementById('pBio');
-        bioEl.innerText = profileData.bio;
-        bioEl.style.display = 'block';
-    }
+    if (profileData.bio) { const bioEl = document.getElementById('pBio'); bioEl.innerText = profileData.bio; bioEl.style.display = 'block'; }
 
     let subCount = sRes.count || 0;
     document.getElementById('sCount').innerText = subCount;
@@ -241,36 +250,25 @@ async function load() {
         document.getElementById('gPct').innerText = Math.floor(pct)+'%';
         btnContainer.innerHTML = `<button onclick="location.href='edit-profile.html'" class="btn-sub btn-grey" style="min-width:130px;">Edit Profile</button>`;
         checkNotifications();
-    } else {
-        renderSubButton();
-    }
+    } else { renderSubButton(); }
 }
 
 function renderSubButton() {
     const btnContainer = document.getElementById('btns');
-    if (isSubscribed) {
-        btnContainer.innerHTML = `<button onclick="handleSubscribe()" class="btn-sub btn-grey">💟 Subscribed</button>`;
-    } else {
-        btnContainer.innerHTML = `<button onclick="handleSubscribe()" class="btn-sub btn-black">Subscribe</button>`;
-    }
+    btnContainer.innerHTML = isSubscribed 
+        ? `<button onclick="handleSubscribe()" class="btn-sub btn-grey">💟 Subscribed</button>` 
+        : `<button onclick="handleSubscribe()" class="btn-sub btn-black">Subscribe</button>`;
 }
 
 window.handleSubscribe = async () => {
-    if (!myId) {
-        showToast("Login to subscribe!", () => { location.href = "login.html"; });
-        return;
-    }
+    if (!myId) { showToast("Login to subscribe!", () => { location.href = "login.html"; }); return; }
     const countEl = document.getElementById('sCount');
     let currentCount = parseInt(countEl.innerText);
     if (isSubscribed) {
-        isSubscribed = false;
-        countEl.innerText = Math.max(0, currentCount - 1);
-        renderSubButton();
+        isSubscribed = false; countEl.innerText = Math.max(0, currentCount - 1); renderSubButton();
         await supabase.from("follows").delete().eq("user_id", profileId).eq("follower_id", myId);
     } else {
-        isSubscribed = true;
-        countEl.innerText = currentCount + 1;
-        renderSubButton();
+        isSubscribed = true; countEl.innerText = currentCount + 1; renderSubButton();
         await supabase.from("follows").insert([{ user_id: profileId, follower_id: myId }]);
         await supabase.from("notifications").insert([{ user_id: profileId, type: 'follow', from_id: myId, content: 'started following you' }]);
     }
@@ -317,7 +315,7 @@ window.openFS = (post) => {
             });
         }
     } else {
-        content.innerHTML = `<div class="carousel-item"><video src="${post.video_url}" autoplay loop playsinline style="width:100%; height:100%;"></video></div>`;
+        content.innerHTML = `<div class="carousel-item"><video src="${post.video_url}" autoplay loop playsinline disablePictureInPicture controlsList="nodownload"></video></div>`;
     }
     
     document.getElementById('fsAv').src = profileData.avatar_url || "";
@@ -334,4 +332,4 @@ window.closeFS = () => { document.getElementById('fsPlayer').style.display = 'no
 load();
 </script>
 </body>
-    </html>
+            </html>
