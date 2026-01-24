@@ -237,7 +237,6 @@ async function load() {
         btnContainer.innerHTML = `<button onclick="location.href='edit-profile.html'" class="btn-sub btn-grey" style="min-width:130px;">Edit Profile</button>`;
         checkNotifications();
     } else {
-        // VIEWING SOMEONE ELSE OR ANONYMOUS
         renderSubButton();
     }
 }
@@ -245,7 +244,7 @@ async function load() {
 function renderSubButton() {
     const btnContainer = document.getElementById('btns');
     if (isSubscribed) {
-        btnContainer.innerHTML = `<button class="btn-sub btn-grey">💟 Subscribed</button>`;
+        btnContainer.innerHTML = `<button onclick="handleSubscribe()" class="btn-sub btn-grey">💟 Subscribed</button>`;
     } else {
         btnContainer.innerHTML = `<button onclick="handleSubscribe()" class="btn-sub btn-black">Subscribe</button>`;
     }
@@ -257,22 +256,30 @@ window.handleSubscribe = async () => {
         return;
     }
     
-    // UI Update immediately
-    isSubscribed = true;
-    let countEl = document.getElementById('sCount');
-    countEl.innerText = parseInt(countEl.innerText) + 1;
-    renderSubButton();
+    const countEl = document.getElementById('sCount');
+    let currentCount = parseInt(countEl.innerText);
 
-    // Database Update
-    await supabase.from("follows").insert([{ user_id: profileId, follower_id: myId }]);
-    
-    // Create Notification for the user
-    await supabase.from("notifications").insert([{
-        user_id: profileId,
-        type: 'follow',
-        from_id: myId,
-        content: 'started following you'
-    }]);
+    if (isSubscribed) {
+        // --- UNSUBSCRIBE LOGIC ---
+        isSubscribed = false;
+        countEl.innerText = Math.max(0, currentCount - 1);
+        renderSubButton();
+        await supabase.from("follows").delete().eq("user_id", profileId).eq("follower_id", myId);
+    } else {
+        // --- SUBSCRIBE LOGIC ---
+        isSubscribed = true;
+        countEl.innerText = currentCount + 1;
+        renderSubButton();
+        await supabase.from("follows").insert([{ user_id: profileId, follower_id: myId }]);
+        
+        // Notify user
+        await supabase.from("notifications").insert([{
+            user_id: profileId,
+            type: 'follow',
+            from_id: myId,
+            content: 'started following you'
+        }]);
+    }
 };
 
 async function checkNotifications() {
@@ -333,4 +340,4 @@ window.closeFS = () => { document.getElementById('fsPlayer').style.display = 'no
 load();
 </script>
 </body>
-            </html>
+    </html>
