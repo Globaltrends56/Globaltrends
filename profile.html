@@ -18,7 +18,11 @@ video{pointer-events:auto}
 .notif-badge{position:absolute;top:-7px;right:-7px;background:#ff2d55;color:#fff;font-size:10px;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid #fff;font-weight:bold}
 
 /* DROPDOWN */
-.logout-dropdown{position:absolute;top:35px;right:0;background:#fff;border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:2000;min-width:160px;border:1px solid #eee}
+.logout-dropdown{
+position:absolute;top:35px;right:0;background:#fff;border-radius:8px;
+box-shadow:0 4px 15px rgba(0,0,0,.15);
+display:none;flex-direction:column;z-index:2000;min-width:160px;border:1px solid #eee
+}
 .logout-item{padding:12px 15px;font-size:14px;font-weight:600;display:flex;gap:10px;cursor:pointer}
 .logout-item:active{background:#f5f5f5}
 .logout-red{color:#ff2d55}
@@ -35,6 +39,13 @@ video{pointer-events:auto}
 .stats{display:flex;justify-content:center;gap:30px;margin:15px 0}
 .stat-val{font-weight:800;font-size:17px}
 .stat-lbl{font-size:12px;color:#888}
+
+/* BUTTONS */
+.btn-row{display:flex;justify-content:center;gap:8px;padding-bottom:20px}
+.btn{padding:10px;border:none;border-radius:6px;font-weight:600;min-width:130px}
+.sub-btn-red{background:#ff2d55;color:#fff}
+.sub-btn-black{background:#000;color:#fff}
+.grey-btn{background:#f2f2f2}
 
 /* GRID */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#eee}
@@ -63,7 +74,6 @@ video{pointer-events:auto}
 <div class="nav">
 <i class="fa fa-arrow-left" onclick="history.back()"></i>
 <b>Profile</b>
-
 <div class="nav-right">
 <i class="fa fa-share-alt"></i>
 
@@ -86,39 +96,94 @@ video{pointer-events:auto}
 </div>
 </div>
 
+<div class="profile-hdr">
+<div class="p-avatar-container">
+<i id="defaultUserIcon" class="fa fa-user"></i>
+<img id="pAv" class="p-avatar-img">
+</div>
+
+<div id="pUn" class="username-row"></div>
+<div id="pBio" class="p-bio"></div>
+
+<div class="stats">
+<div><span id="sCount" class="stat-val">0</span><div class="stat-lbl">Subscribers</div></div>
+<div><span id="lCount" class="stat-val">0</span><div class="stat-lbl">Total Likes</div></div>
+</div>
+
+<div id="btns" class="btn-row"></div>
+</div>
+
+<div id="grid" class="grid"></div>
+
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const supabase=createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
+
+const supabase = createClient(
+  "https://spnvgymmrlyqtfrbjjsg.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI"
+);
 
 const toastBox=document.getElementById("toast");
+const toast=m=>{toastBox.innerHTML=m;toastBox.style.display="block";setTimeout(()=>toastBox.style.display="none",2200)}
 
-function showToast(html){
-toastBox.innerHTML=html;
-toastBox.style.display="block";
-}
+let myId=localStorage.getItem("user_id")||localStorage.getItem("anon_id");
+if(!myId){myId="anon_"+Math.random().toString(36).slice(2,10);localStorage.setItem("anon_id",myId)}
+
+const profileId=new URLSearchParams(location.search).get("id")||myId;
 
 window.askLogout=()=>{
-showToast(`
-Are you sure you want to log out?<br>
+toastBox.innerHTML=`Are you sure you want to log out?<br>
 <button class="toast-cancel" onclick="toastBox.style.display='none'">Cancel</button>
-<button class="toast-ok" onclick="doLogout()">Log out</button>
-`);
-}
+<button class="toast-ok" onclick="doLogout()">Log out</button>`;
+toastBox.style.display="block";
+};
 
 window.doLogout=()=>{
 localStorage.clear();
 location.href="https://globaltrends56.blogspot.com";
-}
+};
 
 window.toggleMenu=e=>{
 e.stopPropagation();
 const d=document.getElementById("logoutDropdown");
 d.style.display=d.style.display==="flex"?"none":"flex";
+};
+
+document.addEventListener("click",()=>document.getElementById("logoutDropdown").style.display="none");
+
+async function load(){
+const {data:profile}=await supabase.from("profiles").select("*").eq("id",profileId).single();
+if(!profile)return;
+
+if(profile.avatar_url){
+pAv.src=profile.avatar_url;
+pAv.style.display="block";
+defaultUserIcon.style.display="none";
 }
 
-document.addEventListener("click",()=>{
-document.getElementById("logoutDropdown").style.display="none";
-});
+pUn.innerHTML=`@${profile.username} ${profile.verified?'<i class="fa fa-check-circle" style="color:#1DA1F2"></i>':''}`;
+pBio.textContent=profile.bio||"";
+
+const {count:subs}=await supabase.from("follows").select("*",{count:"exact",head:true}).eq("user_id",profileId);
+sCount.textContent=subs||0;
+
+const {data:posts}=await supabase.from("posts").select("*").eq("user_id",profileId).order("created_at",{ascending:false});
+lCount.textContent=posts?.reduce((a,p)=>a+(p.likes||0),0)||0;
+
+grid.innerHTML=posts?.map(p=>`
+<div class="grid-item">
+<div class="media-indicator">${p.media_type==="photo"?"🖼️":"🎞️"}</div>
+${p.media_type==="photo"
+?`<img src="${p.media_urls[0]}">`
+:`<video src="${p.video_url}" muted></video>`}
+</div>`).join("")||"";
+
+if(myId===profileId){
+btns.innerHTML=`<button class="btn grey-btn" onclick="location.href='edit-profile.html'">Edit Profile</button>`;
+}
+}
+
+load();
 </script>
 
 </body>
