@@ -44,11 +44,13 @@
     .btn-grey { background: #f2f2f2; color: #555; }
     .btn-sub:active { transform: scale(0.96); }
 
-    /* TOAST MODAL */
-    .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); z-index: 10000; padding: 25px 20px; transition: bottom 0.3s ease-out; text-align: center; box-sizing: border-box; }
+    /* TOAST MODAL FIXES */
+    .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); z-index: 10000; padding: 30px 20px; transition: bottom 0.3s ease-out; text-align: center; box-sizing: border-box; }
     .confirm-toast.active { bottom: 0; }
-    .t-btn { padding: 14px; border-radius: 10px; border: none; font-weight: bold; flex: 1; max-width: 150px; cursor: pointer; font-size: 15px; }
-    .t-btn-no { background: #eee; color: #000; }
+    .toast-msg { font-weight: 600; font-size: 17px; margin-bottom: 25px; color: #000; }
+    .toast-btns { display: flex; justify-content: center; gap: 15px; } /* Space between buttons */
+    .t-btn { padding: 14px; border-radius: 12px; border: none; font-weight: bold; flex: 1; max-width: 140px; cursor: pointer; font-size: 15px; }
+    .t-btn-no { background: #f0f0f0; color: #000; }
     .t-btn-yes { background: #ff2d55; color: #fff; }
 
     /* PROFILE HEADER */
@@ -178,7 +180,11 @@ const profileId = new URLSearchParams(location.search).get("id") || myId;
 let currentPost = null, profileData = null, isSubscribed = false;
 
 // UI UTILS
-window.showToast = (msg, onYes) => { document.getElementById('toastMsg').innerText = msg; document.getElementById('confirmToast').classList.add('active'); document.getElementById('toastYes').onclick = () => { onYes(); closeToast(); }; };
+window.showToast = (msg, onYes) => { 
+    document.getElementById('toastMsg').innerText = msg; 
+    document.getElementById('confirmToast').classList.add('active'); 
+    document.getElementById('toastYes').onclick = () => { onYes(); closeToast(); }; 
+};
 window.closeToast = () => document.getElementById('confirmToast').classList.remove('active');
 window.askLogout = () => showToast("Are you sure you want to logout?", () => { localStorage.clear(); location.href = "https://globaltrends56.blogspot.com"; });
 window.askDelete = () => showToast("Confirm delete post?", async () => { await supabase.from("posts").delete().eq('id', currentPost.id); location.reload(); });
@@ -216,7 +222,6 @@ async function load() {
     document.getElementById('sCount').innerText = subCount;
     document.getElementById('lCount').innerText = vRes.data?.reduce((acc, p) => acc + (parseInt(p.likes) || 0), 0) || 0;
 
-    // Grid Construction
     document.getElementById('grid').innerHTML = vRes.data?.map(v => {
         const isPhoto = v.media_type === 'photo';
         const hasMultiple = isPhoto && v.media_urls && v.media_urls.length > 1;
@@ -255,30 +260,19 @@ window.handleSubscribe = async () => {
         showToast("Login to subscribe!", () => { location.href = "login.html"; });
         return;
     }
-    
     const countEl = document.getElementById('sCount');
     let currentCount = parseInt(countEl.innerText);
-
     if (isSubscribed) {
-        // --- UNSUBSCRIBE LOGIC ---
         isSubscribed = false;
         countEl.innerText = Math.max(0, currentCount - 1);
         renderSubButton();
         await supabase.from("follows").delete().eq("user_id", profileId).eq("follower_id", myId);
     } else {
-        // --- SUBSCRIBE LOGIC ---
         isSubscribed = true;
         countEl.innerText = currentCount + 1;
         renderSubButton();
         await supabase.from("follows").insert([{ user_id: profileId, follower_id: myId }]);
-        
-        // Notify user
-        await supabase.from("notifications").insert([{
-            user_id: profileId,
-            type: 'follow',
-            from_id: myId,
-            content: 'started following you'
-        }]);
+        await supabase.from("notifications").insert([{ user_id: profileId, type: 'follow', from_id: myId, content: 'started following you' }]);
     }
 };
 
