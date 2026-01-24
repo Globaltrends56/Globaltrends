@@ -11,7 +11,9 @@
     
     /* NAV & HEADER */
     .nav { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index: 1000; }
-    .nav-right { display: flex; align-items: center; gap: 18px; position: relative; }
+    
+    /* FIX 1: Spacing between Nav Icons */
+    .nav-right { display: flex; align-items: center; gap: 22px; position: relative; }
     
     /* NOTIFICATION BELL STYLE */
     .notif-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; }
@@ -23,25 +25,26 @@
         border: 2px solid #fff; font-weight: bold;
     }
 
-    /* LOGOUT DROPDOWN STYLE */
+    /* LOGOUT & DASHBOARD DROPDOWN STYLE */
     .logout-dropdown {
         position: absolute; top: 35px; right: 0;
-        background: #fff; border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        background: #fff; border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         display: none; flex-direction: column;
-        z-index: 2000; min-width: 120px;
+        z-index: 2000; min-width: 160px;
         overflow: hidden; border: 1px solid #eee;
     }
-    .logout-item {
-        padding: 12px 15px; font-size: 14px;
-        color: #ff2d55; font-weight: 600;
-        display: flex; align-items: center; gap: 10px; cursor: pointer;
+    .dropdown-item {
+        padding: 14px 18px; font-size: 14px;
+        color: #000; font-weight: 600;
+        display: flex; align-items: center; gap: 12px; cursor: pointer;
+        border-bottom: 1px solid #f5f5f5;
     }
-    .logout-item:active { background: #f9f9f9; }
+    .dropdown-item:last-child { border-bottom: none; color: #ff2d55; }
+    .dropdown-item:active { background: #f9f9f9; }
 
     .profile-hdr { text-align:center; padding:20px; }
     
-    /* GREY CIRCLE & BLACK USER ICON DESIGN */
     .p-avatar-container {
         width: 85px; height: 85px;
         background-color: #e0e0e0;
@@ -55,7 +58,7 @@
     .username-row { font-size:18px; font-weight:700; margin:10px 0 4px; display:flex; justify-content:center; align-items:center; gap:4px; }
     .p-bio { font-size:14px; color:#444; max-width:80%; margin:0 auto 12px; }
 
-    /* DASHBOARD */
+    /* DASHBOARD PROGRESS BAR */
     #goalBox { width: 85%; max-width: 280px; margin: 10px auto; display: none; background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
     .bar-bg { width: 100%; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; margin-top:5px;}
     .bar-fill { height: 100%; width: 0%; background: #ff2d55; transition: width 1s; }
@@ -81,21 +84,35 @@
     #mediaContent { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
     .fs-video, .fs-img { max-width: 100%; max-height: 100%; object-fit: contain; }
     .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; z-index: 5100; }
-    .fs-dots { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; }
+    .fs-dots { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; cursor: pointer; }
+    
+    /* SLIDE CONTROLS */
     .slide-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: #fff; border: none; padding: 20px 10px; font-size: 20px; z-index: 5200; border-radius: 5px; }
     .prev-btn { left: 10px; }
     .next-btn { right: 10px; }
     .dots-container { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 5200; }
     .dot { width: 6px; height: 6px; background: rgba(255,255,255,0.5); border-radius: 50%; }
     .dot.active { background: #fff; transform: scale(1.2); }
+
     .fs-info { position: absolute; bottom: 30px; left: 15px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); pointer-events: none; }
     .fs-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .fs-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
+    
     .fs-actions { position: absolute; right: 15px; bottom: 100px; color: #fff; text-align: center; }
     .fs-btn { font-size: 30px; margin-bottom: 5px; cursor: pointer; }
     .liked { color: #ff2d55; }
-    #delMenu { position: absolute; top: 60px; right: 20px; background: #fff; color: red; padding: 12px 20px; border-radius: 8px; font-weight: bold; display: none; z-index: 5200; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-    .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#000; color:#fff; padding: 12px 24px; border-radius:30px; display:none; z-index:9999; }
+
+    /* DELETE MENU STYLE */
+    #delMenu { 
+        position: absolute; top: 60px; right: 20px; 
+        background: #fff; color: #ff2d55; 
+        padding: 12px 20px; border-radius: 10px; 
+        font-weight: bold; display: none; z-index: 5200; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        cursor: pointer;
+    }
+
+    .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#000; color:#fff; padding: 12px 24px; border-radius:30px; display:none; z-index:9999; text-align: center; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -104,8 +121,9 @@
 
 <div id="fsPlayer">
     <i class="fa fa-times fs-close" onclick="closeFS()"></i>
-    <i id="dotsBtn" class="fa fa-ellipsis-v fs-dots" onclick="toggleDelMenu()"></i>
+    <i id="dotsBtn" class="fa fa-ellipsis-v fs-dots" onclick="toggleDelMenu(event)"></i>
     <div id="delMenu" onclick="confirmDelete()">Delete Post</div>
+    
     <div id="mediaContent"></div>
     <button id="prevBtn" class="slide-btn prev-btn" onclick="changeSlide(-1)" style="display:none">❮</button>
     <button id="nextBtn" class="slide-btn next-btn" onclick="changeSlide(1)" style="display:none">❯</button>
@@ -128,7 +146,7 @@
     <i class="fa fa-arrow-left" onclick="history.back()"></i>
     <b>Profile</b>
     <div class="nav-right">
-        <i class="fa fa-share-alt"></i>
+        <i class="fa fa-share-alt" onclick="toast('Link copied!')"></i>
 
         <div id="notifBtn" class="notif-wrapper" style="display:none;" onclick="location.href='notifications.html'">
             <i class="fa fa-bell"></i>
@@ -138,8 +156,11 @@
         <div id="logoutMenuContainer" style="display:none;">
             <i class="fa fa-ellipsis-v" onclick="toggleLogoutDropdown(event)"></i>
             <div id="logoutDropdown" class="logout-dropdown">
-                <div class="logout-item" onclick="doLogout()">
-                    <i class="fa fa-sign-out-alt"></i> Log out
+                <div class="dropdown-item" onclick="location.href='dashboard.html'">
+                    <i class="fa fa-chart-line"></i> View dashboard
+                </div>
+                <div class="dropdown-item" onclick="doLogout()">
+                    <i class="fa fa-sign-out-alt"></i> Logout
                 </div>
             </div>
         </div>
@@ -157,7 +178,7 @@
 
     <div id="goalBox">
         <div style="font-size:10px; color:#888; display:flex; justify-content:space-between; font-weight:bold;">
-            <span>Dashboard</span><span id="gPct">0%</span>
+            <span>10K SUBS GOAL</span><span id="gPct">0%</span>
         </div>
         <div class="bar-bg"><div id="bar" class="bar-fill"></div></div>
     </div>
@@ -183,26 +204,9 @@ let isFollowing = false, rawSubs = 0, currentPost = null, profileData = null;
 let currentSlide = 0, currentMedia = [];
 
 // --- UTILS ---
-const toast = m => { const t = document.getElementById("toast"); t.innerText = m; t.style.display="block"; setTimeout(()=>t.style.display="none", 2000); };
+const toast = m => { const t = document.getElementById("toast"); t.innerText = m; t.style.display="block"; setTimeout(()=>t.style.display="none", 2500); };
 
-// --- NOTIFICATIONS LOGIC ---
-async function checkNotifications() {
-    if (myId !== profileId) return;
-    document.getElementById('notifBtn').style.display = 'flex';
-    const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', myId).eq('is_read', false);
-    if (count > 0) {
-        const dot = document.getElementById('notifDot');
-        dot.style.display = 'flex';
-        dot.innerText = count > 9 ? '9+' : count;
-    }
-}
-
-async function sendNotification(targetId, type, postId = null) {
-    if (myId === targetId) return;
-    await supabase.from('notifications').insert({ user_id: targetId, sender_id: myId, type: type, post_id: postId });
-}
-
-// --- LOGOUT LOGIC ---
+// --- DROPDOWN LOGIC ---
 window.toggleLogoutDropdown = (e) => {
     e.stopPropagation();
     const d = document.getElementById('logoutDropdown');
@@ -210,15 +214,33 @@ window.toggleLogoutDropdown = (e) => {
 };
 
 window.doLogout = () => {
-    if(confirm("Are you sure you want to log out?")) {
+    if(confirm("Are you sure you want to logout?")) {
         localStorage.clear();
         location.href = "https://globaltrends56.blogspot.com";
+    }
+};
+
+window.toggleDelMenu = (e) => {
+    e.stopPropagation();
+    const m = document.getElementById('delMenu');
+    m.style.display = (m.style.display === 'block') ? 'none' : 'block';
+};
+
+window.confirmDelete = async () => {
+    if (confirm("Confirm delete video?")) {
+        const { error } = await supabase.from("posts").delete().eq('id', currentPost.id);
+        if(!error) {
+            toast("Video deleted");
+            setTimeout(() => location.reload(), 1000);
+        }
     }
 };
 
 document.addEventListener('click', () => { 
     const d = document.getElementById('logoutDropdown'); 
     if(d) d.style.display = 'none'; 
+    const m = document.getElementById('delMenu');
+    if(m) m.style.display = 'none';
 });
 
 // --- CORE LOADING ---
@@ -232,7 +254,6 @@ async function load() {
     if (!pRes.data) return;
     profileData = pRes.data;
     
-    // Avatar Logic: Show image if exists, else keep grey circle icon
     const avImg = document.getElementById('pAv');
     const avIcon = document.getElementById('defaultUserIcon');
     if(profileData.avatar_url) {
@@ -245,6 +266,7 @@ async function load() {
     document.getElementById('pBio').innerText = profileData.bio || "";
     rawSubs = sRes.count || 0;
     document.getElementById('sCount').innerText = rawSubs;
+    
     const totalLikes = vRes.data?.reduce((acc, post) => acc + (parseInt(post.likes) || 0), 0) || 0;
     document.getElementById('lCount').innerText = totalLikes;
 
@@ -274,6 +296,17 @@ async function load() {
     }
 }
 
+async function checkNotifications() {
+    if (myId !== profileId) return;
+    document.getElementById('notifBtn').style.display = 'flex';
+    const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', myId).eq('is_read', false);
+    if (count > 0) {
+        const dot = document.getElementById('notifDot');
+        dot.style.display = 'flex';
+        dot.innerText = count > 9 ? '9+' : count;
+    }
+}
+
 function renderSubBtn() {
     document.getElementById('btns').innerHTML = `<button onclick="doSub()" class="btn ${isFollowing?'sub-btn-red':'sub-btn-black'}">${isFollowing?'💟 Subscribed':'Subscribe'}</button>`;
 }
@@ -282,7 +315,6 @@ window.doSub = async () => {
     if (!isFollowing) {
         isFollowing = true; rawSubs++;
         await supabase.from("follows").insert({ follower_id: myId, user_id: profileId });
-        sendNotification(profileId, 'subscribe');
     } else {
         isFollowing = false; rawSubs--;
         await supabase.from("follows").delete().match({ follower_id: myId, user_id: profileId });
@@ -321,7 +353,10 @@ window.openFS = (post) => {
     document.getElementById('fsBadge').innerHTML = profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
     document.getElementById('fsCap').innerText = post.caption || "";
     document.getElementById('fsLikeCount').innerText = post.likes || 0;
+    
+    // Only show three dots if viewing own post
     document.getElementById('dotsBtn').style.display = (myId === profileId) ? 'block' : 'none';
+    
     const isLiked = localStorage.getItem('liked_'+post.id);
     document.getElementById('likeHeart').className = isLiked ? 'fa fa-heart fs-btn liked' : 'fa fa-heart fs-btn';
 };
@@ -345,7 +380,6 @@ window.toggleLike = async () => {
     if (!heart.classList.contains('liked')) {
         heart.classList.add('liked'); count++;
         localStorage.setItem('liked_'+currentPost.id, 'true');
-        sendNotification(profileId, 'like', currentPost.id);
     } else {
         heart.classList.remove('liked'); count--;
         localStorage.removeItem('liked_'+currentPost.id);
@@ -355,26 +389,13 @@ window.toggleLike = async () => {
     await supabase.from("posts").update({ likes: count }).eq('id', currentPost.id);
 };
 
-window.toggleDelMenu = () => {
-    const m = document.getElementById('delMenu');
-    m.style.display = (m.style.display === 'block') ? 'none' : 'block';
-};
-
-window.confirmDelete = async () => {
-    if (confirm("Delete this post?")) {
-        await supabase.from("posts").delete().eq('id', currentPost.id);
-        location.reload();
-    }
-};
-
 window.closeFS = () => {
     document.getElementById('fsPlayer').style.display = 'none';
     const v = document.getElementById('mainVid');
     if(v) v.pause();
-    document.getElementById('delMenu').style.display = 'none';
 };
 
 load();
 </script>
 </body>
-  </html>
+    </html>
