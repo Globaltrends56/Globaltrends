@@ -7,64 +7,74 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 
 <style>
-/* ===== ORIGINAL STYLES — UNCHANGED ===== */
 body{
     margin:0;font-family:-apple-system,sans-serif;background:#fff;
     -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
     overflow-x:hidden;
 }
+
+/* NAV */
 .nav{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:1000}
 .nav-right{display:flex;align-items:center;gap:20px}
-.notif-wrapper{position:relative;cursor:pointer}
-.notif-badge{position:absolute;top:-4px;right:-4px;background:#ff2d55;color:#fff;font-size:10px;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid #fff;font-weight:bold}
+
+/* PROFILE HEADER */
+.profile-hdr{text-align:center;padding:20px}
+.p-avatar-container{width:85px;height:85px;border-radius:50%;background:#e0e0e0;margin:0 auto;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.p-avatar-img{width:100%;height:100%;object-fit:cover;display:none}
+.p-bio{font-size:13.5px;color:#444;margin-top:8px;display:none}
+
+/* GRID */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#eee}
-.grid-item{aspect-ratio:9/16;background:#000;position:relative;overflow:hidden}
+.grid-item{aspect-ratio:9/16;background:#000;position:relative;overflow:hidden;cursor:pointer}
 .grid-item img,.grid-item video{width:100%;height:100%;object-fit:cover;pointer-events:none}
 .media-indicator{position:absolute;top:5px;right:5px;color:#fff;background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px;font-size:11px}
+
+/* FULLSCREEN */
 #fsPlayer{position:fixed;inset:0;background:#000;z-index:5000;display:none;flex-direction:column}
 .fs-close{position:absolute;top:20px;left:20px;color:#fff;font-size:24px;z-index:5100}
-.fs-dots-menu{position:absolute;top:20px;right:20px;color:#fff;font-size:20px;z-index:5100;padding:10px;cursor:pointer}
 .carousel-container{width:100%;height:100%;display:flex;overflow-x:auto;scroll-snap-type:x mandatory}
 .carousel-item{min-width:100%;display:flex;align-items:center;justify-content:center}
 .carousel-item img,.carousel-item video{
     max-width:100%;max-height:100%;object-fit:contain;
     pointer-events:none;-webkit-touch-callout:none
 }
-.nav-dots{display:flex;justify-content:center;gap:6px;position:absolute;bottom:120px;width:100%;z-index:5100}
-.dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4)}
-.dot.active{background:#fff;transform:scale(1.2)}
 </style>
 </head>
 
 <body oncontextmenu="return false;">
 
-<!-- ===== FULLSCREEN PLAYER ===== -->
-<div id="fsPlayer">
-    <i class="fa fa-times fs-close" onclick="closeFS()"></i>
-    <i id="dotsBtn" class="fa fa-ellipsis-v fs-dots-menu"></i>
-    <div id="mediaContent" style="width:100%;height:100%"></div>
-    <div id="navDots" class="nav-dots"></div>
-</div>
-
-<!-- ===== NAV ===== -->
+<!-- NAV -->
 <div class="nav">
     <i class="fa fa-arrow-left" onclick="history.back()"></i>
     <b>Profile</b>
     <div class="nav-right">
         <i class="fa fa-share-alt" onclick="navigator.share({url:location.href})"></i>
-        <div id="notifBtn" class="notif-wrapper">
-            <i class="fa fa-bell"></i>
-            <span id="notifDot" class="notif-badge"></span>
-        </div>
         <i class="fa fa-ellipsis-v"></i>
     </div>
 </div>
 
-<!-- ===== GRID ===== -->
+<!-- PROFILE HEADER -->
+<div class="profile-hdr">
+    <div class="p-avatar-container">
+        <i id="defaultIcon" class="fa fa-user" style="font-size:40px"></i>
+        <img id="pAv" class="p-avatar-img">
+    </div>
+    <div id="pUn" style="font-size:18px;font-weight:700;margin-top:10px"></div>
+    <div id="pBio" class="p-bio"></div>
+</div>
+
+<!-- GRID -->
 <div id="grid" class="grid"></div>
+
+<!-- FULLSCREEN -->
+<div id="fsPlayer">
+    <i class="fa fa-times fs-close" onclick="closeFS()"></i>
+    <div id="mediaContent" style="width:100%;height:100%"></div>
+</div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const supabase = createClient(
  "https://spnvgymmrlyqtfrbjjsg.supabase.co",
  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI"
@@ -72,60 +82,79 @@ const supabase = createClient(
 
 const myId = localStorage.getItem("user_id");
 const profileId = new URLSearchParams(location.search).get("id") || myId;
-let profileData = null;
+
+const postsMap = {};
 let currentPost = null;
 
-/* ===== LOAD POSTS ===== */
-async function load(){
- const { data: posts } = await supabase
+/* LOAD PROFILE */
+async function loadProfile(){
+ const { data } = await supabase.from("profiles").select("*").eq("id",profileId).single();
+ if(!data) return;
+
+ document.getElementById("pUn").innerHTML =
+   `@${data.username} ${data.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : ''}`;
+
+ if(data.bio){
+   const bio=document.getElementById("pBio");
+   bio.innerText=data.bio;
+   bio.style.display="block";
+ }
+
+ if(data.avatar_url){
+   document.getElementById("pAv").src=data.avatar_url;
+   document.getElementById("pAv").style.display="block";
+   document.getElementById("defaultIcon").style.display="none";
+ }
+}
+
+/* LOAD POSTS */
+async function loadPosts(){
+ const { data } = await supabase
    .from("posts")
    .select("*")
-   .eq("user_id", profileId)
+   .eq("user_id",profileId)
    .order("created_at",{ascending:false});
 
- document.getElementById("grid").innerHTML = posts.map(p=>{
-   const isPhoto = p.media_type==="photo";
-   return `
-   <div class="grid-item" onclick='openFS(${JSON.stringify(p)})'>
-     <div class="media-indicator">${isPhoto?"🖼️":"🎞️"}</div>
-     ${isPhoto
-        ? `<img src="${p.media_urls[0]}">`
-        : `<video src="${p.video_url}#t=0.2" muted playsinline></video>`
-     }
-   </div>`;
- }).join("");
+ const grid=document.getElementById("grid");
+ grid.innerHTML="";
+
+ data.forEach(p=>{
+   postsMap[p.id]=p;
+
+   const div=document.createElement("div");
+   div.className="grid-item";
+   div.onclick=()=>openFS(p.id);
+
+   div.innerHTML=`
+     <div class="media-indicator">${p.media_type==="photo"?"🖼️":"🎞️"}</div>
+     ${p.media_type==="photo"
+       ? `<img src="${p.media_urls[0]}">`
+       : `<video src="${p.video_url}#t=0.2" muted playsinline></video>`}`;
+
+   grid.appendChild(div);
+ });
 }
-load();
 
-/* ===== FULLSCREEN OPEN (FIXED) ===== */
-window.openFS = (post)=>{
- currentPost = post;
- const fs = document.getElementById("fsPlayer");
- const content = document.getElementById("mediaContent");
- const dots = document.getElementById("navDots");
+/* FULLSCREEN OPEN */
+window.openFS = (id)=>{
+ currentPost = postsMap[id];
+ if(!currentPost) return;
 
+ const fs=document.getElementById("fsPlayer");
+ const content=document.getElementById("mediaContent");
  fs.style.display="flex";
  content.innerHTML="";
- dots.innerHTML="";
 
- if(post.media_type==="photo"){
-   const urls = post.media_urls.slice(0,10);
+ if(currentPost.media_type==="photo"){
+   const urls=currentPost.media_urls.slice(0,10);
    content.innerHTML=`
-     <div class="carousel-container" id="carousel">
+     <div class="carousel-container">
        ${urls.map(u=>`<div class="carousel-item"><img src="${u}"></div>`).join("")}
      </div>`;
-   if(urls.length>1){
-     dots.innerHTML=urls.map((_,i)=>`<div class="dot ${i===0?"active":""}"></div>`).join("");
-     const carousel=document.getElementById("carousel");
-     carousel.addEventListener("scroll",()=>{
-       const idx=Math.round(carousel.scrollLeft/carousel.offsetWidth);
-       document.querySelectorAll(".dot").forEach((d,i)=>d.classList.toggle("active",i===idx));
-     });
-   }
  }else{
    content.innerHTML=`
      <div class="carousel-item">
-       <video src="${post.video_url}"
+       <video src="${currentPost.video_url}"
          autoplay
          loop
          playsinline
@@ -138,18 +167,21 @@ window.openFS = (post)=>{
  }
 };
 
-/* ===== FULLSCREEN CLOSE (AUDIO FIXED) ===== */
+/* FULLSCREEN CLOSE — AUDIO STOP FIX */
 window.closeFS = ()=>{
  const content=document.getElementById("mediaContent");
- const video=content.querySelector("video");
- if(video){
-   video.pause();
-   video.src="";
-   video.load();
+ const vid=content.querySelector("video");
+ if(vid){
+   vid.pause();
+   vid.src="";
+   vid.load();
  }
  content.innerHTML="";
  document.getElementById("fsPlayer").style.display="none";
 };
+
+loadProfile();
+loadPosts();
 </script>
 </body>
 </html>
