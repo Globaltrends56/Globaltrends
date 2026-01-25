@@ -6,109 +6,182 @@
 <title>Profile • Globaltrends</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 <style>
-    body { margin:0; font-family:-apple-system, sans-serif; background:#fff; -webkit-user-select: none; user-select: none; overflow-x: hidden; }
+    body { 
+        margin:0; font-family:-apple-system, sans-serif; background:#fff; 
+        /* Disables the long-press menu system-wide */
+        -webkit-touch-callout: none; 
+        -webkit-user-select: none;
+        user-select: none; 
+        overflow-x: hidden; 
+    }
     
-    /* NAV */
+    /* NAVIGATION */
     .nav { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index: 1000; }
-    .nav-right { display: flex; align-items: center; gap: 18px; }
-    .notif-badge { position: absolute; top: -5px; right: -5px; background: #ff2d55; color: #fff; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; font-weight: bold; }
+    .nav-right { display: flex; align-items: center; gap: 20px; }
+    
+    .notif-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; padding: 5px; }
+    .notif-badge { 
+        position: absolute; top: 0px; right: -2px; 
+        background: #ff2d55; color: #fff; font-size: 10px; 
+        width: 16px; height: 16px; border-radius: 50%; 
+        display: none; align-items: center; justify-content: center; 
+        border: 2px solid #fff; font-weight: bold;
+    }
 
-    /* DROPDOWN */
-    .dropdown-menu { position: absolute; top: 45px; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 2000; min-width: 200px; border: 1px solid #eee; overflow: hidden; }
-    .dropdown-item { padding: 14px 18px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f5f5f5; cursor: pointer; color: #333; }
+    .menu-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; padding: 5px; }
+    .logout-dropdown {
+        position: absolute; top: 40px; right: 0;
+        background: #fff; border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        display: none; flex-direction: column;
+        z-index: 2000; min-width: 170px;
+        overflow: hidden; border: 1px solid #eee;
+    }
+    .dropdown-item {
+        padding: 14px 18px; font-size: 14px;
+        color: #000; font-weight: 600;
+        display: flex; align-items: center; gap: 12px; cursor: pointer;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    .dropdown-item:last-child { border-bottom: none; color: #ff2d55; }
+
+    /* BUTTONS */
+    .btn-sub { width: 80%; max-width: 280px; padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; }
+    .btn-black { background: #000; color: #fff; }
+    .btn-grey { background: #f2f2f2; color: #555; }
+    .btn-sub:active { transform: scale(0.96); }
+
+    /* TOAST MODAL */
+    .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); z-index: 10000; padding: 30px 20px; transition: bottom 0.3s ease-out; text-align: center; box-sizing: border-box; }
+    .confirm-toast.active { bottom: 0; }
+    .toast-msg { font-weight: 600; font-size: 17px; margin-bottom: 25px; color: #000; }
+    .toast-btns { display: flex; justify-content: center; gap: 15px; }
+    .t-btn { padding: 14px; border-radius: 12px; border: none; font-weight: bold; flex: 1; max-width: 140px; cursor: pointer; font-size: 15px; }
+    .t-btn-no { background: #f0f0f0; color: #000; }
+    .t-btn-yes { background: #ff2d55; color: #fff; }
 
     /* PROFILE HEADER */
     .profile-hdr { text-align:center; padding:20px; }
-    .p-avatar-container { width: 95px; height: 95px; border-radius: 50%; margin: 0 auto; overflow: hidden; border: 3px solid #f8f8f8; background: #fff; position: relative; }
-    .p-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+    .p-avatar-container { width: 85px; height: 85px; background-color: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; overflow: hidden; border: 1px solid #eee; }
+    .p-avatar-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .p-bio { font-size: 13.5px; color: #444; margin: 8px auto; max-width: 85%; line-height: 1.4; white-space: pre-wrap; display: none; }
     
-    /* GRID - FIXED BLACK BOXES */
-    .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background:#f0f0f0; }
-    .grid-item { aspect-ratio: 9/16; background:#111; position: relative; overflow: hidden; cursor: pointer; }
-    .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; background: #000; }
-    .media-badge { position: absolute; top: 8px; right: 8px; color: #fff; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 4px; font-size: 11px; z-index: 10; }
+    #goalBox { width: 85%; max-width: 280px; margin: 10px auto; display: none; background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+    .bar-bg { width: 100%; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; margin-top:5px;}
+    .bar-fill { height: 100%; width: 0%; background: #ff2d55; transition: width 1s; }
 
-    /* FULL SCREEN PLAYER */
-    #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 9000; display: none; flex-direction: column; }
-    .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 26px; z-index: 9500; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-    .carousel-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; background: #000; }
-    .carousel-item img, .carousel-item video { max-width: 100%; max-height: 100%; object-fit: contain; }
+    /* GRID DESIGN - ANTI DOWNLOAD */
+    .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background:#eee; }
+    .grid-item { aspect-ratio: 9/16; background:#000; position: relative; overflow: hidden; }
+    .grid-item img, .grid-item video { 
+        width: 100%; height: 100%; object-fit: cover; display: block; 
+        image-rendering: -webkit-optimize-contrast;
+        pointer-events: none; /* Prevents long-press on the image itself */
+    }
+    .media-indicator { position: absolute; top: 5px; right: 5px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; font-size: 11px; z-index: 5; }
 
-    .fs-info { position: absolute; bottom: 0; left: 0; width: 100%; padding: 80px 20px 40px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); color: #fff; z-index: 9100; pointer-events: none; box-sizing: border-box; }
-    .fs-actions { position: absolute; right: 20px; bottom: 150px; color: #fff; text-align: center; z-index: 9200; }
+    /* FULL SCREEN PLAYER - ANTI DOWNLOAD */
+    #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; }
+    .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; z-index: 5100; text-shadow: 0 0 4px #000; }
+    .fs-dots-menu { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; cursor: pointer; }
     
-    /* LION BUTTON */
-    .lion-btn { font-size: 45px; color: #FFD700; cursor: pointer; filter: drop-shadow(0 0 5px rgba(0,0,0,0.3)); transition: 0.2s; }
-    .lion-btn.active { transform: scale(1.2); color: #FFA500; filter: drop-shadow(0 0 15px #FFD700); }
+    .carousel-container { width: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; height: 100%; }
+    .carousel-container::-webkit-scrollbar { display: none; }
+    .carousel-item { min-width: 100%; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; height: 100%; }
+    
+    /* Strict protection for viewed media */
+    .carousel-item img, .carousel-item video { 
+        max-width: 100%; max-height: 100%; object-fit: contain; 
+        pointer-events: none; 
+        -webkit-touch-callout: none;
+    }
 
-    /* TOAST */
-    .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 25px 25px 0 0; z-index: 10000; padding: 30px; transition: 0.3s; text-align: center; box-sizing: border-box; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); }
-    .confirm-toast.active { bottom: 0; }
-    .btn-main { padding: 12px 25px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+    .nav-dots { display: flex; justify-content: center; gap: 6px; position: absolute; bottom: 120px; width: 100%; z-index: 5100; pointer-events: none; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); transition: 0.3s; }
+    .dot.active { background: #fff; transform: scale(1.2); }
+
+    .fs-info { position: absolute; bottom: 30px; left: 15px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); pointer-events: none; z-index: 5100; max-width: 80%; }
+    .fs-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .fs-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
+    .fs-caption { font-size: 14px; line-height: 1.4; font-weight: 400; }
+
+    .fs-actions { position: absolute; right: 15px; bottom: 100px; color: #fff; text-align: center; z-index: 5100; }
+    .fa-heart { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 32px; cursor: pointer; }
+    .fa-heart.liked { color: #ff2d55; }
+    .heart-pop { animation: heartPop 0.3s linear; }
+    @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1.2); } }
+
+    #delMenu { position: absolute; top: 65px; right: 20px; background: #fff; color: #ff2d55; padding: 12px 20px; border-radius: 10px; font-weight: bold; display: none; z-index: 5200; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 </style>
 </head>
-<body>
-
-<div id="confirmToast" class="confirm-toast">
-    <div id="toastMsg" style="margin-bottom:20px; font-weight:bold;"></div>
-    <div style="display:flex; gap:10px;">
-        <button onclick="closeToast()" class="btn-main" style="flex:1; background:#eee;">No</button>
-        <button id="toastYes" class="btn-main" style="flex:1; background:#ff2d55; color:#fff;">Yes</button>
+<body oncontextmenu="return false;"> <div id="confirmToast" class="confirm-toast">
+    <div id="toastMsg" class="toast-msg">Are you sure?</div>
+    <div class="toast-btns">
+        <button class="t-btn t-btn-no" onclick="closeToast()">No</button>
+        <button id="toastYes" class="t-btn t-btn-yes">Yes</button>
     </div>
 </div>
 
 <div id="fsPlayer">
     <i class="fa fa-times fs-close" onclick="closeFS()"></i>
-    <div id="mediaContent" style="display:flex; overflow-x:auto; scroll-snap-type:x mandatory; height:100%; scrollbar-width:none;"></div>
+    <i id="dotsBtn" class="fa fa-ellipsis-v fs-dots-menu" onclick="toggleDelMenu(event)"></i>
+    <div id="delMenu" onclick="askDelete()">Delete Post</div>
+    
+    <div id="mediaContent" style="width:100%; height:100%;"></div>
+    <div id="navDots" class="nav-dots"></div>
+    
     <div class="fs-info">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-            <img id="fsAv" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #fff;">
-            <b id="fsUn"></b><span id="fsVer"></span>
+        <div class="fs-user-row">
+            <img id="fsAv" class="fs-avatar" src="">
+            <span id="fsUn" style="font-weight:bold;"></span>
+            <span id="fsBadge"></span>
         </div>
-        <div id="fsCap"></div>
+        <div id="fsCap" class="fs-caption"></div>
     </div>
-    <div class="fs-actions" id="fsActions"></div>
+
+    <div class="fs-actions">
+        <i id="likeHeart" class="fa fa-heart" onclick="toggleLike()"></i>
+        <div id="fsLikeCount" style="font-weight:bold; font-size:13px; margin-top:5px;">0</div>
+    </div>
 </div>
 
 <div class="nav">
     <i class="fa fa-arrow-left" onclick="history.back()"></i>
     <b>Profile</b>
     <div class="nav-right">
-        <i class="fa fa-share-alt" onclick="navigator.share({url:window.location.href})"></i>
-        <div id="notifArea" style="position:relative; display:none;" onclick="location.href='notifications.html'">
-            <i class="fa fa-bell"></i><span id="nDot" class="notif-badge">0</span>
+        <i class="fa fa-share-alt" onclick="navigator.share({url: window.location.href})"></i>
+        <div id="notifBtn" class="notif-wrapper" style="display:none;" onclick="location.href='notifications.html'">
+            <i class="fa fa-bell"></i>
+            <span id="notifDot" class="notif-badge"></span>
         </div>
-        <div style="position:relative;">
-            <i class="fa fa-ellipsis-v" onclick="toggleDrop(event)"></i>
-            <div id="drop" class="dropdown-menu">
-                <div class="dropdown-item" onclick="location.href='dashboard.html'"><i class="fa fa-chart-line"></i> View Dashboard</div>
-                <div class="dropdown-item" onclick="askOut()" style="color:#ff2d55;"><i class="fa fa-sign-out-alt"></i> Logout</div>
+        <div id="logoutMenuContainer" class="menu-wrapper" style="display:none;">
+            <i class="fa fa-ellipsis-v" onclick="toggleLogoutDropdown(event)"></i>
+            <div id="logoutDropdown" class="logout-dropdown">
+                <div class="dropdown-item" onclick="location.href='dashboard.html'">
+                    <i class="fa fa-chart-line"></i> View dashboard
+                </div>
+                <div class="dropdown-item" onclick="askLogout()">
+                    <i class="fa fa-sign-out-alt"></i> Logout
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <div class="profile-hdr">
-    <div class="p-avatar-container"><img id="pAv" class="p-avatar-img"></div>
-    <div style="display:flex; justify-content:center; align-items:center; gap:5px; margin-top:12px;">
-        <b id="pUn" style="font-size:20px;"></b><span id="pVer"></span>
-    </div>
-    <div id="pBio" style="font-size:14px; color:#666; margin-top:8px;"></div>
-    
-    <div style="width:85%; margin:20px auto; border:1px solid #eee; padding:12px; border-radius:12px;">
-        <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:900; color:#aaa; margin-bottom:5px;">
-            <span>10K SUBS GOAL</span><span id="gPct">0%</span>
-        </div>
-        <div style="width:100%; height:8px; background:#f0f0f0; border-radius:10px; overflow:hidden;">
-            <div id="bar" style="height:100%; width:0%; background:#ff2d55; transition:1s;"></div>
-        </div>
-    </div>
+    <div class="p-avatar-container"><i id="defaultUserIcon" class="fa fa-user" style="color:#000; font-size:40px;"></i><img id="pAv" class="p-avatar-img"></div>
+    <div id="pUn" style="font-size:18px; font-weight:700; margin:10px 0 4px; display:flex; justify-content:center; align-items:center; gap:4px;"></div>
+    <div id="pBio" class="p-bio"></div>
 
-    <div style="display:flex; justify-content:center; gap:40px;">
-        <div style="text-align:center;"><b id="sCount" style="font-size:18px; display:block;">0</b><small style="color:#888;">Subscribers</small></div>
-        <div style="text-align:center;"><b id="lCount" style="font-size:18px; display:block;">0</b><small style="color:#888;">Total Likes</small></div>
+    <div id="goalBox">
+        <div style="font-size:10px; color:#888; display:flex; justify-content:space-between; font-weight:bold;"><span>10K SUBS GOAL</span><span id="gPct">0%</span></div>
+        <div class="bar-bg"><div id="bar" class="bar-fill"></div></div>
     </div>
-    <div id="btnRow" style="margin-top:20px;"></div>
+    <div style="display:flex; justify-content:center; gap:30px; margin:15px 0;">
+        <div style="text-align:center;"><span id="sCount" style="font-weight:800; font-size:17px; display:block;">0</span><small style="color:#888;">Subscribers</small></div>
+        <div style="text-align:center;"><span id="lCount" style="font-weight:800; font-size:17px; display:block;">0</span><small style="color:#888;">Total Likes</small></div>
+    </div>
+    <div id="btns" style="display:flex; justify-content:center; padding-bottom:20px;"></div>
 </div>
 
 <div id="grid" class="grid"></div>
@@ -117,101 +190,146 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
 
-let myId = localStorage.getItem("user_id"), profileId = new URLSearchParams(location.search).get("id") || myId, pData = null, isSub = false;
+let myId = localStorage.getItem("user_id");
+const profileId = new URLSearchParams(location.search).get("id") || myId;
+let currentPost = null, profileData = null, isSubscribed = false;
 
-window.toggleDrop = (e) => { e.stopPropagation(); const d = document.getElementById('drop'); d.style.display = d.style.display === 'flex' ? 'none' : 'flex'; };
-document.onclick = () => document.getElementById('drop').style.display = 'none';
-
+window.showToast = (msg, onYes) => { 
+    document.getElementById('toastMsg').innerText = msg; 
+    document.getElementById('confirmToast').classList.add('active'); 
+    document.getElementById('toastYes').onclick = () => { onYes(); closeToast(); }; 
+};
 window.closeToast = () => document.getElementById('confirmToast').classList.remove('active');
-window.askOut = () => { document.getElementById('toastMsg').innerText = "Logout?"; document.getElementById('confirmToast').classList.add('active'); document.getElementById('toastYes').onclick = () => { localStorage.clear(); location.href='login.html' }; };
+window.askLogout = () => showToast("Are you sure you want to logout?", () => { localStorage.clear(); location.href = "https://globaltrends56.blogspot.com"; });
+window.askDelete = () => showToast("Confirm delete post?", async () => { await supabase.from("posts").delete().eq('id', currentPost.id); location.reload(); });
+window.toggleLogoutDropdown = (e) => { e.stopPropagation(); const d = document.getElementById('logoutDropdown'); d.style.display = (d.style.display === 'flex') ? 'none' : 'flex'; };
+window.toggleDelMenu = (e) => { e.stopPropagation(); const m = document.getElementById('delMenu'); m.style.display = (m.style.display === 'block') ? 'none' : 'block'; };
+document.addEventListener('click', () => { if(document.getElementById('logoutDropdown')) document.getElementById('logoutDropdown').style.display = 'none'; if(document.getElementById('delMenu')) document.getElementById('delMenu').style.display = 'none'; });
 
 async function load() {
-    const [p, s, v, f] = await Promise.all([
+    const [pRes, sRes, vRes, fCheck] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", profileId).single(),
-        supabase.from("follows").select("*", {count:"exact", head:true}).eq("user_id", profileId),
+        supabase.from("follows").select("*", { count:"exact", head:true }).eq("user_id", profileId),
         supabase.from("posts").select("*").eq("user_id", profileId).order('created_at', {ascending: false}),
-        myId ? supabase.from("follows").select("*").eq("user_id", profileId).eq("follower_id", myId).single() : {data:null}
+        myId ? supabase.from("follows").select("*").eq("user_id", profileId).eq("follower_id", myId).single() : {data: null}
     ]);
-    if(!p.data) return; pData = p.data; isSub = !!f.data;
-    
-    document.getElementById('pAv').src = pData.avatar_url;
-    document.getElementById('pUn').innerText = `@${pData.username}`;
-    document.getElementById('pBio').innerText = pData.bio || "";
-    if(pData.verified) document.getElementById('pVer').innerHTML = '<i class="fa fa-check-circle" style="color:#1DA1F2; font-size:14px;"></i>';
-    
-    const sc = s.count || 0;
-    document.getElementById('sCount').innerText = sc;
-    document.getElementById('lCount').innerText = v.data?.reduce((a, b) => a + (b.likes || 0), 0) || 0;
-    
-    let pct = (sc / 10000) * 100;
-    document.getElementById('bar').style.width = Math.min(pct, 100) + "%";
-    document.getElementById('gPct').innerText = Math.floor(pct) + "%";
 
-    // GRID WITH VIDEO THUMBNAIL FIX
-    document.getElementById('grid').innerHTML = v.data?.map(i => {
-        const isVid = i.media_type === 'video';
-        return `<div class="grid-item" onclick='openFS(${JSON.stringify(i)})'>
-            <div class="media-badge"><i class="fa ${isVid?'fa-video':(i.media_urls.length>1?'fa-clone':'fa-image')}"></i></div>
-            ${isVid ? `<video src="${i.video_url}#t=0.1" preload="metadata"></video>` : `<img src="${i.media_urls[0]}">`}
+    if (!pRes.data) return;
+    profileData = pRes.data;
+    isSubscribed = !!fCheck.data;
+    
+    if(profileData.avatar_url) {
+        document.getElementById('pAv').src = profileData.avatar_url;
+        document.getElementById('pAv').style.display = 'block';
+        document.getElementById('defaultUserIcon').style.display = 'none';
+    }
+
+    document.getElementById('pUn').innerHTML = `@${profileData.username} ${profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : ''}`;
+    if (profileData.bio) { const bioEl = document.getElementById('pBio'); bioEl.innerText = profileData.bio; bioEl.style.display = 'block'; }
+
+    let subCount = sRes.count || 0;
+    document.getElementById('sCount').innerText = subCount;
+    document.getElementById('lCount').innerText = vRes.data?.reduce((acc, p) => acc + (parseInt(p.likes) || 0), 0) || 0;
+
+    document.getElementById('grid').innerHTML = vRes.data?.map(v => {
+        const isPhoto = v.media_type === 'photo';
+        const hasMultiple = isPhoto && v.media_urls && v.media_urls.length > 1;
+        return `
+        <div class="grid-item" onclick='openFS(${JSON.stringify(v)})'>
+            <div class="media-indicator">${hasMultiple ? '<i class="fa fa-clone"></i>' : (isPhoto ? '🖼️' : '🎞️')}</div>
+            ${isPhoto ? `<img src="${v.media_urls[0]}">` : `<video src="${v.video_url}#t=0.5" muted playsinline></video>`}
         </div>`;
     }).join("");
 
-    const br = document.getElementById('btnRow');
-    if(myId === profileId) {
-        br.innerHTML = `<button onclick="location.href='edit-profile.html'" style="width:160px; padding:10px; border-radius:8px; border:none; background:#f2f2f2; font-weight:bold;">Edit Profile</button>`;
-        const n = await supabase.from('notifications').select('*',{count:'exact', head:true}).eq('user_id', myId).eq('is_read', false);
-        if(n.count > 0) { document.getElementById('notifArea').style.display='block'; document.getElementById('nDot').innerText=n.count; }
+    const btnContainer = document.getElementById('btns');
+    if (myId === profileId) {
+        document.getElementById('logoutMenuContainer').style.display = 'flex';
+        document.getElementById('goalBox').style.display = 'block';
+        let pct = Math.min((subCount/10000)*100, 100);
+        document.getElementById('bar').style.width = pct+'%';
+        document.getElementById('gPct').innerText = Math.floor(pct)+'%';
+        btnContainer.innerHTML = `<button onclick="location.href='edit-profile.html'" class="btn-sub btn-grey" style="min-width:130px;">Edit Profile</button>`;
+        checkNotifications();
+    } else { renderSubButton(); }
+}
+
+function renderSubButton() {
+    const btnContainer = document.getElementById('btns');
+    btnContainer.innerHTML = isSubscribed 
+        ? `<button onclick="handleSubscribe()" class="btn-sub btn-grey">💟 Subscribed</button>` 
+        : `<button onclick="handleSubscribe()" class="btn-sub btn-black">Subscribe</button>`;
+}
+
+window.handleSubscribe = async () => {
+    if (!myId) { showToast("Login to subscribe!", () => { location.href = "login.html"; }); return; }
+    const countEl = document.getElementById('sCount');
+    let currentCount = parseInt(countEl.innerText);
+    if (isSubscribed) {
+        isSubscribed = false; countEl.innerText = Math.max(0, currentCount - 1); renderSubButton();
+        await supabase.from("follows").delete().eq("user_id", profileId).eq("follower_id", myId);
     } else {
-        br.innerHTML = `<button id="sBtn" onclick="toggleSub()" style="width:160px; padding:10px; border-radius:8px; border:none; background:${isSub?'#f2f2f2':'#000'}; color:${isSub?'#555':'#fff'}; font-weight:bold;">${isSub?'💟 Subscribed':'Subscribe'}</button>`;
+        isSubscribed = true; countEl.innerText = currentCount + 1; renderSubButton();
+        await supabase.from("follows").insert([{ user_id: profileId, follower_id: myId }]);
+        await supabase.from("notifications").insert([{ user_id: profileId, type: 'follow', from_id: myId, content: 'started following you' }]);
+    }
+};
+
+async function checkNotifications() {
+    if (!myId) return;
+    const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', myId).eq('is_read', false);
+    if (count > 0) {
+        document.getElementById('notifBtn').style.display = 'flex';
+        document.getElementById('notifDot').style.display = 'flex';
+        document.getElementById('notifDot').innerText = count > 9 ? '9+' : count;
     }
 }
 
-window.toggleSub = async () => {
-    if(!myId) return location.href='login.html';
-    const b = document.getElementById('sBtn'), c = document.getElementById('sCount');
-    let n = parseInt(c.innerText);
-    if(isSub) {
-        isSub = false; n--; b.innerText='Subscribe'; b.style.background='#000'; b.style.color='#fff';
-        await supabase.from("follows").delete().eq("user_id", profileId).eq("follower_id", myId);
-    } else {
-        isSub = true; n++; b.innerText='💟 Subscribed'; b.style.background='#f2f2f2'; b.style.color='#555';
-        await supabase.from("follows").insert([{user_id:profileId, follower_id:myId}]);
-    }
-    c.innerText = n;
+window.toggleLike = async () => {
+    if(!currentPost) return;
+    const heart = document.getElementById('likeHeart');
+    const countEl = document.getElementById('fsLikeCount');
+    let likes = parseInt(countEl.innerText) || 0;
+    if(heart.classList.contains('liked')) { heart.classList.remove('liked', 'heart-pop'); likes--; } 
+    else { heart.classList.add('liked', 'heart-pop'); likes++; }
+    countEl.innerText = likes;
+    await supabase.from("posts").update({ likes }).eq('id', currentPost.id);
 };
 
 window.openFS = (post) => {
-    const c = document.getElementById('mediaContent'), a = document.getElementById('fsActions');
+    currentPost = post;
     document.getElementById('fsPlayer').style.display = 'flex';
-    document.getElementById('fsAv').src = pData.avatar_url;
-    document.getElementById('fsUn').innerText = `@${pData.username}`;
+    const content = document.getElementById('mediaContent');
+    const dotsBox = document.getElementById('navDots');
+    dotsBox.innerHTML = "";
+
+    if (post.media_type === 'photo' && post.media_urls) {
+        const limitedUrls = post.media_urls.slice(0, 10);
+        const slides = limitedUrls.map(url => `<div class="carousel-item"><img src="${url}"></div>`).join("");
+        content.innerHTML = `<div class="carousel-container" id="carousel">${slides}</div>`;
+        if(limitedUrls.length > 1) {
+            dotsBox.innerHTML = limitedUrls.map((_, i) => `<div class="dot ${i === 0 ? 'active' : ''}"></div>`).join("");
+            const carousel = document.getElementById('carousel');
+            carousel.addEventListener('scroll', () => {
+                const index = Math.round(carousel.scrollLeft / carousel.offsetWidth);
+                document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
+            });
+        }
+    } else {
+        content.innerHTML = `<div class="carousel-item"><video src="${post.video_url}" autoplay loop playsinline disablePictureInPicture controlsList="nodownload"></video></div>`;
+    }
+    
+    document.getElementById('fsAv').src = profileData.avatar_url || "";
+    document.getElementById('fsUn').innerText = `@${profileData.username}`;
+    document.getElementById('fsBadge').innerHTML = profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
     document.getElementById('fsCap').innerText = post.caption || "";
-    document.getElementById('fsVer').innerHTML = pData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
-
-    if(post.media_type === 'photo') {
-        c.innerHTML = post.media_urls.slice(0,10).map(u => `<div class="carousel-item"><img src="${u}"></div>`).join("");
-        const active = localStorage.getItem(`lion_${post.id}`) ? 'active' : '';
-        a.innerHTML = `<i id="lBtn" class="fa fa-paw lion-btn ${active}" onclick="toggleLion(${post.id})"></i><div style="font-weight:bold; font-size:12px; margin-top:5px;">${post.lions || 0} LIONS</div>`;
-    } else {
-        c.innerHTML = `<div class="carousel-item"><video src="${post.video_url}" autoplay loop playsinline></video></div>`;
-        a.innerHTML = `<i class="fa fa-heart" style="color:#ff2d55; font-size:35px;"></i><div style="font-weight:bold; font-size:12px; margin-top:5px;">${post.likes || 0} LIKES</div>`;
-    }
+    document.getElementById('fsLikeCount').innerText = post.likes || 0;
+    document.getElementById('likeHeart').classList.remove('liked', 'heart-pop');
+    document.getElementById('dotsBtn').style.display = (myId === profileId) ? 'block' : 'none';
 };
 
-window.toggleLion = async (id) => {
-    const b = document.getElementById('lBtn'), t = b.nextSibling;
-    let n = parseInt(t.innerText);
-    if(b.classList.contains('active')) {
-        b.classList.remove('active'); n--; localStorage.removeItem(`lion_${id}`);
-    } else {
-        b.classList.add('active'); n++; localStorage.setItem(`lion_${id}`, 'true');
-    }
-    t.innerText = `${n} LIONS`;
-    await supabase.from("posts").update({ lions: n }).eq('id', id);
-};
+window.closeFS = () => { document.getElementById('fsPlayer').style.display = 'none'; document.getElementById('mediaContent').innerHTML = ""; };
 
-window.closeFS = () => { document.getElementById('fsPlayer').style.display='none'; document.getElementById('mediaContent').innerHTML=""; };
 load();
 </script>
 </body>
-                </html>
+                                                                                                                              </html>
