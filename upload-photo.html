@@ -34,17 +34,13 @@
 
 <div class="container">
     <label class="upload-box">
-        <input
-            type="file"
-            id="photos"
-            accept="image/*"
-            multiple
-            hidden
-        >
+        <input type="file" id="photos" accept="image/*" hidden>
         <i class="fa fa-images"></i>
         <div style="font-weight:600">Select Photos</div>
-        <div style="font-size:12px; color:#888">1–10 photos allowed (long-press to select multiple)</div>
+        <div style="font-size:12px; color:#888">1–10 photos allowed</div>
     </label>
+
+    <button id="addMoreBtn" class="post-btn" style="display:none;background:#f2f2f2;color:#000" onclick="openPicker()">Add more photos</button>
 
     <div class="preview-grid" id="previewGrid"></div>
     <textarea id="caption" class="caption" rows="4" placeholder="Write a caption..."></textarea>
@@ -59,54 +55,54 @@ const supabase = createClient(
 );
 
 const myId = localStorage.getItem("user_id");
-
-const toast = (msg) => {
-    const t = document.getElementById("toast");
-    t.innerText = msg;
-    t.style.display = "block";
-    setTimeout(() => t.style.display = "none", 2600);
-};
-
 if (!myId) {
-    toast("Please log in to post");
-    setTimeout(() => location.href = "index.html", 2000);
+    showToast("Login to upload photos");
+    setTimeout(()=>location.href="index.html",1500);
 }
 
 let files = [];
 const input = document.getElementById("photos");
 const grid = document.getElementById("previewGrid");
+const addMoreBtn = document.getElementById("addMoreBtn");
 
-/* 🔥 ANDROID MULTI-SELECT FIX */
-input.setAttribute("multiple", "multiple");
-input.removeAttribute("capture");
+function showToast(msg){
+    const t = document.getElementById("toast");
+    t.innerText = msg;
+    t.style.display = "block";
+    setTimeout(()=>t.style.display="none",2000);
+}
 
-input.onclick = () => {
-    toast("Tip: Long-press photos to select multiple");
+window.openPicker = () => {
+    if(files.length >= 10){
+        showToast("Maximum 10 photos allowed");
+        return;
+    }
+    input.click();
 };
 
 input.onchange = (e) => {
-    grid.innerHTML = "";
-    files = Array.from(e.target.files);
-
-    if (files.length > 10) {
-        files = files.slice(0, 10);
-        toast("Maximum of 10 photos allowed");
-    }
-
-    files.forEach(file => {
+    const selected = Array.from(e.target.files);
+    for(const file of selected){
+        if(files.length >= 10){
+            showToast("Maximum 10 photos allowed");
+            break;
+        }
+        files.push(file);
         const reader = new FileReader();
-        reader.onload = (ev) => {
+        reader.onload = ev => {
             const img = document.createElement("img");
             img.src = ev.target.result;
             grid.appendChild(img);
         };
         reader.readAsDataURL(file);
-    });
+    }
+    addMoreBtn.style.display = files.length > 0 && files.length < 10 ? "block" : "none";
+    input.value = "";
 };
 
 window.upload = async () => {
-    if (files.length === 0) {
-        toast("Select at least 1 photo");
+    if(files.length === 0){
+        showToast("Select at least one photo");
         return;
     }
 
@@ -115,11 +111,10 @@ window.upload = async () => {
     btn.innerText = "Posting...";
 
     const urls = [];
-
-    for (const file of files) {
+    for(const file of files){
         const path = `${myId}/${Date.now()}_${file.name}`;
         const { error } = await supabase.storage.from("photos").upload(path, file);
-        if (!error) {
+        if(!error){
             const { data } = supabase.storage.from("photos").getPublicUrl(path);
             urls.push(data.publicUrl);
         }
@@ -133,7 +128,8 @@ window.upload = async () => {
         likes: 0
     });
 
-    location.href = "profile.html";
+    showToast("Upload successful 🎉");
+    setTimeout(()=>location.href="profile.html",1200);
 };
 </script>
 </body>
