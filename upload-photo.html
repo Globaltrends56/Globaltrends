@@ -34,10 +34,16 @@
 
 <div class="container">
     <label class="upload-box">
-        <input type="file" id="photos" accept="image/*" multiple hidden>
+        <input
+            type="file"
+            id="photos"
+            accept="image/*"
+            multiple
+            hidden
+        >
         <i class="fa fa-images"></i>
         <div style="font-weight:600">Select Photos</div>
-        <div style="font-size:12px; color:#888">1-10 photos allowed</div>
+        <div style="font-size:12px; color:#888">1–10 photos allowed (long-press to select multiple)</div>
     </label>
 
     <div class="preview-grid" id="previewGrid"></div>
@@ -53,11 +59,12 @@ const supabase = createClient(
 );
 
 const myId = localStorage.getItem("user_id");
+
 const toast = (msg) => {
     const t = document.getElementById("toast");
     t.innerText = msg;
     t.style.display = "block";
-    setTimeout(() => t.style.display = "none", 2200);
+    setTimeout(() => t.style.display = "none", 2600);
 };
 
 if (!myId) {
@@ -68,6 +75,14 @@ if (!myId) {
 let files = [];
 const input = document.getElementById("photos");
 const grid = document.getElementById("previewGrid");
+
+/* 🔥 ANDROID MULTI-SELECT FIX */
+input.setAttribute("multiple", "multiple");
+input.removeAttribute("capture");
+
+input.onclick = () => {
+    toast("Tip: Long-press photos to select multiple");
+};
 
 input.onchange = (e) => {
     grid.innerHTML = "";
@@ -81,7 +96,7 @@ input.onchange = (e) => {
     files.forEach(file => {
         const reader = new FileReader();
         reader.onload = (ev) => {
-            const img = document.createElement('img');
+            const img = document.createElement("img");
             img.src = ev.target.result;
             grid.appendChild(img);
         };
@@ -92,11 +107,6 @@ input.onchange = (e) => {
 window.upload = async () => {
     if (files.length === 0) {
         toast("Select at least 1 photo");
-        return;
-    }
-
-    if (files.length > 10) {
-        toast("You can upload only 10 photos");
         return;
     }
 
