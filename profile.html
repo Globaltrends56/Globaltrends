@@ -14,10 +14,10 @@
         overflow-x: hidden; 
     }
     
+    /* NAVIGATION */
     .nav { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index: 1000; }
     .nav-right { display: flex; align-items: center; gap: 20px; }
     
-    .notif-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; padding: 5px; }
     .notif-badge { 
         position: absolute; top: 0px; right: -2px; 
         background: #ff2d55; color: #fff; font-size: 10px; 
@@ -26,7 +26,6 @@
         border: 2px solid #fff; font-weight: bold;
     }
 
-    .menu-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; padding: 5px; }
     .logout-dropdown {
         position: absolute; top: 40px; right: 0;
         background: #fff; border-radius: 12px;
@@ -36,8 +35,7 @@
         overflow: hidden; border: 1px solid #eee;
     }
     .dropdown-item {
-        padding: 14px 18px; font-size: 14px;
-        color: #000; font-weight: 600;
+        padding: 14px 18px; font-size: 14px; color: #000; font-weight: 600;
         display: flex; align-items: center; gap: 12px; cursor: pointer;
         border-bottom: 1px solid #f5f5f5;
     }
@@ -46,16 +44,15 @@
     .btn-sub { width: 80%; max-width: 280px; padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; }
     .btn-black { background: #000; color: #fff; }
     .btn-grey { background: #f2f2f2; color: #555; }
-    .btn-sub:active { transform: scale(0.96); }
 
+    /* TOAST MODAL */
     .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); z-index: 10000; padding: 30px 20px; transition: bottom 0.3s ease-out; text-align: center; box-sizing: border-box; }
     .confirm-toast.active { bottom: 0; }
-    .toast-msg { font-weight: 600; font-size: 17px; margin-bottom: 25px; color: #000; }
-    .toast-btns { display: flex; justify-content: center; gap: 15px; }
     .t-btn { padding: 14px; border-radius: 12px; border: none; font-weight: bold; flex: 1; max-width: 140px; cursor: pointer; font-size: 15px; }
     .t-btn-no { background: #f0f0f0; color: #000; }
     .t-btn-yes { background: #ff2d55; color: #fff; }
 
+    /* PROFILE HEADER */
     .profile-hdr { text-align:center; padding:20px; }
     .p-avatar-container { width: 85px; height: 85px; background-color: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; overflow: hidden; border: 1px solid #eee; }
     .p-avatar-img { width: 100%; height: 100%; object-fit: cover; display: none; }
@@ -65,39 +62,43 @@
     .bar-bg { width: 100%; height: 8px; background: #eee; border-radius: 10px; overflow: hidden; margin-top:5px;}
     .bar-fill { height: 100%; width: 0%; background: #ff2d55; transition: width 1s; }
 
+    /* GRID DESIGN */
     .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background:#eee; }
-    .grid-item { aspect-ratio: 9/16; background:#000; position: relative; overflow: hidden; }
-    .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: -webkit-optimize-contrast; pointer-events: none; }
+    .grid-item { aspect-ratio: 9/16; background:#000; position: relative; overflow: hidden; cursor: pointer; }
+    .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
     .media-indicator { position: absolute; top: 5px; right: 5px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; font-size: 11px; z-index: 5; }
 
-    #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; }
+    /* FULL SCREEN PLAYER (EDGLESS) */
+    #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; width: 100vw; height: 100vh; overflow: hidden; }
     .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; z-index: 5100; text-shadow: 0 0 4px #000; }
-    .fs-dots-menu { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; cursor: pointer; }
+    .fs-dots-menu { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 5100; padding: 10px; }
     
-    .carousel-container { width: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; height: 100%; }
+    .carousel-container { width: 100%; height: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
     .carousel-container::-webkit-scrollbar { display: none; }
-    .carousel-item { min-width: 100%; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; height: 100%; }
-    .carousel-item img, .carousel-item video { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; -webkit-touch-callout: none; }
+    .carousel-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; background: #000; }
+    
+    /* REMOVES BLACK BARS */
+    .carousel-item img, .carousel-item video { width: 100vw; height: 100vh; object-fit: cover; pointer-events: none; }
 
-    .nav-dots { display: flex; justify-content: center; gap: 6px; position: absolute; bottom: 120px; width: 100%; z-index: 5100; pointer-events: none; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); transition: 0.3s; }
+    .nav-dots { display: flex; justify-content: center; gap: 6px; position: absolute; bottom: 120px; width: 100%; z-index: 5100; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); }
     .dot.active { background: #fff; transform: scale(1.2); }
 
-    .fs-info { position: absolute; bottom: 30px; left: 15px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); pointer-events: none; z-index: 5100; max-width: 80%; }
+    .fs-info { position: absolute; bottom: 30px; left: 15px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); z-index: 5100; max-width: 80%; pointer-events: none; }
     .fs-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .fs-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
-    .fs-caption { font-size: 14px; line-height: 1.4; font-weight: 400; }
 
     .fs-actions { position: absolute; right: 15px; bottom: 100px; color: #fff; text-align: center; z-index: 5100; }
-    .fa-heart { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 32px; cursor: pointer; }
+    .fa-heart { transition: transform 0.2s; font-size: 32px; cursor: pointer; }
     .fa-heart.liked { color: #ff2d55; }
     .heart-pop { animation: heartPop 0.3s linear; }
-    @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1.2); } }
+    @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
 
-    #delMenu { position: absolute; top: 65px; right: 20px; background: #fff; color: #ff2d55; padding: 12px 20px; border-radius: 10px; font-weight: bold; display: none; z-index: 5200; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    #delMenu { position: absolute; top: 65px; right: 20px; background: #fff; color: #ff2d55; padding: 12px 20px; border-radius: 10px; font-weight: bold; display: none; z-index: 5200; }
 </style>
 </head>
 <body oncontextmenu="return false;">
+
 <div id="confirmToast" class="confirm-toast">
     <div id="toastMsg" class="toast-msg">Are you sure?</div>
     <div class="toast-btns">
@@ -134,11 +135,11 @@
     <b>Profile</b>
     <div class="nav-right">
         <i class="fa fa-share-alt" onclick="navigator.share({url: window.location.href})"></i>
-        <div id="notifBtn" class="notif-wrapper" style="display:none;" onclick="location.href='notifications.html'">
+        <div id="notifBtn" style="display:none; position:relative;" onclick="location.href='notifications.html'">
             <i class="fa fa-bell"></i>
             <span id="notifDot" class="notif-badge"></span>
         </div>
-        <div id="logoutMenuContainer" class="menu-wrapper" style="display:none;">
+        <div id="logoutMenuContainer" style="display:none; position:relative;">
             <i class="fa fa-ellipsis-v" onclick="toggleLogoutDropdown(event)"></i>
             <div id="logoutDropdown" class="logout-dropdown">
                 <div class="dropdown-item" onclick="location.href='dashboard.html'">
@@ -184,11 +185,15 @@ window.showToast = (msg, onYes) => {
     document.getElementById('toastYes').onclick = () => { onYes(); closeToast(); }; 
 };
 window.closeToast = () => document.getElementById('confirmToast').classList.remove('active');
-window.askLogout = () => showToast("Are you sure you want to logout?", () => { localStorage.clear(); location.href = "https://globaltrends56.blogspot.com"; });
-window.askDelete = () => showToast("Confirm delete post?", async () => { await supabase.from("posts").delete().eq('id', currentPost.id); location.reload(); });
+window.askLogout = () => showToast("Are you sure?", () => { localStorage.clear(); location.href = "https://globaltrends56.blogspot.com"; });
+window.askDelete = () => showToast("Delete post?", async () => { await supabase.from("posts").delete().eq('id', currentPost.id); location.reload(); });
+
 window.toggleLogoutDropdown = (e) => { e.stopPropagation(); const d = document.getElementById('logoutDropdown'); d.style.display = (d.style.display === 'flex') ? 'none' : 'flex'; };
 window.toggleDelMenu = (e) => { e.stopPropagation(); const m = document.getElementById('delMenu'); m.style.display = (m.style.display === 'block') ? 'none' : 'block'; };
-document.addEventListener('click', () => { if(document.getElementById('logoutDropdown')) document.getElementById('logoutDropdown').style.display = 'none'; if(document.getElementById('delMenu')) document.getElementById('delMenu').style.display = 'none'; });
+document.addEventListener('click', () => { 
+    if(document.getElementById('logoutDropdown')) document.getElementById('logoutDropdown').style.display = 'none'; 
+    if(document.getElementById('delMenu')) document.getElementById('delMenu').style.display = 'none'; 
+});
 
 async function load() {
     const [pRes, sRes, vRes, fCheck] = await Promise.all([
@@ -217,29 +222,26 @@ async function load() {
 
     document.getElementById('grid').innerHTML = vRes.data?.map(v => {
         const isPhoto = v.media_type === 'photo';
-        const hasMultiple = isPhoto && v.media_urls && v.media_urls.length > 1;
         return `
         <div class="grid-item" onclick='openFS(${JSON.stringify(v)})'>
-            <div class="media-indicator">${hasMultiple ? '<i class="fa fa-clone"></i>' : (isPhoto ? '🖼️' : '🎞️')}</div>
+            <div class="media-indicator">${isPhoto && v.media_urls?.length > 1 ? '<i class="fa fa-clone"></i>' : (isPhoto ? '🖼️' : '🎞️')}</div>
             ${isPhoto ? `<img src="${v.media_urls[0]}">` : `<video src="${v.video_url}#t=0.5" muted playsinline></video>`}
         </div>`;
     }).join("");
 
-    const btnContainer = document.getElementById('btns');
     if (myId === profileId) {
         document.getElementById('logoutMenuContainer').style.display = 'flex';
         document.getElementById('goalBox').style.display = 'block';
         let pct = Math.min((subCount/10000)*100, 100);
         document.getElementById('bar').style.width = pct+'%';
         document.getElementById('gPct').innerText = Math.floor(pct)+'%';
-        btnContainer.innerHTML = `<button onclick="location.href='edit-profile.html'" class="btn-sub btn-grey" style="min-width:130px;">Edit Profile</button>`;
+        document.getElementById('btns').innerHTML = `<button onclick="location.href='edit-profile.html'" class="btn-sub btn-grey">Edit Profile</button>`;
         checkNotifications();
     } else { renderSubButton(); }
 }
 
 function renderSubButton() {
-    const btnContainer = document.getElementById('btns');
-    btnContainer.innerHTML = isSubscribed 
+    document.getElementById('btns').innerHTML = isSubscribed 
         ? `<button onclick="handleSubscribe()" class="btn-sub btn-grey">💟 Subscribed</button>` 
         : `<button onclick="handleSubscribe()" class="btn-sub btn-black">Subscribe</button>`;
 }
@@ -268,39 +270,32 @@ async function checkNotifications() {
     }
 }
 
-// --- UPDATED LIKE LOGIC FOR PERSISTENCE AND ERROR FIX ---
+// --- FIXED LIKE LOGIC (PERMANENT & ZERO FLOOR) ---
 window.toggleLike = async () => {
     if(!currentPost) return;
     const heart = document.getElementById('likeHeart');
     const countEl = document.getElementById('fsLikeCount');
-    const headerLikeCount = document.getElementById('lCount');
+    const headerCount = document.getElementById('lCount');
     
     let likes = parseInt(countEl.innerText) || 0;
-    let totalHeaderLikes = parseInt(headerLikeCount.innerText) || 0;
+    let totalLikes = parseInt(headerCount.innerText) || 0;
 
     if(heart.classList.contains('liked')) { 
-        // --- UNLIKE ---
         heart.classList.remove('liked', 'heart-pop'); 
         likes = Math.max(0, likes - 1); 
-        totalHeaderLikes = Math.max(0, totalHeaderLikes - 1);
+        totalLikes = Math.max(0, totalLikes - 1);
         localStorage.removeItem(`liked_${currentPost.id}`);
     } else { 
-        // --- LIKE ---
         heart.classList.add('liked', 'heart-pop'); 
         likes++; 
-        totalHeaderLikes++;
+        totalLikes++;
         localStorage.setItem(`liked_${currentPost.id}`, 'true');
     }
 
-    // Update UI
     countEl.innerText = likes;
-    headerLikeCount.innerText = totalHeaderLikes;
-    
-    // Sync with DB
-    await supabase.from("posts").update({ likes }).eq('id', currentPost.id);
-    
-    // Update the local post object so if we reopen it, the number is correct
+    headerCount.innerText = totalLikes;
     currentPost.likes = likes;
+    await supabase.from("posts").update({ likes }).eq('id', currentPost.id);
 };
 
 window.openFS = (post) => {
@@ -308,27 +303,21 @@ window.openFS = (post) => {
     document.getElementById('fsPlayer').style.display = 'flex';
     const content = document.getElementById('mediaContent');
     const heart = document.getElementById('likeHeart');
-    const countEl = document.getElementById('fsLikeCount');
     
-    // 1. SET LIKES AND PERSISTENT RED HEART STATE
-    countEl.innerText = post.likes || 0;
-    if (localStorage.getItem(`liked_${post.id}`) === 'true') {
-        heart.classList.add('liked');
-    } else {
-        heart.classList.remove('liked');
-    }
-
-    // 2. LOAD MEDIA
-    const dotsBox = document.getElementById('navDots');
-    dotsBox.innerHTML = "";
+    document.getElementById('fsLikeCount').innerText = post.likes || 0;
+    
+    // Memory Check (Permanent Heart)
+    if (localStorage.getItem(`liked_${post.id}`) === 'true') heart.classList.add('liked');
+    else heart.classList.remove('liked', 'heart-pop');
 
     if (post.media_type === 'photo' && post.media_urls) {
-        const limitedUrls = post.media_urls.slice(0, 10);
-        const slides = limitedUrls.map(url => `<div class="carousel-item"><img src="${url}"></div>`).join("");
+        const slides = post.media_urls.slice(0, 10).map(url => `<div class="carousel-item"><img src="${url}"></div>`).join("");
         content.innerHTML = `<div class="carousel-container" id="carousel">${slides}</div>`;
-        if(limitedUrls.length > 1) {
-            dotsBox.innerHTML = limitedUrls.map((_, i) => `<div class="dot ${i === 0 ? 'active' : ''}"></div>`).join("");
-            const carousel = document.getElementById('carousel');
+        const dotsBox = document.getElementById('navDots');
+        dotsBox.innerHTML = post.media_urls.length > 1 ? post.media_urls.slice(0, 10).map((_, i) => `<div class="dot ${i === 0 ? 'active' : ''}"></div>`).join("") : "";
+        
+        const carousel = document.getElementById('carousel');
+        if(carousel) {
             carousel.addEventListener('scroll', () => {
                 const index = Math.round(carousel.scrollLeft / carousel.offsetWidth);
                 document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
@@ -336,6 +325,7 @@ window.openFS = (post) => {
         }
     } else {
         content.innerHTML = `<div class="carousel-item"><video src="${post.video_url}" autoplay loop playsinline disablePictureInPicture controlsList="nodownload"></video></div>`;
+        document.getElementById('navDots').innerHTML = "";
     }
     
     document.getElementById('fsAv').src = profileData.avatar_url || "";
@@ -350,4 +340,4 @@ window.closeFS = () => { document.getElementById('fsPlayer').style.display = 'no
 load();
 </script>
 </body>
-        </html>
+    </html>
