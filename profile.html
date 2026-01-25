@@ -194,6 +194,14 @@ let myId = localStorage.getItem("user_id");
 const profileId = new URLSearchParams(location.search).get("id") || myId;
 let currentPost = null, profileData = null, isSubscribed = false;
 
+// 1. SECURITY INTEGRATION: BAN GATE
+async function checkBan() {
+    if (!myId) return;
+    const { data } = await supabase.from('profiles').select('status').eq('id', myId).single();
+    if (data?.status === 'suspended') window.location.href = 'suspended.html';
+}
+checkBan();
+
 window.showToast = (msg, onYes) => { 
     document.getElementById('toastMsg').innerText = msg; 
     document.getElementById('confirmToast').classList.add('active'); 
@@ -224,6 +232,7 @@ async function load() {
         document.getElementById('defaultUserIcon').style.display = 'none';
     }
 
+    // 2. SECURITY INTEGRATION: VERIFIED BADGE
     document.getElementById('pUn').innerHTML = `@${profileData.username} ${profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : ''}`;
     if (profileData.bio) { const bioEl = document.getElementById('pBio'); bioEl.innerText = profileData.bio; bioEl.style.display = 'block'; }
 
@@ -320,6 +329,7 @@ window.openFS = (post) => {
     
     document.getElementById('fsAv').src = profileData.avatar_url || "";
     document.getElementById('fsUn').innerText = `@${profileData.username}`;
+    // VERIFIED LOGIC IN FS VIEW
     document.getElementById('fsBadge').innerHTML = profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : '';
     document.getElementById('fsCap').innerText = post.caption || "";
     document.getElementById('fsLikeCount').innerText = post.likes || 0;
@@ -331,4 +341,5 @@ window.closeFS = () => { document.getElementById('fsPlayer').style.display = 'no
 
 load();
 </script>
-</body>                                                                                                                              </html
+</body>
+    </html>
