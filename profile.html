@@ -8,114 +8,103 @@
 <style>
     body { margin:0; font-family:-apple-system, sans-serif; background:#fff; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; overflow-x: hidden; }
     
-    /* NAVIGATION */
+    /* NAV & NOTIFICATIONS */
     .nav { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index: 1000; }
     .nav-right { display: flex; align-items: center; gap: 20px; }
-    .notif-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; padding: 5px; }
-    .notif-badge { position: absolute; top: 0px; right: -2px; background: #ff2d55; color: #fff; font-size: 10px; width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid #fff; font-weight: bold; }
-    .menu-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; padding: 5px; }
-    .logout-dropdown { position: absolute; top: 40px; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 2000; min-width: 170px; overflow: hidden; border: 1px solid #eee; }
-    .dropdown-item { padding: 14px 18px; font-size: 14px; color: #000; font-weight: 600; display: flex; align-items: center; gap: 12px; cursor: pointer; border-bottom: 1px solid #f5f5f5; }
+    .notif-wrapper { position: relative; display: flex; align-items: center; cursor: pointer; }
+    .notif-badge { position: absolute; top: -5px; right: -5px; background: #ff2d55; color: #fff; font-size: 10px; width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid #fff; font-weight: bold; }
 
-    /* BUTTONS */
-    .btn-sub { width: 80%; max-width: 280px; padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; }
-    .btn-black { background: #000; color: #fff; }
-    .btn-grey { background: #f2f2f2; color: #555; }
+    /* TOAST SYSTEM FIX */
+    .confirm-toast { position: fixed; bottom: -100%; left: 0; width: 100%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.15); z-index: 10000; padding: 30px 20px; transition: bottom 0.3s ease-in-out; text-align: center; box-sizing: border-box; }
+    .confirm-toast.active { bottom: 0; }
 
     /* PROFILE HEADER */
     .profile-hdr { text-align:center; padding:20px; }
-    .p-avatar-container { width: 85px; height: 85px; background-color: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; overflow: hidden; border: 1px solid #eee; }
-    .p-avatar-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-    .p-bio { font-size: 13.5px; color: #444; margin: 8px auto; max-width: 85%; line-height: 1.4; white-space: pre-wrap; display: none; }
+    .p-avatar-container { width: 85px; height: 85px; background: #eee; border-radius: 50%; margin: 0 auto; overflow: hidden; border: 1px solid #f0f0f0; }
+    .p-avatar-img { width: 100%; height: 100%; object-fit: cover; }
     
-    /* GRID */
+    /* SUB GOAL BAR */
+    #goalBox { width: 85%; max-width: 280px; margin: 10px auto; background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+    .bar-bg { width: 100%; height: 8px; background: #eee; border-radius: 10px; margin-top:5px; overflow:hidden; }
+    .bar-fill { height: 100%; width: 0%; background: #ff2d55; transition: width 0.8s ease; }
+
+    /* GRID DISPLAY */
     .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background:#eee; }
     .grid-item { aspect-ratio: 9/16; background:#000; position: relative; overflow: hidden; }
-    .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+    .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; }
 
     /* FULL SCREEN PLAYER (TIKTOK STYLE) */
     #fsPlayer { position: fixed; inset: 0; background: #000; z-index: 5000; display: none; flex-direction: column; }
-    .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; z-index: 6000; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-    .fs-dots-menu { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 20px; z-index: 6000; padding: 10px; }
+    .fs-close { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 26px; z-index: 6000; text-shadow: 0 0 10px #000; }
     
     .carousel-container { width: 100%; height: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
     .carousel-container::-webkit-scrollbar { display: none; }
-    .carousel-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; }
+    .carousel-item { min-width: 100vw; height: 100vh; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; position: relative; }
+    .carousel-item img, .carousel-item video { width: 100%; height: 100%; object-fit: cover; }
+
+    /* OVERLAYS & ACTIONS */
+    .fs-overlay-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 40%; background: linear-gradient(transparent, rgba(0,0,0,0.9)); z-index: 5100; pointer-events: none; }
+    .fs-info { position: absolute; bottom: 40px; left: 15px; color: #fff; z-index: 5200; max-width: 75%; pointer-events: none; }
+    .fs-actions { position: absolute; right: 15px; bottom: 120px; color: #fff; text-align: center; z-index: 5300; }
     
-    /* REMOVES BLACK BORDERS */
-    .carousel-item img, .carousel-item video { width: 100vw; height: 100vh; object-fit: cover; pointer-events: none; }
-
-    /* UI OVERLAYS */
-    .fs-overlay-bottom { 
-        position: absolute; bottom: 0; left: 0; width: 100%; height: 250px; 
-        background: linear-gradient(transparent, rgba(0,0,0,0.8)); 
-        z-index: 5500; pointer-events: none; 
-    }
-
-    .fs-info { position: absolute; bottom: 40px; left: 15px; color: #fff; z-index: 5600; max-width: 75%; pointer-events: none; }
-    .fs-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .fs-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
-    .fs-caption { font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-
-    .fs-actions { position: absolute; right: 15px; bottom: 100px; color: #fff; text-align: center; z-index: 5600; }
-    .fa-heart { font-size: 35px; cursor: pointer; transition: transform 0.2s; }
-    .fa-heart.liked { color: #ff2d55; }
-    .heart-pop { animation: heartPop 0.3s linear; }
-    @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
-
-    #delMenu { position: absolute; top: 65px; right: 20px; background: #fff; color: #ff2d55; padding: 12px 20px; border-radius: 10px; font-weight: bold; display: none; z-index: 7000; }
+    .fa-paw { font-size: 40px; color: #ffcc00; cursor: pointer; transition: 0.3s; }
+    .fa-paw.lionized { color: #ffae00; transform: scale(1.2); filter: drop-shadow(0 0 10px #ffcc00); }
+    .nav-dots { position: absolute; bottom: 100px; width: 100%; display: flex; justify-content: center; gap: 5px; z-index: 5300; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.4); }
+    .dot.active { background: #fff; transform: scale(1.2); }
 </style>
 </head>
 <body oncontextmenu="return false;">
 
+<div id="confirmToast" class="confirm-toast">
+    <div id="toastMsg" class="toast-msg" style="margin-bottom:20px; font-weight:bold;"></div>
+    <div style="display:flex; gap:10px;">
+        <button onclick="closeToast()" style="flex:1; padding:12px; border-radius:10px; border:none; background:#eee;">Cancel</button>
+        <button id="toastYes" style="flex:1; padding:12px; border-radius:10px; border:none; background:#ff2d55; color:#fff; font-weight:bold;">Confirm</button>
+    </div>
+</div>
+
 <div id="fsPlayer">
     <i class="fa fa-times fs-close" onclick="closeFS()"></i>
-    <i id="dotsBtn" class="fa fa-ellipsis-v fs-dots-menu" onclick="toggleDelMenu(event)"></i>
-    <div id="delMenu" onclick="askDelete()">Delete Post</div>
-    
     <div id="mediaContent" style="width:100%; height:100%;"></div>
-    <div id="navDots" class="nav-dots" style="bottom: 120px;"></div>
-    
-    <div class="fs-overlay-bottom"></div> <div class="fs-info">
-        <div class="fs-user-row">
-            <img id="fsAv" class="fs-avatar" src="">
-            <span id="fsUn" style="font-weight:bold;"></span>
-            <span id="fsBadge"></span>
+    <div id="navDots" class="nav-dots"></div>
+    <div class="fs-overlay-bottom"></div>
+    <div class="fs-info">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+            <img id="fsAv" style="width:35px; height:35px; border-radius:50%; border:1.5px solid #fff; object-fit:cover;">
+            <b id="fsUn"></b>
         </div>
-        <div id="fsCap" class="fs-caption"></div>
+        <div id="fsCap"></div>
     </div>
-
-    <div class="fs-actions">
-        <i id="likeHeart" class="fa fa-heart" onclick="toggleLike()"></i>
-        <div id="fsLikeCount" style="font-weight:bold; font-size:13px; margin-top:5px;">0</div>
-    </div>
+    <div class="fs-actions" id="actionBox"></div>
 </div>
 
 <div class="nav">
     <i class="fa fa-arrow-left" onclick="history.back()"></i>
     <b>Profile</b>
     <div class="nav-right">
-        <i class="fa fa-share-alt" onclick="navigator.share({url: window.location.href})"></i>
-        <div id="notifBtn" class="notif-wrapper" style="display:none;" onclick="location.href='notifications.html'"><i class="fa fa-bell"></i><span id="notifDot" class="notif-badge"></span></div>
-        <div id="logoutMenuContainer" class="menu-wrapper" style="display:none;">
-            <i class="fa fa-ellipsis-v" onclick="toggleLogoutDropdown(event)"></i>
-            <div id="logoutDropdown" class="logout-dropdown">
-                <div class="dropdown-item" onclick="location.href='dashboard.html'"><i class="fa fa-chart-line"></i> View dashboard</div>
-                <div class="dropdown-item" onclick="askLogout()"><i class="fa fa-sign-out-alt"></i> Logout</div>
-            </div>
+        <div id="notifBtn" class="notif-wrapper" style="display:none;" onclick="location.href='notifications.html'">
+            <i class="fa fa-bell"></i>
+            <span id="notifDot" class="notif-badge"></span>
         </div>
+        <i class="fa fa-ellipsis-v" onclick="toggleMenu()"></i>
     </div>
 </div>
 
 <div class="profile-hdr">
-    <div class="p-avatar-container"><i id="defaultUserIcon" class="fa fa-user" style="color:#000; font-size:40px;"></i><img id="pAv" class="p-avatar-img"></div>
-    <div id="pUn" style="font-size:18px; font-weight:700; margin:10px 0 4px; display:flex; justify-content:center; align-items:center; gap:4px;"></div>
-    <div id="pBio" class="p-bio"></div>
+    <div class="p-avatar-container"><img id="pAv" class="p-avatar-img"></div>
+    <div id="pUn" style="font-size:18px; font-weight:700; margin-top:10px;"></div>
+    <div id="goalBox">
+        <div style="font-size:10px; color:#888; display:flex; justify-content:space-between; font-weight:bold;">
+            <span>10K SUBS GOAL</span><span id="gPct">0%</span>
+        </div>
+        <div class="bar-bg"><div id="bar" class="bar-fill"></div></div>
+    </div>
     <div style="display:flex; justify-content:center; gap:30px; margin:15px 0;">
         <div style="text-align:center;"><span id="sCount" style="font-weight:800; font-size:17px; display:block;">0</span><small style="color:#888;">Subscribers</small></div>
         <div style="text-align:center;"><span id="lCount" style="font-weight:800; font-size:17px; display:block;">0</span><small style="color:#888;">Total Likes</small></div>
     </div>
-    <div id="btns" style="display:flex; justify-content:center; padding-bottom:20px;"></div>
+    <div id="btns"></div>
 </div>
 
 <div id="grid" class="grid"></div>
@@ -128,86 +117,92 @@ let myId = localStorage.getItem("user_id");
 const profileId = new URLSearchParams(location.search).get("id") || myId;
 let currentPost = null, profileData = null;
 
-// --- FIXED LIKE LOGIC ---
-window.toggleLike = async () => {
-    if(!currentPost) return;
-    const heart = document.getElementById('likeHeart');
-    const countEl = document.getElementById('fsLikeCount');
-    const totalLikesEl = document.getElementById('lCount');
-    
-    let likes = parseInt(countEl.innerText) || 0;
-    let totalLikes = parseInt(totalLikesEl.innerText) || 0;
-
-    if(heart.classList.contains('liked')) {
-        // UNLIKE
-        heart.classList.remove('liked', 'heart-pop');
-        likes = Math.max(0, likes - 1);
-        totalLikes = Math.max(0, totalLikes - 1);
-        localStorage.removeItem(`liked_${currentPost.id}`);
-    } else {
-        // LIKE
-        heart.classList.add('liked', 'heart-pop');
-        likes++;
-        totalLikes++;
-        localStorage.setItem(`liked_${currentPost.id}`, 'true');
-    }
-
-    countEl.innerText = likes;
-    totalLikesEl.innerText = totalLikes;
-    currentPost.likes = likes;
-    
-    // Update DB
-    await supabase.from("posts").update({ likes }).eq('id', currentPost.id);
+// TOAST FIX
+window.showToast = (msg, onYes) => {
+    document.getElementById('toastMsg').innerText = msg;
+    document.getElementById('confirmToast').classList.add('active');
+    document.getElementById('toastYes').onclick = () => { onYes(); closeToast(); };
 };
+window.closeToast = () => document.getElementById('confirmToast').classList.remove('active');
 
+// FULL SCREEN LOGIC
 window.openFS = (post) => {
     currentPost = post;
-    document.getElementById('fsPlayer').style.display = 'flex';
+    const player = document.getElementById('fsPlayer');
     const content = document.getElementById('mediaContent');
-    const heart = document.getElementById('likeHeart');
+    const actions = document.getElementById('actionBox');
+    const dotsBox = document.getElementById('navDots');
     
-    // Set UI from DB
-    document.getElementById('fsLikeCount').innerText = post.likes || 0;
-    
-    // Set Heart from Local Memory (The "Real Social Media" Fix)
-    if(localStorage.getItem(`liked_${post.id}`) === 'true') {
-        heart.classList.add('liked');
+    player.style.display = 'flex';
+    dotsBox.innerHTML = "";
+
+    if (post.media_type === 'photo') {
+        // CAROUSEL 1-10
+        const limited = post.media_urls.slice(0, 10);
+        content.innerHTML = `<div class="carousel-container" id="carousel">${limited.map(url => `<div class="carousel-item"><img src="${url}"></div>`).join("")}</div>`;
+        
+        const isLionized = localStorage.getItem(`lion_${post.id}`) ? 'lionized' : '';
+        actions.innerHTML = `<i id="lionBtn" class="fa fa-paw ${isLionized}" onclick="toggleLion()"></i><div style="font-weight:bold; font-size:12px; margin-top:5px;">${post.lions || 0} LIONS</div>`;
+        
+        if(limited.length > 1) {
+            dotsBox.innerHTML = limited.map((_, i) => `<div class="dot ${i===0?'active':''}"></div>`).join("");
+            const c = document.getElementById('carousel');
+            c.onscroll = () => {
+                const idx = Math.round(c.scrollLeft / window.innerWidth);
+                document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+            };
+        }
     } else {
-        heart.classList.remove('liked', 'heart-pop');
+        // VIDEO VIEW ONLY
+        content.innerHTML = `<div class="carousel-item"><video src="${post.video_url}" autoplay loop playsinline></video></div>`;
+        actions.innerHTML = `<i class="fa fa-heart" style="color:#ff2d55; font-size:32px;"></i><div style="font-weight:bold; font-size:12px; margin-top:5px;">${post.likes || 0} LIKES</div>`;
     }
 
-    if (post.media_type === 'photo' && post.media_urls) {
-        const slides = post.media_urls.slice(0, 10).map(url => `<div class="carousel-item"><img src="${url}"></div>`).join("");
-        content.innerHTML = `<div class="carousel-container" id="carousel">${slides}</div>`;
-    } else {
-        content.innerHTML = `<div class="carousel-item"><video src="${post.video_url}" autoplay loop playsinline disablePictureInPicture controlsList="nodownload"></video></div>`;
-    }
-    
-    document.getElementById('fsAv').src = profileData.avatar_url || "";
+    document.getElementById('fsAv').src = profileData.avatar_url;
     document.getElementById('fsUn').innerText = `@${profileData.username}`;
     document.getElementById('fsCap').innerText = post.caption || "";
-    document.getElementById('dotsBtn').style.display = (myId === profileId) ? 'block' : 'none';
 };
 
-window.closeFS = () => { document.getElementById('fsPlayer').style.display = 'none'; document.getElementById('mediaContent').innerHTML = ""; };
+window.closeFS = () => { 
+    document.getElementById('fsPlayer').style.display = 'none'; 
+    document.getElementById('mediaContent').innerHTML = ""; 
+};
 
-// Keep your existing load() and other helper functions below
+window.toggleLion = async () => {
+    const btn = document.getElementById('lionBtn');
+    let lions = currentPost.lions || 0;
+    if(btn.classList.contains('lionized')) {
+        btn.classList.remove('lionized'); lions = Math.max(0, lions-1);
+        localStorage.removeItem(`lion_${currentPost.id}`);
+    } else {
+        btn.classList.add('lionized'); lions++;
+        localStorage.setItem(`lion_${currentPost.id}`, 'true');
+    }
+    await supabase.from("posts").update({ lions }).eq('id', currentPost.id);
+    document.getElementById('actionBox').querySelector('div').innerText = `${lions} LIONS`;
+};
+
 async function load() {
     const [pRes, sRes, vRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", profileId).single(),
         supabase.from("follows").select("*", { count:"exact", head:true }).eq("user_id", profileId),
         supabase.from("posts").select("*").eq("user_id", profileId).order('created_at', {ascending: false})
     ]);
-    if (!pRes.data) return;
     profileData = pRes.data;
-    if(profileData.avatar_url) { document.getElementById('pAv').src = profileData.avatar_url; document.getElementById('pAv').style.display = 'block'; document.getElementById('defaultUserIcon').style.display = 'none'; }
-    document.getElementById('pUn').innerHTML = `@${profileData.username} ${profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : ''}`;
-    document.getElementById('sCount').innerText = sRes.count || 0;
+    document.getElementById('pAv').src = profileData.avatar_url;
+    document.getElementById('pUn').innerText = `@${profileData.username}`;
+    
+    // Sub Goal Logic
+    const subCount = sRes.count || 0;
+    document.getElementById('sCount').innerText = subCount;
+    let pct = (subCount / 10000) * 100;
+    document.getElementById('bar').style.width = Math.min(pct, 100) + "%";
+    document.getElementById('gPct').innerText = Math.floor(pct) + "%";
+
     document.getElementById('lCount').innerText = vRes.data?.reduce((acc, p) => acc + (parseInt(p.likes) || 0), 0) || 0;
     document.getElementById('grid').innerHTML = vRes.data?.map(v => `<div class="grid-item" onclick='openFS(${JSON.stringify(v)})'><img src="${v.media_type==='photo'?v.media_urls[0]:v.video_url+'#t=0.5'}"></div>`).join("");
-    if (myId === profileId) { document.getElementById('logoutMenuContainer').style.display = 'flex'; }
 }
 load();
 </script>
 </body>
-    </html>
+</html>
