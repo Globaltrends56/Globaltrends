@@ -37,7 +37,7 @@
         <input type="file" id="photos" accept="image/*" hidden>
         <i class="fa fa-images"></i>
         <div style="font-weight:600">Select Photos</div>
-        <div style="font-size:12px; color:#888">🖼️</div>
+        <div style="font-size:12px; color:#888">Add photos one by one (max 10)</div>
     </label>
 
     <input type="file" id="morePhotos" accept="image/*" hidden>
@@ -69,9 +69,18 @@ const addBtn = document.getElementById("addBtn");
 
 const files = [];
 
+// === TOAST FUNCTION ===
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.innerText = message;
+    toast.style.display = "block";
+    setTimeout(() => { toast.style.display = "none"; }, 3000);
+}
+
+// === ADD FILE FUNCTION ===
 function addFile(file) {
     if (files.length >= 10) {
-        alert("Maximum of 10 photos allowed");
+        showToast("Maximum of 10 photos allowed");
         return;
     }
     files.push(file);
@@ -83,6 +92,7 @@ function addFile(file) {
     addBtn.style.display = "block";
 }
 
+// === INITIAL PHOTO ===
 input.onchange = e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -91,14 +101,16 @@ input.onchange = e => {
     addFile(file);
 };
 
+// === ADDITIONAL PHOTOS ===
 moreInput.onchange = e => {
     const file = e.target.files[0];
     if (!file) return;
     addFile(file);
 };
 
+// === UPLOAD FUNCTION ===
 window.upload = async () => {
-    if (!files.length) return alert("Select photo");
+    if (!files.length) return showToast("Select photo");
 
     const captionText = document.getElementById("caption").value;
     const btn = document.getElementById("mainBtn");
