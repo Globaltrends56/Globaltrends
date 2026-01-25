@@ -23,13 +23,7 @@
     </style>
 </head>
 <body>
-
-<div class="nav">
-    <i class="fa fa-chevron-left" onclick="history.back()"></i>
-    <b id="navTitle">Profile</b>
-    <i class="fa fa-ellipsis-v"></i>
-</div>
-
+<div class="nav"><i class="fa fa-chevron-left" onclick="history.back()"></i><b id="navTitle">Profile</b><i class="fa fa-ellipsis-v"></i></div>
 <div class="profile-hdr">
     <img id="pAv" class="p-avatar" src="https://via.placeholder.com/150">
     <div id="pUn" style="font-weight:700; font-size:18px; margin-top:10px;">@username</div>
@@ -40,22 +34,18 @@
     </div>
     <button id="editBtn" class="btn-edit" style="display:none" onclick="location.href='edit-profile.html'">Edit Profile</button>
 </div>
-
 <div id="grid" class="grid"></div>
-
 <div id="fsPlayer">
     <i class="fa fa-times fs-close" onclick="document.getElementById('fsPlayer').style.display='none'"></i>
     <div id="fsContent" style="height:100%; display:flex; align-items:center; justify-content:center;"></div>
 </div>
-
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
-
 const myId = localStorage.getItem("user_id");
 const profileId = new URLSearchParams(location.search).get("id") || myId;
 
-async function verifyAccess() {
+async function checkBan() {
     if (!myId) return;
     const { data } = await supabase.from('profiles').select('status').eq('id', myId).single();
     if (data?.status === 'suspended') window.location.href = 'suspended.html';
@@ -84,9 +74,8 @@ window.openFS = (url, type) => {
     p.style.display = 'flex';
     c.innerHTML = type === 'photo' ? `<img src="${url}" style="max-width:100%; max-height:100%">` : `<video src="${url}" controls autoplay style="width:100%"></video>`;
 }
-
-verifyAccess();
+checkBan();
 loadProfile();
 </script>
 </body>
-    </html>
+</html>
