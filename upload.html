@@ -42,12 +42,12 @@ window.upload = async () => {
     const btn = document.getElementById('postBtn');
     if(!file) return alert("Select video");
 
-    btn.disabled = true; btn.innerText = "Uploading to Scan...";
+    btn.disabled = true; btn.innerText = "Uploading";
     const path = `${myId}/${Date.now()}.mp4`;
     await supabase.storage.from("videos").upload(path, file);
     const videoUrl = supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
 
-    btn.innerText = "AI Watching Video...";
+    btn.innerText = "Please wait...";
     try {
         const aiCheck = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: 'POST',
@@ -61,7 +61,7 @@ window.upload = async () => {
             await supabase.storage.from("videos").remove([path]);
             window.location.href = 'suspended.html'; return;
         }
-    } catch (e) { console.warn("AI error"); }
+    } catch (e) { console.warn("error"); }
 
     await supabase.from("posts").insert({ user_id: myId, video_url: videoUrl, caption: caption, likes: 0, views: 0 });
     location.href = "profile.html";
