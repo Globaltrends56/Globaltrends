@@ -37,7 +37,7 @@
         <input type="file" id="photos" accept="image/*" hidden>
         <i class="fa fa-images"></i>
         <div style="font-weight:600">Select Photos</div>
-        <div style="font-size:12px; color:#888">🖼️</div>
+        <div style="font-size:12px; color:#888">Add photos one by one (max 10)</div>
     </label>
 
     <input type="file" id="morePhotos" accept="image/*" hidden>
@@ -77,7 +77,7 @@ function showToast(message) {
     setTimeout(() => { toast.style.display = "none"; }, 3000);
 }
 
-// === ADD FILE FUNCTION ===
+// === ADD FILE FUNCTION WITH REMOVE BUTTON ===
 function addFile(file) {
     if (files.length >= 10) {
         showToast("Maximum of 10 photos allowed");
@@ -85,10 +85,38 @@ function addFile(file) {
     }
     files.push(file);
 
+    const wrapper = document.createElement("div");
+    wrapper.style.position = "relative";
+
     const img = document.createElement("img");
     img.src = URL.createObjectURL(file);
-    grid.appendChild(img);
+    wrapper.appendChild(img);
 
+    // Remove button
+    const removeBtn = document.createElement("span");
+    removeBtn.innerHTML = "&times;";
+    removeBtn.style.position = "absolute";
+    removeBtn.style.top = "4px";
+    removeBtn.style.right = "4px";
+    removeBtn.style.background = "#111";
+    removeBtn.style.color = "#fff";
+    removeBtn.style.borderRadius = "50%";
+    removeBtn.style.width = "20px";
+    removeBtn.style.height = "20px";
+    removeBtn.style.display = "flex";
+    removeBtn.style.alignItems = "center";
+    removeBtn.style.justifyContent = "center";
+    removeBtn.style.cursor = "pointer";
+    removeBtn.style.fontSize = "14px";
+    removeBtn.title = "Remove photo";
+    removeBtn.onclick = () => {
+        files.splice(files.indexOf(file), 1);
+        grid.removeChild(wrapper);
+        if (!files.length) addBtn.style.display = "none";
+    };
+    wrapper.appendChild(removeBtn);
+
+    grid.appendChild(wrapper);
     addBtn.style.display = "block";
 }
 
@@ -108,24 +136,53 @@ moreInput.onchange = e => {
     addFile(file);
 };
 
-// === UPLOAD FUNCTION ===
+// === UPLOAD FUNCTION WITH GEMINI AI SCAN ===
 window.upload = async () => {
     if (!files.length) return showToast("Select photo");
 
     const captionText = document.getElementById("caption").value;
     const btn = document.getElementById("mainBtn");
     btn.disabled = true;
-    btn.innerText = "Posting...";
+    btn.innerText = "AI Scanning...";
 
     const urls = [];
 
-    for (const file of files) {
-        const path = `${myId}/${Date.now()}-${Math.random()}.jpg`;
-        await supabase.storage.from("photos").upload(path, file);
-        const url = supabase.storage.from("photos").getPublicUrl(path).data.publicUrl;
-        urls.push(url);
+    try {
+        for (const file of files) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            const base64 = await new Promise(res => reader.onload = () => res(reader.result.split(',')[1]));
+
+            // Gemini AI Safety Check
+            const aiCheck = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+                method: 'POST',
+                body: JSON.stringify({ contents: [{ parts: [
+                    { text: `Safety Check: Block nudity/drugs in this image/caption: "${captionText}". Reply ONLY 'BLOCK' or 'PASS'.` },
+                    { inline_data: { mime_type: "image/jpeg", data: base64 } }
+                ]}]})
+            });
+            const aiData = await aiCheck.json();
+            if (aiData.candidates?.[0]?.content?.parts?.[0]?.text.includes("BLOCK")) {
+                await supabase.from('profiles').update({ status: 'suspended' }).eq('id', myId);
+                window.location.href = 'suspended.html';
+                return;
+            }
+
+            // Upload file after passing AI scan
+            const path = `${myId}/${Date.now()}-${Math.random()}.jpg`;
+            await supabase.storage.from("photos").upload(path, file);
+            const url = supabase.storage.from("photos").getPublicUrl(path).data.publicUrl;
+            urls.push(url);
+        }
+    } catch (e) {
+        console.log("AI scan/upload error:", e);
+        showToast("Error during upload. Try again.");
+        btn.disabled = false;
+        btn.innerText = "Share Post";
+        return;
     }
 
+    // Insert post record
     await supabase.from("posts").insert({
         user_id: myId,
         media_type: "photo",
