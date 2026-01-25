@@ -42,7 +42,7 @@ window.upload = async () => {
     const btn = document.getElementById('postBtn');
     if(!file) return alert("Select video");
 
-    btn.disabled = true; btn.innerText = "Uploading";
+    btn.disabled = true; btn.innerText = "Uploading...";
     const path = `${myId}/${Date.now()}.mp4`;
     await supabase.storage.from("videos").upload(path, file);
     const videoUrl = supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
