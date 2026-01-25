@@ -1,56 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Post Video</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: -apple-system, sans-serif; padding: 20px; text-align: center; }
-    .box { background: #fff; padding: 25px; max-width: 400px; margin: auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-    button { background: #000; color: #fff; border: none; font-weight: bold; cursor: pointer; }
-    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Video | Globaltrends</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; margin: 0; padding: 20px; text-align: center; }
+        .box { max-width: 400px; margin: auto; border: 1px solid #eee; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        input, textarea, button { width: 100%; margin-top: 15px; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 15px; }
+        button { background: #000; color: #fff; font-weight: bold; border: none; cursor: pointer; }
+        button:disabled { background: #ccc; }
+    </style>
 </head>
 <body>
-  <div id="toast" class="toast"></div>
-  <div class="box">
+
+<div class="box">
     <h2>Post Video</h2>
-    <input type="file" id="video" accept="video/*">
-    <input id="caption" placeholder="Caption...">
-    <button id="uploadBtn">Post Video</button>
-    <a href="./profile.html" style="display:block; margin-top:10px; color:#888; text-decoration:none;">Cancel</a>
-  </div>
+    <input type="file" id="videoIn" accept="video/*">
+    <textarea id="caption" placeholder="Write a caption..." rows="3"></textarea>
+    <button id="postBtn" onclick="upload()">Post Video</button>
+    <a href="profile.html" style="display:block; margin-top:15px; color:#888; text-decoration:none;">Cancel</a>
+</div>
 
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-    const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
 
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.innerText = msg; t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 2500);
-    }
+const myId = localStorage.getItem("user_id");
+const GEMINI_KEY = "YOUR_GEMINI_KEY";
 
-    document.getElementById("uploadBtn").onclick = async () => {
-      const myId = localStorage.getItem("user_id");
-      const file = document.getElementById("video").files[0];
-      const btn = document.getElementById("uploadBtn");
+async function verify() {
+    if (!myId) return;
+    const { data } = await supabase.from('profiles').select('status').eq('id', myId).single();
+    if (data?.status === 'suspended') window.location.href = 'suspended.html';
+}
+verify();
 
-      if (!file || !myId) return alert("Select a video.");
+window.upload = async () => {
+    const file = document.getElementById('videoIn').files[0];
+    const caption = document.getElementById('caption').value;
+    const btn = document.getElementById('postBtn');
+    if(!file) return alert("Select video");
 
-      btn.disabled = true; showToast("Uploading Video...");
-      const filePath = `${myId}/${Date.now()}_video.mp4`;
+    btn.disabled = true; btn.innerText = "Uploading to Scan...";
+    const path = `${myId}/${Date.now()}.mp4`;
+    await supabase.storage.from("videos").upload(path, file);
+    const videoUrl = supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
 
-      const { error: upError } = await supabase.storage.from("videos").upload(filePath, file);
-      if (upError) { alert(upError.message); btn.disabled = false; return; }
+    btn.innerText = "AI Watching Video...";
+    try {
+        const aiCheck = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+            method: 'POST',
+            body: JSON.stringify({ contents: [{ parts: [
+                { text: `Safety Check: Block nudity or violence in this video/caption: "${caption}". Reply ONLY 'BLOCK' or 'PASS'. URL: ${videoUrl}` }
+            ]}]})
+        });
+        const res = await aiCheck.json();
+        if (res.candidates[0].content.parts[0].text.includes("BLOCK")) {
+            await supabase.from('profiles').update({ status: 'suspended' }).eq('id', myId);
+            await supabase.storage.from("videos").remove([path]);
+            window.location.href = 'suspended.html'; return;
+        }
+    } catch (e) { console.warn("AI error"); }
 
-      const videoUrl = supabase.storage.from("videos").getPublicUrl(filePath).data.publicUrl;
-      await supabase.from("posts").insert({ user_id: myId, video_url: videoUrl, caption: document.getElementById("caption").value, likes: 0, views: 0 });
-
-      showToast("Post Successful! 🎬");
-      setTimeout(() => location.href = "./profile.html", 1000);
-    };
-  </script>
+    await supabase.from("posts").insert({ user_id: myId, video_url: videoUrl, caption: caption, likes: 0, views: 0 });
+    location.href = "profile.html";
+};
+</script>
 </body>
 </html>
