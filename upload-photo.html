@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 <style>
 :root { --primary:#ff2d55; --bg:#fff; --border:#efefef; }
-body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); }
+body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); -webkit-touch-callout:none; user-select:none; }
 .header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:#fff; z-index:100; }
 .header b { font-size:17px; }
 .header span { color:#666; cursor:pointer; }
@@ -18,19 +18,20 @@ body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); }
 .preview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:20px; }
 .preview-grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid #eee; }
 .caption { width:100%; border:1px solid var(--border); border-radius:12px; padding:15px; margin-top:20px; font-size:15px; outline:none; resize:none; background:#fafafa; }
-.post-btn { width:100%; margin-top:25px; padding:16px; border:none; border-radius:12px; background:var(--primary); color:#fff; font-weight:700; font-size:16px; }
-.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:12px 24px; border-radius:30px; display:none; z-index:10000; }
+.post-btn { width:100%; margin-top:25px; padding:16px; border:none; border-radius:12px; background:var(--primary); color:#fff; font-weight:700; font-size:16px; transition: 0.3s; }
+.post-btn:disabled { background: #ccc; cursor: not-allowed; }
+.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:12px 24px; border-radius:30px; display:none; z-index:10000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 #addBtn { background: #e0e0e0; color: #333;}
 </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
 <div id="toast" class="toast"></div>
 
 <div class="header">
   <span onclick="history.back()">Cancel</span>
   <b>New Photo Post</b>
-  <span class="post-btn-text" onclick="upload()">Post</span>
+  <span id="headerPostBtn" class="post-btn-text" onclick="upload()">Post</span>
 </div>
 
 <div class="container">
@@ -40,6 +41,7 @@ body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); }
     <div style="font-weight:600">Select Photos</div>
     <div style="font-size:12px;color:#888">Add photos one by one (max 10)</div>
   </label>
+
   <input type="file" id="morePhotos" accept="image/*" hidden>
   <div class="preview-grid" id="previewGrid"></div>
   <button id="addBtn" class="post-btn" style="display:none" onclick="morePhotos.click()">Add Photos</button>
@@ -56,7 +58,10 @@ const supabase = createClient(
 );
 
 const myId = localStorage.getItem("user_id");
-const CODY_API_KEY = "tm-Vzbm0YG8p8nVLiSfIIwh2yfynYPsJXTH753Lqzrme97e6bf8"; // Replace with your Cody key
+
+// --- CODY AI CONFIGURATION ---
+const CODY_API_KEY = "tm-Vzbm0YG8p8nVLiSfIIwh2yfynYPsJXTH753Lqzrme97e6bf8"; // PASTE YOUR KEY HERE
+const CODY_BOT_ID = "9dc4e5ed-f0ab-4528-92a9-8ce09980c572";
 
 const input = document.getElementById("photos");
 const moreInput = document.getElementById("morePhotos");
@@ -68,7 +73,7 @@ function showToast(msg){
   const t=document.getElementById("toast");
   t.textContent=msg;
   t.style.display="block";
-  setTimeout(()=>t.style.display="none",3000);
+  setTimeout(()=>t.style.display="none",4000);
 }
 
 function addFile(file){
@@ -113,80 +118,99 @@ moreInput.onchange=e=>{
 };
 
 /* UPLOAD + CODY AI SECURITY CHECK */
-window.upload=async()=>{
-  if(!files.length) return showToast("Select photo");
-  if(!myId) return showToast("User not logged in");
+window.upload = async () => {
+  if (!files.length) return showToast("Please select at least one photo");
+  if (!myId) return showToast("Error: User ID not found");
 
-  const caption=document.getElementById("caption").value;
-  const btn=document.getElementById("mainBtn");
-  btn.disabled=true;
-  btn.textContent="Security Scanning...";
+  const caption = document.getElementById("caption").value;
+  const btn = document.getElementById("mainBtn");
+  btn.disabled = true;
+  btn.textContent = "Security Scanning...";
 
   try {
     // 1. CREATE CODY CONVERSATION
     const convRes = await fetch("https://getcody.ai/api/v1/conversations", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${CODY_API_KEY}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name: `Security_Check_${Date.now()}` })
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${CODY_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ 
+        name: `ModCheck_${Date.now()}`,
+        bot_id: CODY_BOT_ID 
+      })
     });
+
+    if (!convRes.ok) throw new Error("Cody API Connection Error");
     const convData = await convRes.json();
     const conversation_id = convData.data.id;
 
     // 2. SEND MODERATION MESSAGE
     const codyRes = await fetch("https://getcody.ai/api/v1/messages", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${CODY_API_KEY}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            content: `You are a strict content moderator. Analyze this post for violations:
-            Caption: "${caption}"
-            If it violates policies (nudity, sexual content, gore, drugs), reply ONLY with 'BLOCK'. 
-            If it is safe, reply ONLY with 'PASS'.`,
-            conversation_id: conversation_id
-        })
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${CODY_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        content: `You are a strict policy enforcer. Analyze this caption for policy violations (sexual content, hate, violence, drugs). 
+        Caption: "${caption}"
+        If it violates any policy, respond ONLY with 'BLOCK'. 
+        If it is safe, respond ONLY with 'PASS'.`,
+        conversation_id: conversation_id
+      })
     });
 
     const codyData = await codyRes.json();
     const verdict = (codyData.data?.content || "").toUpperCase();
 
+    // 3. HANDLE BANNED CONTENT
     if (verdict.includes("BLOCK")) {
-        showToast("Violation Detected. Suspending...");
-        await supabase.from("profiles").update({status:"suspended"}).eq("id", myId);
-        setTimeout(() => location.href = "suspended.html", 2000);
-        return;
+      showToast("Violation Detected! Your account is being suspended.");
+      
+      // Update User Status in Supabase
+      await supabase.from("profiles").update({ status: "suspended" }).eq("id", myId);
+      
+      // Force Redirect
+      setTimeout(() => {
+        window.location.replace("suspended.html");
+      }, 2000);
+      return;
     }
 
-    // 3. PROCEED TO UPLOAD
+    // 4. PROCEED TO UPLOAD (ONLY IF PASS)
     btn.textContent = "Uploading Photos...";
     const urls = [];
-    for(const file of files) {
-      const path=`${myId}/${Date.now()}-${Math.random()}.jpg`;
-      await supabase.storage.from("photos").upload(path, file);
-      urls.push(supabase.storage.from("photos").getPublicUrl(path).data.publicUrl);
+    for (const file of files) {
+      const path = `${myId}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      const { data: uploadData, error: uploadError } = await supabase.storage.from("photos").upload(path, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: publicUrlData } = supabase.storage.from("photos").getPublicUrl(path);
+      urls.push(publicUrlData.publicUrl);
     }
 
-    await supabase.from("posts").insert({
+    // 5. INSERT RECORD INTO SUPABASE
+    const { error: insertError } = await supabase.from("posts").insert({
       user_id: myId,
       media_type: "photo",
       media_urls: urls,
-      caption,
+      caption: caption,
       likes: 0
     });
 
-    location.href = "profile.html";
+    if (insertError) throw insertError;
+
+    window.location.href = "profile.html";
 
   } catch (e) {
-    console.error(e);
-    showToast("Upload failed.");
+    console.error("Critical Error:", e);
+    showToast("System error: " + e.message);
     btn.disabled = false;
     btn.textContent = "Share Post";
   }
 };
 </script>
 </body>
-</html>
+  </html>
