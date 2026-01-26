@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
 <style>
 :root { --primary:#ff2d55; --bg:#fff; --border:#efefef; }
-body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); -webkit-touch-callout:none; user-select:none; }
+body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); }
 .header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:#fff; z-index:100; }
 .header b { font-size:17px; }
 .header span { color:#666; cursor:pointer; }
@@ -18,20 +18,19 @@ body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); -we
 .preview-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:20px; }
 .preview-grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid #eee; }
 .caption { width:100%; border:1px solid var(--border); border-radius:12px; padding:15px; margin-top:20px; font-size:15px; outline:none; resize:none; background:#fafafa; }
-.post-btn { width:100%; margin-top:25px; padding:16px; border:none; border-radius:12px; background:var(--primary); color:#fff; font-weight:700; font-size:16px; transition: 0.3s; }
-.post-btn:disabled { background: #ccc; cursor: not-allowed; }
-.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:12px 24px; border-radius:30px; display:none; z-index:10000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-#addBtn { background: #e0e0e0; color: #333;}
+.post-btn { width:100%; margin-top:25px; padding:16px; border:none; border-radius:12px; background:var(--primary); color:#fff; font-weight:700; font-size:16px; }
+.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:12px 24px; border-radius:30px; display:none; z-index:1000; }
+#addBtn { background: #e0e0e0; /* grey */color: #333;}
 </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
 <div id="toast" class="toast"></div>
 
 <div class="header">
   <span onclick="history.back()">Cancel</span>
   <b>New Photo Post</b>
-  <span id="headerPostBtn" class="post-btn-text" onclick="upload()">Post</span>
+  <span class="post-btn-text" onclick="upload()">Post</span>
 </div>
 
 <div class="container">
@@ -43,8 +42,13 @@ body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); -we
   </label>
 
   <input type="file" id="morePhotos" accept="image/*" hidden>
+
   <div class="preview-grid" id="previewGrid"></div>
-  <button id="addBtn" class="post-btn" style="display:none" onclick="morePhotos.click()">Add Photos</button>
+
+  <button id="addBtn" class="post-btn" style="display:none" onclick="morePhotos.click()">
+    Add Photos
+  </button>
+
   <textarea id="caption" class="caption" rows="4" placeholder="Write a caption..."></textarea>
   <button id="mainBtn" class="post-btn" onclick="upload()">Share Post</button>
 </div>
@@ -58,10 +62,7 @@ const supabase = createClient(
 );
 
 const myId = localStorage.getItem("user_id");
-
-// --- CODY AI CONFIGURATION ---
-const CODY_API_KEY = "tm-Vzbm0YG8p8nVLiSfIIwh2yfynYPsJXTH753Lqzrme97e6bf8"; // PASTE YOUR KEY HERE
-const CODY_BOT_ID = "9dc4e5ed-f0ab-4528-92a9-8ce09980c572";
+const GEMINI_KEY = "AIzaSyDdlC8_lta2_8hE3O8Q1VvNSmjBDfycbdY";
 
 const input = document.getElementById("photos");
 const moreInput = document.getElementById("morePhotos");
@@ -69,21 +70,29 @@ const grid = document.getElementById("previewGrid");
 const addBtn = document.getElementById("addBtn");
 const files = [];
 
+/* TOAST */
 function showToast(msg){
   const t=document.getElementById("toast");
   t.textContent=msg;
   t.style.display="block";
-  setTimeout(()=>t.style.display="none",4000);
+  setTimeout(()=>t.style.display="none",3000);
 }
 
+/* ADD FILE */
 function addFile(file){
-  if(files.length>=10){ showToast("Maximum of 10 photos allowed"); return; }
+  if(files.length>=10){
+    showToast("Maximum of 10 photos allowed");
+    return;
+  }
   files.push(file);
+
   const wrap=document.createElement("div");
   wrap.style.position="relative";
+
   const img=document.createElement("img");
   img.src=URL.createObjectURL(file);
   wrap.appendChild(img);
+
   const x=document.createElement("span");
   x.innerHTML="&times;";
   Object.assign(x.style,{
@@ -93,16 +102,19 @@ function addFile(file){
     alignItems:"center",justifyContent:"center",
     fontSize:"14px",cursor:"pointer"
   });
+
   x.onclick=()=>{
     files.splice(files.indexOf(file),1);
     grid.removeChild(wrap);
     if(!files.length) addBtn.style.display="none";
   };
+
   wrap.appendChild(x);
   grid.appendChild(wrap);
   addBtn.style.display="block";
 }
 
+/* INITIAL PICK */
 input.onchange=e=>{
   const f=e.target.files[0];
   if(!f) return;
@@ -111,106 +123,76 @@ input.onchange=e=>{
   addFile(f);
 };
 
+/* ADD MORE */
 moreInput.onchange=e=>{
   const f=e.target.files[0];
   if(!f) return;
   addFile(f);
 };
 
-/* UPLOAD + CODY AI SECURITY CHECK */
-window.upload = async () => {
-  if (!files.length) return showToast("Please select at least one photo");
-  if (!myId) return showToast("Error: User ID not found");
+/* UPLOAD + GEMINI AI SCAN */
+window.upload=async()=>{
+  if(!files.length) return showToast("Select photo");
 
-  const caption = document.getElementById("caption").value;
-  const btn = document.getElementById("mainBtn");
-  btn.disabled = true;
-  btn.textContent = "Security Scanning...";
+  const caption=document.getElementById("caption").value;
+  const btn=document.getElementById("mainBtn");
+  btn.disabled=true;
+  btn.textContent="Please wait...";
 
-  try {
-    // 1. CREATE CODY CONVERSATION
-    const convRes = await fetch("https://getcody.ai/api/v1/conversations", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${CODY_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ 
-        name: `ModCheck_${Date.now()}`,
-        bot_id: CODY_BOT_ID 
-      })
-    });
+  const urls=[];
 
-    if (!convRes.ok) throw new Error("Cody API Connection Error");
-    const convData = await convRes.json();
-    const conversation_id = convData.data.id;
+  try{
+    for(const file of files){
+      const reader=new FileReader();
+      reader.readAsDataURL(file);
+      const base64=await new Promise(r=>reader.onload=()=>r(reader.result.split(",")[1]));
 
-    // 2. SEND MODERATION MESSAGE
-    const codyRes = await fetch("https://getcody.ai/api/v1/messages", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${CODY_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        content: `You are a strict policy enforcer. Analyze this caption for policy violations (sexual content, hate, violence, drugs). 
-        Caption: "${caption}"
-        If it violates any policy, respond ONLY with 'BLOCK'. 
-        If it is safe, respond ONLY with 'PASS'.`,
-        conversation_id: conversation_id
-      })
-    });
+      const res=await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+        {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({
+            contents:[{parts:[
+              {text:`You are a strict content moderator.
+If the image OR caption contains nudity, sexual content, hate, bullying, weapons, drugs, or danger, reply ONLY with BLOCK.
+If it is safe and family-friendly, reply ONLY with PASS.
+Caption: "${caption}"`},
+              {inline_data:{ mime_type:file.type, data:base64 }}
+            ]}]
+          })
+        }
+      );
 
-    const codyData = await codyRes.json();
-    const verdict = (codyData.data?.content || "").toUpperCase();
+      const data=await res.json();
+      if(data.candidates?.[0]?.content?.parts?.[0]?.text.includes("BLOCK")){
+        await supabase.from("profiles").update({status:"suspended"}).eq("id",myId);
+        location.href="suspended.html";
+        return;
+      }
 
-    // 3. HANDLE BANNED CONTENT
-    if (verdict.includes("BLOCK")) {
-      showToast("Violation Detected! Your account is being suspended.");
-      
-      // Update User Status in Supabase
-      await supabase.from("profiles").update({ status: "suspended" }).eq("id", myId);
-      
-      // Force Redirect
-      setTimeout(() => {
-        window.location.replace("suspended.html");
-      }, 2000);
-      return;
+      const path=`${myId}/${Date.now()}-${Math.random()}.jpg`;
+      await supabase.storage.from("photos").upload(path,file);
+      urls.push(supabase.storage.from("photos").getPublicUrl(path).data.publicUrl);
     }
-
-    // 4. PROCEED TO UPLOAD (ONLY IF PASS)
-    btn.textContent = "Uploading Photos...";
-    const urls = [];
-    for (const file of files) {
-      const path = `${myId}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-      const { data: uploadData, error: uploadError } = await supabase.storage.from("photos").upload(path, file);
-      
-      if (uploadError) throw uploadError;
-      
-      const { data: publicUrlData } = supabase.storage.from("photos").getPublicUrl(path);
-      urls.push(publicUrlData.publicUrl);
-    }
-
-    // 5. INSERT RECORD INTO SUPABASE
-    const { error: insertError } = await supabase.from("posts").insert({
-      user_id: myId,
-      media_type: "photo",
-      media_urls: urls,
-      caption: caption,
-      likes: 0
-    });
-
-    if (insertError) throw insertError;
-
-    window.location.href = "profile.html";
-
-  } catch (e) {
-    console.error("Critical Error:", e);
-    showToast("System error: " + e.message);
-    btn.disabled = false;
-    btn.textContent = "Share Post";
+  }catch(e){
+    console.error(e);
+    showToast("Error during upload");
+    btn.disabled=false;
+    btn.textContent="Share Post";
+    return;
   }
+
+  await supabase.from("posts").insert({
+    user_id:myId,
+    media_type:"photo",
+    media_urls:urls,
+    caption,
+    likes:0
+  });
+
+  location.href="profile.html";
 };
 </script>
 </body>
-  </html>
+    </html>
