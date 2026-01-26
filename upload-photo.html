@@ -40,7 +40,6 @@ body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); }
     <div style="font-weight:600">Select Photos</div>
     <div style="font-size:12px;color:#888">Add photos one by one (max 10)</div>
   </label>
-
   <input type="file" id="morePhotos" accept="image/*" hidden>
   <div class="preview-grid" id="previewGrid"></div>
   <button id="addBtn" class="post-btn" style="display:none" onclick="morePhotos.click()">Add Photos</button>
@@ -57,9 +56,7 @@ const supabase = createClient(
 );
 
 const myId = localStorage.getItem("user_id");
-
-// --- CODY AI CONFIGURATION ---
-const CODY_API_KEY = "tm-Vzbm0YG8p8nVLiSfIIwh2yfynYPsJXTH753Lqzrme97e6bf8"; // Paste your Cody API Key here
+const CODY_API_KEY = "tm-Vzbm0YG8p8nVLiSfIIwh2yfynYPsJXTH753Lqzrme97e6bf8"; // Replace with your Cody key
 
 const input = document.getElementById("photos");
 const moreInput = document.getElementById("morePhotos");
@@ -126,7 +123,19 @@ window.upload=async()=>{
   btn.textContent="Security Scanning...";
 
   try {
-    // 1. CODY AI SECURITY SCAN (TEXT/CONTENT BASED)
+    // 1. CREATE CODY CONVERSATION
+    const convRes = await fetch("https://getcody.ai/api/v1/conversations", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${CODY_API_KEY}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name: `Security_Check_${Date.now()}` })
+    });
+    const convData = await convRes.json();
+    const conversation_id = convData.data.id;
+
+    // 2. SEND MODERATION MESSAGE
     const codyRes = await fetch("https://getcody.ai/api/v1/messages", {
         method: "POST",
         headers: {
@@ -134,10 +143,11 @@ window.upload=async()=>{
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            content: `MODERATOR TASK: Analyze this post for violations (nudity, sexual content, hate speech, or gore). 
-            Caption: "${caption}". 
-            If it violates policies, reply ONLY with 'BLOCK'. 
-            If it is safe, reply ONLY with 'PASS'.`
+            content: `You are a strict content moderator. Analyze this post for violations:
+            Caption: "${caption}"
+            If it violates policies (nudity, sexual content, gore, drugs), reply ONLY with 'BLOCK'. 
+            If it is safe, reply ONLY with 'PASS'.`,
+            conversation_id: conversation_id
         })
     });
 
@@ -145,26 +155,21 @@ window.upload=async()=>{
     const verdict = (codyData.data?.content || "").toUpperCase();
 
     if (verdict.includes("BLOCK")) {
-        showToast("Content Violated Policy. Suspending...");
+        showToast("Violation Detected. Suspending...");
         await supabase.from("profiles").update({status:"suspended"}).eq("id", myId);
         setTimeout(() => location.href = "suspended.html", 2000);
         return;
     }
 
-    // 2. PROCEED TO IMAGE UPLOAD
+    // 3. PROCEED TO UPLOAD
     btn.textContent = "Uploading Photos...";
     const urls = [];
-
     for(const file of files) {
       const path=`${myId}/${Date.now()}-${Math.random()}.jpg`;
-      const { data: storageData, error: storageError } = await supabase.storage.from("photos").upload(path, file);
-      
-      if(storageError) throw storageError;
-      
+      await supabase.storage.from("photos").upload(path, file);
       urls.push(supabase.storage.from("photos").getPublicUrl(path).data.publicUrl);
     }
 
-    // 3. INSERT INTO DATABASE
     await supabase.from("posts").insert({
       user_id: myId,
       media_type: "photo",
@@ -177,7 +182,7 @@ window.upload=async()=>{
 
   } catch (e) {
     console.error(e);
-    showToast("Upload failed. Try again.");
+    showToast("Upload failed.");
     btn.disabled = false;
     btn.textContent = "Share Post";
   }
