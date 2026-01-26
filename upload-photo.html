@@ -19,8 +19,8 @@ body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); }
 .preview-grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; border:1px solid #eee; }
 .caption { width:100%; border:1px solid var(--border); border-radius:12px; padding:15px; margin-top:20px; font-size:15px; outline:none; resize:none; background:#fafafa; }
 .post-btn { width:100%; margin-top:25px; padding:16px; border:none; border-radius:12px; background:var(--primary); color:#fff; font-weight:700; font-size:16px; }
-.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:12px 24px; border-radius:30px; display:none; z-index:1000; }
-#addBtn { background: #e0e0e0; /* grey */color: #333;}
+.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:12px 24px; border-radius:30px; display:none; z-index:10000; }
+#addBtn { background: #e0e0e0; color: #333;}
 </style>
 </head>
 <body>
@@ -42,13 +42,8 @@ body { margin:0; font-family:-apple-system,sans-serif; background:var(--bg); }
   </label>
 
   <input type="file" id="morePhotos" accept="image/*" hidden>
-
   <div class="preview-grid" id="previewGrid"></div>
-
-  <button id="addBtn" class="post-btn" style="display:none" onclick="morePhotos.click()">
-    Add Photos
-  </button>
-
+  <button id="addBtn" class="post-btn" style="display:none" onclick="morePhotos.click()">Add Photos</button>
   <textarea id="caption" class="caption" rows="4" placeholder="Write a caption..."></textarea>
   <button id="mainBtn" class="post-btn" onclick="upload()">Share Post</button>
 </div>
@@ -62,7 +57,9 @@ const supabase = createClient(
 );
 
 const myId = localStorage.getItem("user_id");
-const GEMINI_KEY = "AIzaSyDdlC8_lta2_8hE3O8Q1VvNSmjBDfycbdY";
+
+// --- CODY AI CONFIGURATION ---
+const CODY_API_KEY = "tm-Vzbm0YG8p8nVLiSfIIwh2yfynYPsJXTH753Lqzrme97e6bf8"; // Paste your Cody API Key here
 
 const input = document.getElementById("photos");
 const moreInput = document.getElementById("morePhotos");
@@ -70,7 +67,6 @@ const grid = document.getElementById("previewGrid");
 const addBtn = document.getElementById("addBtn");
 const files = [];
 
-/* TOAST */
 function showToast(msg){
   const t=document.getElementById("toast");
   t.textContent=msg;
@@ -78,21 +74,14 @@ function showToast(msg){
   setTimeout(()=>t.style.display="none",3000);
 }
 
-/* ADD FILE */
 function addFile(file){
-  if(files.length>=10){
-    showToast("Maximum of 10 photos allowed");
-    return;
-  }
+  if(files.length>=10){ showToast("Maximum of 10 photos allowed"); return; }
   files.push(file);
-
   const wrap=document.createElement("div");
   wrap.style.position="relative";
-
   const img=document.createElement("img");
   img.src=URL.createObjectURL(file);
   wrap.appendChild(img);
-
   const x=document.createElement("span");
   x.innerHTML="&times;";
   Object.assign(x.style,{
@@ -102,19 +91,16 @@ function addFile(file){
     alignItems:"center",justifyContent:"center",
     fontSize:"14px",cursor:"pointer"
   });
-
   x.onclick=()=>{
     files.splice(files.indexOf(file),1);
     grid.removeChild(wrap);
     if(!files.length) addBtn.style.display="none";
   };
-
   wrap.appendChild(x);
   grid.appendChild(wrap);
   addBtn.style.display="block";
 }
 
-/* INITIAL PICK */
 input.onchange=e=>{
   const f=e.target.files[0];
   if(!f) return;
@@ -123,75 +109,78 @@ input.onchange=e=>{
   addFile(f);
 };
 
-/* ADD MORE */
 moreInput.onchange=e=>{
   const f=e.target.files[0];
   if(!f) return;
   addFile(f);
 };
 
-/* UPLOAD + GEMINI AI SCAN */
+/* UPLOAD + CODY AI SECURITY CHECK */
 window.upload=async()=>{
   if(!files.length) return showToast("Select photo");
+  if(!myId) return showToast("User not logged in");
 
   const caption=document.getElementById("caption").value;
   const btn=document.getElementById("mainBtn");
   btn.disabled=true;
-  btn.textContent="Please wait...";
+  btn.textContent="Security Scanning...";
 
-  const urls=[];
+  try {
+    // 1. CODY AI SECURITY SCAN (TEXT/CONTENT BASED)
+    const codyRes = await fetch("https://getcody.ai/api/v1/messages", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${CODY_API_KEY}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            content: `MODERATOR TASK: Analyze this post for violations (nudity, sexual content, hate speech, or gore). 
+            Caption: "${caption}". 
+            If it violates policies, reply ONLY with 'BLOCK'. 
+            If it is safe, reply ONLY with 'PASS'.`
+        })
+    });
 
-  try{
-    for(const file of files){
-      const reader=new FileReader();
-      reader.readAsDataURL(file);
-      const base64=await new Promise(r=>reader.onload=()=>r(reader.result.split(",")[1]));
+    const codyData = await codyRes.json();
+    const verdict = (codyData.data?.content || "").toUpperCase();
 
-      const res=await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
-        {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({
-            contents:[{parts:[
-              {text:`You are a strict content moderator.
-If the image OR caption contains nudity, sexual content, hate, bullying, weapons, drugs, or danger, reply ONLY with BLOCK.
-If it is safe and family-friendly, reply ONLY with PASS.
-Caption: "${caption}"`},
-              {inline_data:{ mime_type:file.type, data:base64 }}
-            ]}]
-          })
-        }
-      );
-
-      const data=await res.json();
-      if(data.candidates?.[0]?.content?.parts?.[0]?.text.includes("BLOCK")){
-        await supabase.from("profiles").update({status:"suspended"}).eq("id",myId);
-        location.href="suspended.html";
+    if (verdict.includes("BLOCK")) {
+        showToast("Content Violated Policy. Suspending...");
+        await supabase.from("profiles").update({status:"suspended"}).eq("id", myId);
+        setTimeout(() => location.href = "suspended.html", 2000);
         return;
-      }
+    }
 
+    // 2. PROCEED TO IMAGE UPLOAD
+    btn.textContent = "Uploading Photos...";
+    const urls = [];
+
+    for(const file of files) {
       const path=`${myId}/${Date.now()}-${Math.random()}.jpg`;
-      await supabase.storage.from("photos").upload(path,file);
+      const { data: storageData, error: storageError } = await supabase.storage.from("photos").upload(path, file);
+      
+      if(storageError) throw storageError;
+      
       urls.push(supabase.storage.from("photos").getPublicUrl(path).data.publicUrl);
     }
-  }catch(e){
+
+    // 3. INSERT INTO DATABASE
+    await supabase.from("posts").insert({
+      user_id: myId,
+      media_type: "photo",
+      media_urls: urls,
+      caption,
+      likes: 0
+    });
+
+    location.href = "profile.html";
+
+  } catch (e) {
     console.error(e);
-    showToast("Error during upload");
-    btn.disabled=false;
-    btn.textContent="Share Post";
-    return;
+    showToast("Upload failed. Try again.");
+    btn.disabled = false;
+    btn.textContent = "Share Post";
   }
-
-  await supabase.from("posts").insert({
-    user_id:myId,
-    media_type:"photo",
-    media_urls:urls,
-    caption,
-    likes:0
-  });
-
-  location.href="profile.html";
 };
 </script>
 </body>
