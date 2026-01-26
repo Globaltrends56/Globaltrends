@@ -6,33 +6,35 @@
     <title>Upload Video • Globaltrends</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
     <style>
-        body { margin:0; font-family:-apple-system, sans-serif; background:#fff; -webkit-touch-callout:none; }
+        body { margin:0; font-family:-apple-system, sans-serif; background:#fff; -webkit-touch-callout:none; user-select:none; }
         .nav { display:flex; align-items:center; padding:12px 18px; border-bottom:1px solid #eee; gap:20px; }
         .upload-container { padding: 20px; text-align: center; }
         .preview-box { width: 100%; aspect-ratio: 9/16; background: #000; border-radius: 12px; margin-bottom: 20px; overflow: hidden; display: none; }
-        video { width: 100%; height: 100%; object-fit: cover; -webkit-touch-callout: none; }
-        textarea { width: 100%; border: 1px solid #eee; border-radius: 8px; padding: 12px; box-sizing: border-box; margin-bottom: 20px; resize: none; }
+        video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        textarea { width: 100%; border: 1px solid #eee; border-radius: 8px; padding: 12px; box-sizing: border-box; margin-bottom: 20px; resize: none; font-size: 16px; }
         .btn-post { width: 100%; padding: 15px; background: #000; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         
         /* TOAST SYSTEM */
         #toast { 
             position: fixed; top: -100px; left: 50%; transform: translateX(-50%); 
             background: #ff2d55; color: #fff; padding: 15px 25px; border-radius: 30px; 
-            font-weight: bold; z-index: 20000; transition: top 0.5s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            white-space: nowrap;
+            font-weight: bold; z-index: 20000; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; width: 80%;
         }
-        #toast.show { top: 20px; }
+        #toast.show { top: 30px; }
 
-        #loadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; }
+        #loadingOverlay { position: fixed; inset: 0; background: rgba(255,255,255,0.98); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; }
+        .spinner { font-size: 40px; color: #ff2d55; margin-bottom: 15px; animation: fa-spin 1s infinite linear; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-<div id="toast">Violation Detected! Account Suspended.</div>
+<div id="toast">Content Violation! Account Suspended.</div>
 
 <div id="loadingOverlay">
-    <i class="fa fa-shield-alt fa-spin" style="font-size: 40px; color: #ff2d55; margin-bottom: 15px;"></i>
-    <b id="statusText">Please wait...</b>
+    <i class="fa fa-shield-alt spinner"></i>
+    <b id="statusText" style="font-size: 18px;">Analyzing Content...</b>
+    <p style="color: #666; font-size: 14px; margin-top: 10px;">Gemini AI is scanning for safety.</p>
 </div>
 
 <div class="nav">
@@ -42,11 +44,11 @@
 
 <div class="upload-container">
     <div id="previewBox" class="preview-box">
-        <video id="previewVid" muted loop playsinline oncontextmenu="return false;" controlsList="nodownload"></video>
+        <video id="previewVid" muted loop playsinline controlsList="nodownload"></video>
     </div>
     <input type="file" id="videoInput" accept="video/*" style="display: none;" onchange="handleFile(this)">
     <button onclick="document.getElementById('videoInput').click()" id="selectBtn" style="margin-bottom: 20px; padding: 12px 25px; border-radius: 25px; border: 2px solid #000; background: none; font-weight: bold;">Select Video</button>
-    <textarea id="caption" placeholder="Caption your video..." rows="4"></textarea>
+    <textarea id="caption" placeholder="Write a caption..." rows="4"></textarea>
     <button id="uploadBtn" class="btn-post" onclick="startUpload()" disabled>Post Video</button>
 </div>
 
@@ -54,6 +56,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabase = createClient("https://spnvgymmrlyqtfrbjjsg.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI");
 
+// REPLACE WITH YOUR KEY
 const GEMINI_KEY = "AIzaSyDdlC8_lta2_8hE3O8Q1VvNSmjBDfycbdY"; 
 let selectedFile = null;
 const myId = localStorage.getItem("user_id");
@@ -70,48 +73,94 @@ window.handleFile = (input) => {
         document.getElementById('previewVid').src = URL.createObjectURL(selectedFile);
         document.getElementById('previewBox').style.display = 'block';
         document.getElementById('uploadBtn').disabled = false;
+        document.getElementById('previewVid').play();
     }
 };
 
 async function checkAISecurity(file) {
     try {
-        const base64 = await new Promise(r => {
+        const base64 = await new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onload = () => r(reader.result.split(',')[1]);
+            reader.onload = () => resolve(reader.result.split(',')[1]);
             reader.readAsDataURL(file);
         });
+
         const resp = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [{ parts: [
-                    { text: "Does this video contain nudity, extreme violence, or NSFW content? Answer exactly 'SAFE' or 'BANNED'." },
+                    { text: "Safety Check: If this media contains nudity, pornography, or extreme gore, respond ONLY with 'BANNED'. If clean, respond 'SAFE'." },
                     { inline_data: { mime_type: file.type, data: base64 } }
                 ]}]
             })
         });
+
         const data = await resp.json();
+        
+        if (data.error) {
+            console.error("Gemini Error:", data.error.message);
+            return "ERROR";
+        }
+
         const verdict = data.candidates[0].content.parts[0].text.trim().toUpperCase();
         return verdict.includes("BANNED") ? "BANNED" : "SAFE";
-    } catch (e) { return "SAFE"; }
+
+    } catch (e) {
+        console.error("System Error:", e);
+        return "ERROR";
+    }
 }
 
 window.startUpload = async () => {
-    document.getElementById('loadingOverlay').style.display = 'flex';
+    if (!selectedFile || !myId) return;
+
+    const overlay = document.getElementById('loadingOverlay');
+    const statusText = document.getElementById('statusText');
+    overlay.style.display = 'flex';
+
+    // TRIGGER AI SCAN
     const verdict = await checkAISecurity(selectedFile);
 
     if (verdict === "BANNED") {
-        showToast("Redirecting...");
-        await supabase.from('profiles').update({ status: 'suspended' }).eq('id', myId);
-        setTimeout(() => location.href = 'suspended.html', 3000);
+        // 1. Show Toast immediately
+        showToast("Policy Violation! Redirecting...");
+        statusText.innerText = "ACCOUNT SUSPENDED";
+
+        // 2. Background update to Supabase (don't wait for response to speed up redirect)
+        supabase.from('profiles').update({ status: 'suspended' }).eq('id', myId).then();
+
+        // 3. FORCE REDIRECT after 1.5 seconds
+        setTimeout(() => {
+            window.location.replace('suspended.html');
+        }, 1500);
+        
+        return; // Kill the script here
+    }
+
+    if (verdict === "ERROR") {
+        overlay.style.display = 'none';
+        alert("Security scan failed. Please check your connection or use a smaller file.");
         return;
     }
 
-    const fileName = `${Date.now()}_v.mp4`;
-    await supabase.storage.from('videos').upload(fileName, selectedFile);
+    // PROCEED ONLY IF SAFE
+    statusText.innerText = "Uploading...";
+    const fileName = `${Date.now()}_${myId}_video.mp4`;
+    
+    const { data: upData, error: upError } = await supabase.storage.from('videos').upload(fileName, selectedFile);
+    if (upError) { alert("Upload error"); overlay.style.display = 'none'; return; }
+
     const { data: urlData } = supabase.storage.from('videos').getPublicUrl(fileName);
-    await supabase.from('posts').insert([{ user_id: myId, video_url: urlData.publicUrl, caption: document.getElementById('caption').value, media_type: 'video' }]);
-    location.href = 'profile.html';
+
+    await supabase.from('posts').insert([{
+        user_id: myId,
+        video_url: urlData.publicUrl,
+        caption: document.getElementById('caption').value,
+        media_type: 'video'
+    }]);
+
+    window.location.href = 'profile.html';
 };
 </script>
 </body>
