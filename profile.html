@@ -206,35 +206,40 @@ window.toggleLogoutDropdown = (e) => { e.stopPropagation(); const d = document.g
 window.toggleDelMenu = (e) => { e.stopPropagation(); const m = document.getElementById('delMenu'); m.style.display = (m.style.display === 'block') ? 'none' : 'block'; };
 document.addEventListener('click', () => { if(document.getElementById('logoutDropdown')) document.getElementById('logoutDropdown').style.display = 'none'; if(document.getElementById('delMenu')) document.getElementById('delMenu').style.display = 'none'; });
     
-    async function load() {
-    // A. PRE-LOAD CHECK (The Wall)
-    // We fetch the profile first to see if it's even allowed to be seen
-    const { data: checkData, error: checkError } = await supabase
+async function load() {
+    // 1. HIDDEN BY DEFAULT (Prevents seeing the '0 likes/0 subs' flicker)
+    document.body.style.opacity = "0";
+
+    // 2. FETCH THE TARGET PROFILE DATA FIRST
+    const { data: targetProfile, error } = await supabase
         .from("profiles")
-        .select("status, id, username, avatar_url, verified, bio")
+        .select("*")
         .eq("id", profileId)
         .single();
 
-    // 1. If the profile doesn't exist OR is suspended, SHUT DOWN the page
-    if (!checkData || checkData.status === 'suspended') {
-        document.body.innerHTML = `
-            <div style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
-                <i class="fa fa-ban" style="font-size:50px; color:#ff2d55; margin-bottom:15px;"></i>
-                <h2>Account Unavailable</h2>
-                <p style="color:#666;">This profile has been suspended or is no longer available.</p>
-                <button onclick="location.href='index.html'" style="margin-top:20px; padding:12px 25px; border-radius:30px; border:none; background:#000; color:#fff; font-weight:bold;">Back to Home</button>
-            </div>`;
-        return; // STOP everything here. No more code will run.
-    }
+    // 3. SECURITY CHECK: IS THIS ACCOUNT SUSPENDED?
+    if (!targetProfile || targetProfile.status === 'suspended') {
+        
+        // If the LOGGED-IN user is the one who is suspended, kick them out
+        if (myId === profileId && targetProfile?.status === 'suspended') {
+            window.location.replace("suspended.html");
+            return;
+        }
 
-    // 2. If the user is viewing THEIR OWN profile, check if they are personally banned
-    if (myId === profileId && checkData.status === 'suspended') {
-        window.location.replace("suspended.html");
+        // For everyone else (Anonymous or other users), show "Unavailable"
+        document.body.innerHTML = `
+            <div style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-family:sans-serif;">
+                <i class="fa fa-user-slash" style="font-size:50px; color:#ccc; margin-bottom:20px;"></i>
+                <h2 style="margin:0;">Account Unavailable</h2>
+                <p style="color:#888;">This profile has been suspended or does not exist.</p>
+                <button onclick="location.href='index.html'" style="margin-top:20px; padding:10px 20px; border-radius:20px; border:none; background:#000; color:#fff;">Go Home</button>
+            </div>`;
+        document.body.style.opacity = "1";
         return;
     }
 
-    // B. DATA LOADING (Only happens if the user is NOT suspended)
-    profileData = checkData; // Use the data we already fetched
+    // 4. IF WE GOT HERE, THE PROFILE IS ACTIVE. LOAD EVERYTHING ELSE.
+    profileData = targetProfile;
     
     const [sRes, vRes, fCheck] = await Promise.all([
         supabase.from("follows").select("*", { count:"exact", head:true }).eq("user_id", profileId),
@@ -242,34 +247,44 @@ document.addEventListener('click', () => { if(document.getElementById('logoutDro
         myId ? supabase.from("follows").select("*").eq("user_id", profileId).eq("follower_id", myId).single() : {data: null}
     ]);
 
-    // Now proceed with your existing rendering logic...
+    // 5. RENDER THE UI
     isSubscribed = !!fCheck.data;
     
+    // Set Avatar
     if(profileData.avatar_url) {
         document.getElementById('pAv').src = profileData.avatar_url;
         document.getElementById('pAv').style.display = 'block';
         document.getElementById('defaultUserIcon').style.display = 'none';
     }
 
+    // Set Username & Bio
     document.getElementById('pUn').innerHTML = `@${profileData.username} ${profileData.verified ? '<i class="fa fa-check-circle" style="color:#1DA1F2"></i>' : ''}`;
-    // ... (rest of your existing UI rendering code)
+    if (profileData.bio) { 
+        const bioEl = document.getElementById('pBio'); 
+        bioEl.innerText = profileData.bio; 
+        bioEl.style.display = 'block'; 
     }
-    if (profileData.bio) { const bioEl = document.getElementById('pBio'); bioEl.innerText = profileData.bio; bioEl.style.display = 'block'; }
 
+    // Set Stats
     let subCount = sRes.count || 0;
     document.getElementById('sCount').innerText = subCount;
     document.getElementById('lCount').innerText = vRes.data?.reduce((acc, p) => acc + (parseInt(p.likes) || 0), 0) || 0;
 
+    // Set Grid (INDICATORS ADDED HERE)
     document.getElementById('grid').innerHTML = vRes.data?.map(v => {
         const isPhoto = v.media_type === 'photo';
         const hasMultiple = isPhoto && v.media_urls && v.media_urls.length > 1;
+        
         return `
         <div class="grid-item" onclick='openFS(${JSON.stringify(v)})'>
-            <div class="media-indicator">${hasMultiple ? '<i class="fa fa-clone"></i>' : (isPhoto ? '🖼️' : '🎞️')}</div>
+            <div class="media-indicator">
+                ${hasMultiple ? '<i class="fa fa-clone"></i>' : (isPhoto ? '🖼️' : '🎞️')}
+            </div>
             ${isPhoto ? `<img src="${v.media_urls[0]}">` : `<video src="${v.video_url}#t=0.5" muted playsinline></video>`}
         </div>`;
     }).join("");
 
+    // Set Buttons & Goal Box
     const btnContainer = document.getElementById('btns');
     if (myId === profileId) {
         document.getElementById('logoutMenuContainer').style.display = 'flex';
@@ -279,9 +294,14 @@ document.addEventListener('click', () => { if(document.getElementById('logoutDro
         document.getElementById('gPct').innerText = Math.floor(pct)+'%';
         btnContainer.innerHTML = `<button onclick="location.href='edit-profile.html'" class="btn-sub btn-grey" style="min-width:130px;">Edit Profile</button>`;
         checkNotifications();
-    } else { renderSubButton(); }
-}
+    } else { 
+        renderSubButton(); 
+    }
 
+    // FINALLY, SHOW THE COMPLETED PAGE
+    document.body.style.opacity = "1";
+    }
+    
 function renderSubButton() {
     const btnContainer = document.getElementById('btns');
     btnContainer.innerHTML = isSubscribed 
