@@ -8,12 +8,12 @@
     
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: #161b22;
-            --text-main: #ffffff;
-            --text-dim: #8b949e;
-            --accent-red: #ff4d4d;
+            --bg-color: #ffffff; /* White background */
+            --text-main: #0f1419; /* Near black text */
+            --text-dim: #536471; /* Gray text */
+            --accent-red: #e0245e;
             --btn-blue: #1d9bf0;
+            --dropdown-bg: #f7f9f9;
         }
 
         body, html {
@@ -22,11 +22,12 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            height: 100vh;
+            height: 100%;
+            width: 100%;
+            /* Make it scrollable */
+            overflow-y: auto; 
             display: flex;
-            align-items: center;
             justify-content: center;
-            overflow: hidden;
         }
 
         /* HELP DROPDOWN (Top Right) */
@@ -41,22 +42,26 @@
             color: var(--text-dim);
             cursor: pointer;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 6px;
             user-select: none;
+            background: #f0f3f4;
+            padding: 8px 15px;
+            border-radius: 20px;
         }
 
         .help-menu {
             display: none;
             position: absolute;
-            top: 30px;
+            top: 40px;
             right: 0;
             background: white;
-            border-radius: 10px;
-            width: 160px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            width: 180px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            border: 1px solid #eff3f4;
             overflow: hidden;
             animation: menuFade 0.2s ease-out;
         }
@@ -77,11 +82,11 @@
             font-weight: 500;
         }
 
-        .help-menu a:hover { background: #f5f5f5; }
+        .help-menu a:hover { background: #f7f9f9; }
         
         .help-menu .divider {
             height: 1px;
-            background: #eee;
+            background: #eff3f4;
         }
 
         .help-menu.show { display: block; }
@@ -99,9 +104,9 @@
         }
 
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
+            width: 35px;
+            height: 35px;
+            border: 3px solid #eff3f4;
             border-left-color: var(--btn-blue);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -110,82 +115,82 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* MAIN CONTENT */
+        /* MAIN CONTENT CONTAINER */
         #main-content {
             display: none;
             width: 90%;
             max-width: 420px;
             text-align: center;
-            animation: fadeIn 0.8s ease-out;
+            padding: 80px 0 40px 0; /* Padding for scrolling room */
+            animation: fadeIn 0.6s ease-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
-        .ban-icon { font-size: 70px; margin-bottom: 20px; }
+        .ban-icon { font-size: 60px; margin-bottom: 20px; }
 
-        h1 { font-size: 24px; margin-bottom: 15px; letter-spacing: -0.5px; }
+        h1 { font-size: 26px; font-weight: 800; margin-bottom: 15px; color: #000; }
 
         p.description {
             color: var(--text-dim);
-            line-height: 1.6;
-            font-size: 15px;
-            margin-bottom: 30px;
+            line-height: 1.5;
+            font-size: 16px;
+            margin-bottom: 35px;
         }
 
         .appeal-btn {
             display: block;
-            background-color: var(--btn-blue);
+            background-color: #000; /* Professional Black Button */
             color: white;
             text-decoration: none;
-            padding: 15px;
-            border-radius: 30px;
-            font-weight: bold;
+            padding: 16px;
+            border-radius: 35px;
+            font-weight: 700;
             margin-bottom: 40px;
-            transition: opacity 0.2s;
+            transition: background 0.2s;
         }
 
-        .appeal-btn:hover { opacity: 0.9; }
+        .appeal-btn:hover { background: #272c30; }
 
         /* WHY WE MADE THIS DECISION DROPDOWN */
         .decision-container {
-            border-top: 1px solid #30363d;
-            padding-top: 20px;
+            background-color: var(--dropdown-bg);
+            border-radius: 16px;
+            padding: 15px;
+            margin-top: 20px;
         }
 
         .decision-trigger {
-            color: var(--text-dim);
-            font-size: 14px;
+            color: var(--text-main);
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
+            justify-content: space-between;
         }
 
         .decision-content {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s ease-out;
-            background: #161b22;
-            border-radius: 12px;
-            margin-top: 12px;
         }
 
         .decision-content p {
-            padding: 15px;
+            padding-top: 15px;
             margin: 0;
-            font-size: 13px;
+            font-size: 14px;
             text-align: left;
             color: var(--text-dim);
             line-height: 1.5;
         }
 
-        .decision-container.active .decision-content { max-height: 200px; }
+        .decision-container.active .decision-content { max-height: 250px; }
         .decision-container.active .fa-chevron-down { transform: rotate(180deg); }
-        .fa-chevron-down { transition: transform 0.3s; }
+        .fa-chevron-down { transition: transform 0.3s; color: var(--text-dim); }
     </style>
 </head>
 <body>
@@ -195,7 +200,9 @@
             Help <i class="fa fa-chevron-down"></i>
         </div>
         <div class="help-menu" id="helpMenu">
-            <a href="help-center.html"><i class="fa-regular fa-circle-question"></i> Help Center</a>
+            <a href="https://your-help-center-url.com" target="_blank">
+                <i class="fa-regular fa-circle-question"></i> Help Center
+            </a>
             <div class="divider"></div>
             <a href="#" onclick="logout()" style="color: var(--accent-red) !important;">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
@@ -205,7 +212,7 @@
 
     <div id="loader-screen">
         <div class="spinner"></div>
-        <p>Redirecting...</p>
+        <p style="font-weight: 600; font-size: 14px;">Redirecting...</p>
     </div>
 
     <div id="main-content">
@@ -227,11 +234,12 @@
             <div class="decision-content">
                 <p>
                     Our system detected unusual activity on this account and decided to take action. 
-                    This rule is applied to all users Globally.
+                    This rule is applied to all users Globally to ensure the safety of our community.
                 </p>
             </div>
         </div>
-    </div>
+
+        <div style="height: 50px;"></div> </div>
 
     <script>
         // 1. Handle the Loading Spinner
