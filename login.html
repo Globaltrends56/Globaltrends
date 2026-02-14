@@ -142,6 +142,7 @@ showToast("Signup successful! Check email to confirm.");
       return;
     }
 
+    // 1. Authenticate with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -152,32 +153,30 @@ showToast("Signup successful! Check email to confirm.");
     } else {
       const userId = data.user.id;
 
-      // --- START SUSPENSION CHECK ---
-      // We check the database BEFORE saving the ID or redirecting
-      const { data: profile, error: pError } = await supabase
+      // 2. IMMEDIATE SECURITY CHECK
+      // We check the status BEFORE doing anything else
+      const { data: profile } = await supabase
         .from('profiles')
         .select('status')
         .eq('id', userId)
         .single();
 
       if (profile && profile.status === 'suspended') {
-        // If suspended, sign them back out and send to suspended page
+        // KICK THEM OUT IMMEDIATELY
         await supabase.auth.signOut();
         localStorage.clear();
-        location.href = "suspended.html";
+        window.location.replace("suspended.html"); // Use .replace so they can't click 'Back'
         return; 
       }
-      // --- END SUSPENSION CHECK ---
 
-      // If they are NOT suspended, proceed normally
+      // 3. IF ACTIVE: Save ID and Redirect
       localStorage.setItem("user_id", userId);
       showToast("Login Successful! Redirecting...");
       
-      setTimeout(() => {
-        location.href = `profile.html?id=${userId}`;
-      }, 1000);
+      // Removed the long timeout to prevent "racing" errors
+      location.href = `profile.html?id=${userId}`;
     }
-  };
+};
 </script>
 
 </body>
