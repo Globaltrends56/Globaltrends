@@ -117,14 +117,19 @@
     if (error) {
       showToast(error.message);
     } else {
-      // Create empty profile so 'Profile Not Found' error is avoided
-      if (data.user) {
-         await supabase.from('profiles').insert([
-           { id: data.user.id, username: email.split('@')[0], bio: '' }
-         ]);
-      }
-      showToast("Signup successful! Check email to confirm.");
-    }
+      // ... inside your signupBtn.onclick else block ...
+if (data.user) {
+   // This ensures new users are marked 'active' immediately
+   await supabase.from('profiles').insert([
+     { 
+       id: data.user.id, 
+       username: email.split('@')[0], 
+       bio: '', 
+       status: 'active' // <--- ADD THIS LINE
+     }
+   ]);
+}
+showToast("Signup successful! Check email to confirm.");
   };
 
   document.getElementById("loginBtn").onclick = async () => {
@@ -145,11 +150,28 @@
       showToast(error.message);
     } else {
       const userId = data.user.id;
+
+      // --- START SUSPENSION CHECK ---
+      // We check the database BEFORE saving the ID or redirecting
+      const { data: profile, error: pError } = await supabase
+        .from('profiles')
+        .select('status')
+        .eq('id', userId)
+        .single();
+
+      if (profile && profile.status === 'suspended') {
+        // If suspended, sign them back out and send to suspended page
+        await supabase.auth.signOut();
+        localStorage.clear();
+        location.href = "suspended.html";
+        return; 
+      }
+      // --- END SUSPENSION CHECK ---
+
+      // If they are NOT suspended, proceed normally
       localStorage.setItem("user_id", userId);
-      
       showToast("Login Successful! Redirecting...");
       
-      // Redirect to Profile with the ID attached
       setTimeout(() => {
         location.href = `profile.html?id=${userId}`;
       }, 1000);
