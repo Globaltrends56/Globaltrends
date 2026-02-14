@@ -29,6 +29,63 @@
             overflow: hidden;
         }
 
+        /* HELP DROPDOWN (Top Right) */
+        .help-dropdown {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+        }
+
+        .help-trigger {
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+        }
+
+        .help-menu {
+            display: none;
+            position: absolute;
+            top: 30px;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            width: 160px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            overflow: hidden;
+            animation: menuFade 0.2s ease-out;
+        }
+
+        @keyframes menuFade {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .help-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            color: #000 !important;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .help-menu a:hover { background: #f5f5f5; }
+        
+        .help-menu .divider {
+            height: 1px;
+            background: #eee;
+        }
+
+        .help-menu.show { display: block; }
+
         /* LOADING PHASE */
         #loader-screen {
             position: fixed;
@@ -51,33 +108,27 @@
             margin-bottom: 15px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* MAIN CONTENT (Hidden initially) */
+        /* MAIN CONTENT */
         #main-content {
             display: none;
             width: 90%;
-            max-width: 400px;
+            max-width: 420px;
             text-align: center;
             animation: fadeIn 0.8s ease-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .ban-icon {
-            font-size: 80px;
-            color: var(--accent-red);
-            margin-bottom: 20px;
-        }
+        .ban-icon { font-size: 70px; margin-bottom: 20px; }
 
-        h1 { font-size: 24px; margin-bottom: 15px; }
+        h1 { font-size: 24px; margin-bottom: 15px; letter-spacing: -0.5px; }
 
-        p {
+        p.description {
             color: var(--text-dim);
             line-height: 1.6;
             font-size: 15px;
@@ -85,28 +136,26 @@
         }
 
         .appeal-btn {
-            display: inline-block;
+            display: block;
             background-color: var(--btn-blue);
             color: white;
             text-decoration: none;
-            padding: 14px 30px;
+            padding: 15px;
             border-radius: 30px;
             font-weight: bold;
-            width: 100%;
-            box-sizing: border-box;
-            transition: transform 0.2s;
+            margin-bottom: 40px;
+            transition: opacity 0.2s;
         }
 
-        .appeal-btn:active { transform: scale(0.98); }
+        .appeal-btn:hover { opacity: 0.9; }
 
-        /* DROPDOWN SECTION */
-        .dropdown-container {
-            margin-top: 40px;
+        /* WHY WE MADE THIS DECISION DROPDOWN */
+        .decision-container {
             border-top: 1px solid #30363d;
             padding-top: 20px;
         }
 
-        .dropdown-trigger {
+        .decision-trigger {
             color: var(--text-dim);
             font-size: 14px;
             cursor: pointer;
@@ -114,47 +163,55 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            user-select: none;
         }
 
-        .dropdown-content {
+        .decision-content {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s ease-out;
             background: #161b22;
             border-radius: 12px;
-            margin-top: 10px;
+            margin-top: 12px;
         }
 
-        .dropdown-content p {
+        .decision-content p {
             padding: 15px;
             margin: 0;
             font-size: 13px;
             text-align: left;
+            color: var(--text-dim);
+            line-height: 1.5;
         }
 
-        .dropdown-container.active .dropdown-content {
-            max-height: 150px;
-        }
-
-        .dropdown-container.active .fa-chevron-down {
-            transform: rotate(180deg);
-        }
-
+        .decision-container.active .decision-content { max-height: 200px; }
+        .decision-container.active .fa-chevron-down { transform: rotate(180deg); }
         .fa-chevron-down { transition: transform 0.3s; }
     </style>
 </head>
 <body>
 
+    <div class="help-dropdown">
+        <div class="help-trigger" onclick="toggleHelpMenu(event)">
+            Help <i class="fa fa-chevron-down"></i>
+        </div>
+        <div class="help-menu" id="helpMenu">
+            <a href="help-center.html"><i class="fa-regular fa-circle-question"></i> Help Center</a>
+            <div class="divider"></div>
+            <a href="#" onclick="logout()" style="color: var(--accent-red) !important;">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+            </a>
+        </div>
+    </div>
+
     <div id="loader-screen">
         <div class="spinner"></div>
-        <p style="color: white;">Redirecting...</p>
+        <p>Redirecting...</p>
     </div>
 
     <div id="main-content">
         <div class="ban-icon">🚫</div>
         <h1>Account Suspended</h1>
-        <p>
+        <p class="description">
             We noticed your account and its activity violated our community standards. 
             If you think we made a mistake, you can submit an appeal or your account will be permanently <b>DELETED</b>.
         </p>
@@ -163,40 +220,49 @@
             Submit an appeal
         </a>
 
-        <div class="dropdown-container" id="decisionDropdown">
-            <div class="dropdown-trigger" onclick="toggleDropdown()">
+        <div class="decision-container" id="decisionBox">
+            <div class="decision-trigger" onclick="toggleDecision()">
                 Why we made this decision <i class="fa fa-chevron-down"></i>
             </div>
-            <div class="dropdown-content">
+            <div class="decision-content">
                 <p>
                     Our system detected unusual activity on this account and decided to take action. 
                     This rule is applied to all users Globally.
                 </p>
             </div>
         </div>
-        
-        <button onclick="logout()" style="margin-top: 30px; background: none; border: none; color: #58a6ff; cursor: pointer; font-size: 14px;">
-            Log out of this account
-        </button>
     </div>
 
     <script>
-        // Simulate a loading delay for "modern" feel
+        // 1. Handle the Loading Spinner
         window.onload = () => {
             setTimeout(() => {
                 document.getElementById('loader-screen').style.display = 'none';
                 document.getElementById('main-content').style.display = 'block';
-            }, 2000); // 2 seconds delay
+            }, 2000); 
         };
 
-        function toggleDropdown() {
-            document.getElementById('decisionDropdown').classList.toggle('active');
+        // 2. Toggle Help Dropdown
+        function toggleHelpMenu(e) {
+            e.stopPropagation();
+            document.getElementById('helpMenu').classList.toggle('show');
         }
 
+        // 3. Toggle Decision Dropdown
+        function toggleDecision() {
+            document.getElementById('decisionBox').classList.toggle('active');
+        }
+
+        // 4. Logout Function
         function logout() {
             localStorage.clear();
             window.location.href = "login.html";
         }
+
+        // Close help menu if clicking outside
+        window.onclick = () => {
+            document.getElementById('helpMenu').classList.remove('show');
+        };
     </script>
 </body>
 </html>
