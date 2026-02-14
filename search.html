@@ -116,10 +116,11 @@ searchInput.addEventListener('input', () => {
 
     debounceTimer = setTimeout(async () => {
         const { data, error } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url, verified, bio')
-            .ilike('username', `%${val}%`)
-            .limit(25);
+    .from('profiles')
+    .select('id, username, avatar_url, verified, bio, status') // Added status
+    .eq('status', 'active') // ONLY SHOW ACTIVE USERS
+    .ilike('username', `%${val}%`)
+    .limit(25);
 
         if (error || !data.length) {
             resultsDiv.innerHTML = '<div class="empty-state"><b>No results found</b>Check the spelling or try searching for someone else.</div>';
