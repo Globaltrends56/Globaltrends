@@ -207,21 +207,25 @@ window.toggleDelMenu = (e) => { e.stopPropagation(); const m = document.getEleme
 document.addEventListener('click', () => { if(document.getElementById('logoutDropdown')) document.getElementById('logoutDropdown').style.display = 'none'; if(document.getElementById('delMenu')) document.getElementById('delMenu').style.display = 'none'; });
     
     async function load() {
-    // 1. THIS KICKS THE LOGGED-IN USER OUT IF THEY ARE BANNED
+    // FORCE-HIDE BODY UNTIL CHECKED (Prevents the "flash" of the profile)
+    document.body.style.opacity = "0";
+
+    // 1. CHECK THE LOGGED-IN USER (The "Security Guard")
     if (myId) {
-        const { data: profileStatus } = await supabase
+        // We fetch the status using a fresh call to be 100% sure
+        const { data: statusCheck } = await supabase
             .from("profiles")
             .select("status")
-            .eq("id", myId)
+            .eq("id", myId.replace(/['"]+/g, ''))
             .single();
 
-        if (profileStatus && profileStatus.status === 'suspended') {
-            window.location.href = "suspended.html";
-            return; 
+        if (statusCheck && statusCheck.status === 'suspended') {
+            window.location.replace("suspended.html"); // .replace prevents "back" button
+            return;
         }
     }
 
-    // 2. FETCH THE DATA (Keep your Promise.all here)
+    // 2. FETCH THE PROFILE DATA
     const [pRes, sRes, vRes, fCheck] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", profileId).single(),
         supabase.from("follows").select("*", { count:"exact", head:true }).eq("user_id", profileId),
@@ -229,13 +233,24 @@ document.addEventListener('click', () => { if(document.getElementById('logoutDro
         myId ? supabase.from("follows").select("*").eq("user_id", profileId).eq("follower_id", myId).single() : {data: null}
     ]);
 
-    // 3. THIS HIDES THE PROFILE FROM OTHER USERS IF THE ACCOUNT IS BANNED
+    // 3. CHECK THE VIEWED PROFILE (The "Wall")
+    // If someone visits a link of a suspended person
     if (!pRes.data || pRes.data.status === 'suspended') {
-        document.body.innerHTML = `<div style="text-align:center; padding:50px; font-weight:bold;">Account not found or unavailable.</div>`;
+        document.body.style.opacity = "1";
+        document.body.innerHTML = `
+            <div style="height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+                <h2 style="font-family:sans-serif;">Account Unavailable</h2>
+                <p style="color:#666;">This profile has been suspended for violating terms.</p>
+                <button onclick="location.href='index.html'" style="padding:10px 20px; border-radius:20px; border:none; background:#000; color:#fff;">Go Home</button>
+            </div>`;
         return;
     }
-    
+
+    // 4. IF EVERYTHING IS OK, SHOW THE PAGE
+    document.body.style.opacity = "1";
     profileData = pRes.data;
+    
+    // ... rest of your code (avatar, username, grid, etc.)
     isSubscribed = !!fCheck.data;
     
     if(profileData.avatar_url) {
