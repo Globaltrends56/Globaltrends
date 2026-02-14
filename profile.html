@@ -205,9 +205,9 @@ window.askDelete = () => showToast("Confirm delete post?", async () => { await s
 window.toggleLogoutDropdown = (e) => { e.stopPropagation(); const d = document.getElementById('logoutDropdown'); d.style.display = (d.style.display === 'flex') ? 'none' : 'flex'; };
 window.toggleDelMenu = (e) => { e.stopPropagation(); const m = document.getElementById('delMenu'); m.style.display = (m.style.display === 'block') ? 'none' : 'block'; };
 document.addEventListener('click', () => { if(document.getElementById('logoutDropdown')) document.getElementById('logoutDropdown').style.display = 'none'; if(document.getElementById('delMenu')) document.getElementById('delMenu').style.display = 'none'; });
-
-async function load() {
-    // --- START SUSPENSION GUARD ---
+    
+    async function load() {
+    // 1. THIS KICKS THE LOGGED-IN USER OUT IF THEY ARE BANNED
     if (myId) {
         const { data: profileStatus } = await supabase
             .from("profiles")
@@ -217,11 +217,11 @@ async function load() {
 
         if (profileStatus && profileStatus.status === 'suspended') {
             window.location.href = "suspended.html";
-            return; // Stop the rest of the code from running
+            return; 
         }
     }
-    // --- END SUSPENSION GUARD ---
 
+    // 2. FETCH THE DATA (Keep your Promise.all here)
     const [pRes, sRes, vRes, fCheck] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", profileId).single(),
         supabase.from("follows").select("*", { count:"exact", head:true }).eq("user_id", profileId),
@@ -229,11 +229,12 @@ async function load() {
         myId ? supabase.from("follows").select("*").eq("user_id", profileId).eq("follower_id", myId).single() : {data: null}
     ]);
 
-    // Added security: If the profile being viewed is suspended, don't show it to others
+    // 3. THIS HIDES THE PROFILE FROM OTHER USERS IF THE ACCOUNT IS BANNED
     if (!pRes.data || pRes.data.status === 'suspended') {
         document.body.innerHTML = `<div style="text-align:center; padding:50px; font-weight:bold;">Account not found or unavailable.</div>`;
         return;
     }
+    
     profileData = pRes.data;
     isSubscribed = !!fCheck.data;
     
