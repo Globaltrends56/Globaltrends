@@ -5,83 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>Globaltrends</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* ... (Keep your previous styles for Header, Tabs, and Layout) ... */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        html, body { margin: 0; padding: 0; background: #000; font-family: sans-serif; overflow: hidden; width: 100%; height: 100%; }
+        html, body { margin: 0; padding: 0; background: #000; font-family: -apple-system, sans-serif; overflow: hidden; width: 100%; height: 100%; }
         
         #tiktok-feed { position: fixed; inset: 0; background: #000; overflow-y: scroll; scroll-snap-type: y mandatory; z-index: 1; scrollbar-width: none; }
         #tiktok-feed::-webkit-scrollbar { display: none; }
 
-        .app-header { position: fixed; top: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 10000; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); pointer-events: none; }
-        .brand-text-logo { font-size: 19px; color: #1DA1F2; font-weight: 900; pointer-events: auto; }
-        .icon-bar { display: flex; align-items: center; gap: 18px; pointer-events: auto; }
-        .top-btn { color: white; font-size: 20px; cursor: pointer; }
-        #chatIcon { width: 32px; height: 32px; background: #0084ff; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        /* FIXED TOP BAR - Everything in one row */
+        .header-container {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            padding: 10px 15px;
+        }
 
-        .nav-tabs-wrapper { position: fixed; top: 65px; left: 0; right: 0; display: flex; justify-content: center; gap: 20px; z-index: 100; pointer-events: auto; }
-        .nav-tab { color: rgba(255,255,255,0.5); font-size: 14px; font-weight: bold; cursor: pointer; position: relative; padding: 5px 0; }
+        .top-row {
+            display: flex; align-items: center; justify-content: space-between;
+            height: 45px; margin-bottom: 10px;
+        }
+
+        .brand-text-logo { font-size: 20px; color: #1DA1F2; font-weight: 900; }
+        
+        .icon-bar { display: flex; align-items: center; gap: 15px; }
+        .top-btn { color: white; font-size: 20px; cursor: pointer; }
+        
+        #chatIcon {
+            width: 34px; height: 34px; background: #0084ff; color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 16px; cursor: pointer;
+        }
+
+        /* NOTIFICATION DROPDOWN FIX */
+        .notification-wrapper { position: relative; }
+        .dropdown {
+            display: none; position: absolute; right: 0; top: 40px;
+            background: #1c1c1e; border-radius: 12px; width: 250px; 
+            border: 1px solid #333; z-index: 99999; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .dropdown.show { display: block; }
+        .no-notif { padding: 20px; text-align: center; color: #888; font-size: 13px; }
+
+        /* TABS ROW - Clean & Centered */
+        .tabs-row {
+            display: flex; justify-content: center; gap: 25px;
+        }
+        .nav-tab { color: rgba(255,255,255,0.5); font-size: 15px; font-weight: bold; cursor: pointer; position: relative; padding-bottom: 5px; }
         .nav-tab.active { color: #fff; }
-        .nav-indicator { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 2px; background: #1DA1F2; transition: 0.3s; }
+        .nav-indicator { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 3px; background: #1DA1F2; transition: 0.3s; }
         .nav-tab.active .nav-indicator { width: 100%; }
 
-        .tiktok-post { height: 100vh; scroll-snap-align: start; position: relative; }
-        .video-wrapper { position: absolute; inset: 0; background: #000; z-index: 1; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        .video-shield { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; }
+        /* FEED OVERLAY - Pushed to absolute bottom */
+        .overlay { 
+            position: absolute; bottom: 100px; left: 15px; right: 80px; 
+            color: #fff; z-index: 20; pointer-events: none; 
+        }
+        .user-info { display: flex; align-items: center; gap: 10px; pointer-events: auto; margin-bottom: 8px; }
+        .avatar { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
+        .username-link { color: #fff; text-decoration: none; font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 4px; }
+        .verify-badge { color: #1DA1F2; font-size: 14px; }
+        .caption { font-size: 14px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
 
         /* HEART POP ANIMATION */
         .heart-pop {
-            position: absolute; color: white; font-size: 80px;
-            opacity: 0; pointer-events: none; z-index: 10;
-            animation: popHeart 0.8s ease-out;
+            position: absolute; color: white; font-size: 90px;
+            opacity: 0; pointer-events: none; z-index: 100;
+            animation: popHeart 0.7s ease-out;
         }
         @keyframes popHeart {
             0% { transform: scale(0); opacity: 0; }
-            20% { transform: scale(1.2); opacity: 0.9; }
-            50% { transform: scale(1); opacity: 0.9; }
-            100% { transform: scale(1.5); opacity: 0; }
+            25% { transform: scale(1.3); opacity: 0.9; }
+            100% { transform: scale(1.6); opacity: 0; }
         }
 
-        .overlay { position: absolute; bottom: 100px; left: 15px; right: 80px; color: #fff; z-index: 20; pointer-events: none; }
-        .avatar { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
-        .username-link { color: #fff; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 4px; pointer-events: auto; }
-        .verify-badge { color: #1DA1F2; font-size: 14px; }
-        
-        .actions { position: absolute; right: 12px; bottom: 110px; color: #fff; display: flex; flex-direction: column; gap: 18px; text-align: center; z-index: 20; }
-        .action-item { cursor: pointer; pointer-events: auto; }
-        .heart-icon { font-size: 32px; }
+        /* SIDE ACTIONS */
+        .actions { position: absolute; right: 12px; bottom: 110px; color: #fff; display: flex; flex-direction: column; gap: 20px; text-align: center; z-index: 20; }
         .heart-icon.liked { color: #ff2d55; }
-        .action-count { font-size: 12px; font-weight: bold; margin-top: 2px; }
+        .action-count { font-size: 13px; font-weight: bold; margin-top: 4px; }
 
-        .toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: #1DA1F2; color: #fff; padding: 10px 20px; border-radius: 20px; transition: 0.5s; z-index: 100000; font-size: 13px; font-weight: bold; }
-        .toast.show { top: 20px; }
+        .video-wrapper { position: absolute; inset: 0; z-index: 1; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .video-shield { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; }
+
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1DA1F2; color: #fff; padding: 10px 20px; border-radius: 20px; transition: 0.5s; z-index: 100000; font-size: 13px; font-weight: bold; opacity: 0; pointer-events: none; }
+        .toast.show { opacity: 1; }
     </style>
 </head>
 <body>
 
-    <header class="app-header">
-        <div class="brand-text-logo">𝗚𝗹𝗼𝗯𝗮𝗹𝘁𝗿𝗲𝗻𝗱𝘀</div>
-        <div class="icon-bar">
-            <i class="fa-solid fa-magnifying-glass top-btn" onclick="showToast('Search coming soon!')"></i>
-            <div id="chatIcon" onclick="checkAuthRedirect('messenger')"><i class="fa-brands fa-facebook-messenger"></i></div>
-            <div class="notification" onclick="toggleDropdown()">
-                <i class="fa-solid fa-bell top-btn"></i>
-                <div class="dropdown" id="notifDropdown">
-                    <div style="padding:12px; font-weight:bold; color:white; border-bottom:1px solid #333;">Notifications</div>
-                    <div id="notifContent"><div style="padding:30px; text-align:center; color:#888;">No notifications yet</div></div>
+    <div class="header-container">
+        <div class="top-row">
+            <div class="brand-text-logo">𝗚𝗹𝗼𝗯𝗮𝗹𝘁𝗿𝗲𝗻𝗱𝘀</div>
+            <div class="icon-bar">
+                <i class="fa-solid fa-magnifying-glass top-btn" onclick="showToast('Search coming soon!')"></i>
+                <div id="chatIcon" onclick="checkAuthRedirect('messenger')"><i class="fa-brands fa-facebook-messenger"></i></div>
+                <div class="notification-wrapper">
+                    <i class="fa-solid fa-bell top-btn" onclick="toggleDropdown()"></i>
+                    <div class="dropdown" id="notifDropdown">
+                        <div style="padding:12px; border-bottom:1px solid #333; font-size:14px; font-weight:bold;">Notifications</div>
+                        <div id="notifContent"><div class="no-notif">No notifications yet</div></div>
+                    </div>
                 </div>
             </div>
         </div>
-    </header>
-
-    <div class="nav-tabs-wrapper">
-        <div class="nav-tab active" id="tab-foryou" onclick="toggleFeed('foryou')">For you <div class="nav-indicator"></div></div>
-        <div class="nav-tab" id="tab-following" onclick="toggleFeed('following')">Following <div class="nav-indicator"></div></div>
-        <div class="nav-tab" id="tab-trending" onclick="toggleFeed('trending')">Trending <div class="nav-indicator"></div></div>
+        <div class="tabs-row">
+            <div class="nav-tab active" id="tab-foryou" onclick="toggleFeed('foryou')">For you <div class="nav-indicator"></div></div>
+            <div class="nav-tab" id="tab-following" onclick="toggleFeed('following')">Following <div class="nav-indicator"></div></div>
+            <div class="nav-tab" id="tab-trending" onclick="toggleFeed('trending')">Trending <div class="nav-indicator"></div></div>
+        </div>
     </div>
 
     <div id="tiktok-feed"></div>
@@ -91,16 +123,49 @@
         const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI";
         const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
+        
         let allPosts = [];
         let currentVideo = null;
 
-        // ... (Keep nFormatter, shuffleArray, and renderNotifications helpers) ...
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.textContent = msg; t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 3000);
+        }
+
+        function toggleDropdown() { document.getElementById('notifDropdown').classList.toggle('show'); }
+
+        function nFormatter(num) {
+            if (!num) return 0;
+            if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num/1000).toFixed(1) + 'k';
+            return num;
+        }
+
+        function shuffleArray(array) {
+            let cur = [...array];
+            for (let i = cur.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cur[i], cur[j]] = [cur[j], cur[i]];
+            }
+            return cur;
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
+                headers: { apikey: SUPABASE_KEY } 
+            });
+            const data = await res.json();
+            allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];
+            renderFeed(shuffleArray(allPosts));
+        });
 
         function renderFeed(posts) {
             const feed = document.getElementById("tiktok-feed");
             feed.innerHTML = "";
             posts.forEach((post) => {
                 const isLiked = localStorage.getItem("liked_" + post.id);
+                const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);
                 const div = document.createElement("div");
                 div.className = "tiktok-post";
                 div.innerHTML = `
@@ -109,18 +174,23 @@
                         <div class="video-shield"></div>
                     </div>
                     <div class="overlay">
-                        <div style="display:flex;align-items:center;gap:10px;pointer-events:auto;">
+                        <div class="user-info">
                             <img class="avatar" src="${post.profiles?.avatar_url || ''}">
                             <a class="username-link" href="profile.html?id=${post.user_id}">
                                 ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
                             </a>
+                            <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer; pointer-events:auto;">${isFollowed ? 'Following' : 'Follow'}</button>
                         </div>
-                        <div style="margin-top:8px;">${post.caption || ""}</div>
+                        <div class="caption">${post.caption || ""}</div>
                     </div>
                     <div class="actions">
-                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
-                            <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart"></i></div>
+                        <div onclick="likePostGlobal('${post.id}', this)" style="cursor:pointer; pointer-events:auto;">
+                            <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>
                             <div class="action-count">${nFormatter(post.likes)}</div>
+                        </div>
+                        <div>
+                            <i class="fa-solid fa-eye" style="font-size:26px;"></i>
+                            <div class="action-count">${nFormatter(post.views)}</div>
                         </div>
                     </div>`;
                 
@@ -128,46 +198,61 @@
                 const video = div.querySelector("video");
                 let lastTap = 0;
 
-                // Tap Logic (Single = Mute, Double = Like)
                 shield.onclick = (e) => {
                     const now = Date.now();
-                    if (now - lastTap < 300) {
-                        // Double Tap
-                        handleDoubleTapLike(post.id, div);
+                    if (now - lastTap < 300) { 
+                        // DOUBLE TAP ANIMATION
+                        const h = document.createElement("i");
+                        h.className = "fa-solid fa-heart heart-pop";
+                        shield.appendChild(h);
+                        setTimeout(() => h.remove(), 700);
+                        if (!localStorage.getItem("liked_" + post.id)) likePostGlobal(post.id, div.querySelector(".actions div"));
                     } else {
-                        // Single Tap (Wait 300ms to be sure it's not a double tap)
-                        setTimeout(() => {
-                            if (Date.now() - now >= 300) {
-                                video.muted = !video.muted;
-                                showToast(video.muted ? "Muted" : "🔊 Sound On");
-                            }
-                        }, 300);
+                        setTimeout(() => { if (Date.now() - now >= 300) { video.muted = !video.muted; showToast(video.muted ? "Muted" : "🔊 Sound On"); } }, 300);
                     }
                     lastTap = now;
                 };
 
                 feed.appendChild(div);
-                // ... (Keep IntersectionObserver logic) ...
+                new IntersectionObserver(entries => {
+                    entries.forEach(e => {
+                        if (e.isIntersecting) { if(currentVideo) currentVideo.pause(); currentVideo = video; video.play().catch(()=>{}); }
+                        else video.pause();
+                    });
+                }, { threshold: 0.6 }).observe(div);
             });
         }
 
-        async function handleDoubleTapLike(postId, postElement) {
-            if (!myId) { showToast("Login to like posts"); return; }
-            
-            // 1. Show Pop Animation
-            const heart = document.createElement("i");
-            heart.className = "fa-solid fa-heart heart-pop";
-            postElement.querySelector(".video-shield").appendChild(heart);
-            setTimeout(() => heart.remove(), 800);
-
-            // 2. Trigger Like Logic if not already liked
-            if (!localStorage.getItem("liked_" + postId)) {
-                const actionBtn = postElement.querySelector(".action-item");
-                likePostGlobal(postId, actionBtn);
-            }
+        async function toggleFeed(type) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${type}`).classList.add('active');
+            if (type === 'following' && !myId) { showToast("Login to see Following"); toggleFeed('foryou'); return; }
+            const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
+            let f = [];
+            if (type === 'trending') f = [...allPosts].sort((a,b) => ((b.likes||0)+(b.views||0)) - ((a.likes||0)+(a.views||0)));
+            else if (type === 'following') f = shuffleArray(allPosts.filter(p => interests.includes(p.user_id)));
+            else f = shuffleArray(allPosts);
+            renderFeed(f);
         }
 
-        // ... (Keep likePostGlobal, toggleFeed, and handleFollow) ...
+        async function handleFollow(uid, btn) {
+            if (!myId) { showToast("Login to follow"); return; }
+            let cur = JSON.parse(localStorage.getItem("my_interests")) || [];
+            if (!cur.includes(uid)) { btn.textContent = "Following"; cur.push(uid); }
+            else { btn.textContent = "Follow"; cur = cur.filter(i => i !== uid); }
+            localStorage.setItem("my_interests", JSON.stringify(cur));
+        }
+
+        async function likePostGlobal(id, el) {
+            if (!myId) { showToast("Login to like"); return; }
+            const heart = el.querySelector(".heart-icon");
+            const countLabel = el.querySelector(".action-count");
+            let likes = parseInt(countLabel.innerText.replace('k','000')) || 0;
+            if (localStorage.getItem("liked_" + id)) { likes--; localStorage.removeItem("liked_" + id); heart.classList.remove("liked"); }
+            else { likes++; localStorage.setItem("liked_" + id, "1"); heart.classList.add("liked"); }
+            countLabel.innerText = nFormatter(likes);
+            fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}`, { method: "PATCH", headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ likes: likes }) });
+        }
     </script>
 </body>
     </html>
