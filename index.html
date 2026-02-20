@@ -1,10 +1,400 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="refresh" content="0; url=login.html">
-  <title>Redirecting...</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Globaltrends</title>
+
+<style>
+/* 1. LAYOUT & FEED */
+body:not(.homepage) #tiktok-feed { display: none; }
+#tiktok-feed {
+  position: fixed; inset: 0; background: #000;
+  overflow-y: scroll; scroll-snap-type: y mandatory; z-index: 1;
+}
+
+/* MAIN NAVIGATION CONTAINER */
+.main-nav-container {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex; flex-direction: column;
+    align-items: center;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* BRANDING LOGO TOP-LEFT */
+.brand-text-logo {
+    position: absolute;
+    top: 15px;
+    left: 18px;
+    font-size: 14px; 
+    color: #1DA1F2;
+    font-weight: bold;
+    font-family: sans-serif;
+    white-space: nowrap;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    z-index: 101;
+}
+
+/* ROW 1: PROFILE ICON + SEARCH + PHOTO CENTERED */
+.action-row-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: auto;
+    gap: 0;
+    pointer-events: auto;
+    margin-top: 50px;
+}
+
+/* PROFILE ICON */
+.standalone-profile {
+    width: 30px; height: 30px;
+    background: rgba(60, 60, 60, 0.7);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.2); 
+    backdrop-filter: blur(10px);
+}
+
+/* Make the search bar taller/fatter and add spacing */
+.search-container {
+    width: 250px;
+    background: rgba(60, 60, 60, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    line-height: 1.2;
+    white-space: normal;
+    text-align: left;
+    Padding: 6px 15px;
+    margin-left: 12px;
+    margin-right: 20px;
+}
+.search-container a {
+    color: #bbb;
+    text-decoration: none;
+    font-size: 13px;
+    display: block;
+}
+
+/* ROW 2: TABS (FOR YOU / FOLLOWING) CENTERED */
+.nav-tabs-wrapper {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    pointer-events: auto;
+    margin-top: 8px;
+}
+
+.nav-tab {
+    position: relative; color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    font-weight: bold; cursor: pointer;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    padding-bottom: 5px;
+}
+.nav-tab.active { color: #ffffff; }
+.nav-indicator {
+    position: absolute; bottom: -4px; left: 50%;
+    transform: translateX(-50%); width: 0; height: 2px;
+    background: #1DA1F2; transition: width 0.3s ease;
+}
+.nav-tab.active .nav-indicator { width: 15px; }
+
+/* 3. FEED ELEMENTS */
+.tiktok-post { height: 100vh; scroll-snap-align: start; position: relative; display: flex; flex-direction: column; }
+.video-wrapper { position: relative; width: 100%; height: 85%; background: #000; overflow: hidden; }
+.tiktok-post video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.video-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }
+.ad-container-bottom { height: 15%; width: 100%; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+/* - - - USER INFO ON FEED - - - */
+.overlay { 
+  position: absolute; 
+  bottom: 110px; 
+  left: 10px; /* Reduced side padding */
+  right: 70px; /* Keep space for side buttons */
+  color: #fff; 
+  z-index: 20; 
+  pointer-events: none; 
+}
+
+.user-row { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; /* Reduced gap from 10px to 6px */
+  pointer-events: auto; 
+  width: 100%; /* Ensure it uses available width */
+}
+
+.avatar { 
+  width: 38px; height: 38px; /* Slightly smaller avatar (was 45px) */
+  border-radius: 50%; 
+  object-fit: cover; 
+  border: 1.5px solid #fff; 
+  flex-shrink: 0; /* Prevents avatar from getting squashed */
+}
+
+.username-container { 
+  display: flex; 
+  align-items: center; 
+  gap: 6px; /* Tighter gap between username and follow button */
+  flex-wrap: nowrap; /* Forces them to stay on one line */
+  overflow: hidden;
+}
+
+.username-link { 
+  color: #fff !important; 
+  text-decoration: none; 
+  font-weight: bold; 
+  font-size: 14px; /* Reduced from 16px */
+  display: flex; 
+  align-items: center; 
+  white-space: nowrap; /* Prevents username from breaking into two lines */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Adds "..." if the username is too long */
+  max-width: 120px; /* Limits username width on small screens */
+}
+
+.verify { 
+  color: #1DA1F2; 
+  margin-left: 3px; 
+  font-size: 12px; /* Reduced from 14px */
+  flex-shrink: 0;
+}
+
+.feed-follow-btn.followed { 
+  background: rgba(255, 255, 255, 0.2); /* Transparent white */
+  color: #fff; 
+  backdrop-filter: blur(8px); /* The "Blur" effect */
+  -webkit-backdrop-filter: blur(8px); /* Safari support */
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Soft border to define the shape */
+}
+
+.feed-follow-btn { 
+  background: #1DA1F2; 
+  color: #fff; 
+  border: none; 
+  padding: 3px 8px; /* Tighter padding */
+  border-radius: 4px; 
+  font-size: 11px; /* Reduced from 12px */
+  font-weight: bold; 
+  cursor: pointer; 
+  flex-shrink: 0; /* Crucial: Prevents the button from shrinking to 0 width */
+}
+.actions { position: absolute; right: 14px; bottom: 130px; color: #fff; display: flex; flex-direction: column; gap: 20px; text-align: center; z-index: 20; }
+.heart { font-size: 34px; cursor: pointer; }
+.heart.liked { color: #ff2d55; }
+.toast { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 8px 20px; border-radius: 20px; transition: 0.4s; z-index: 9999; }
+.toast.show { top: 20px; }
+.caption { margin-top: 6px; line-height: 1.2; }
+.action-count { font-size: 14px; margin-top: 4px; } /* make views/likes bigger */
+.view-icon { font-size: 24px; }
+</style>
+
 </head>
 <body>
-  <p>if you're not redirected automatically,<a href="login.html">click here</a>.</p>
+
+<div class="main-nav-container" id="brand-logo">
+   <div class="action-row-container">
+       <div class="brand-text-logo">𝗚𝗹𝗼𝗯𝗮𝗹𝘁𝗿𝗲𝗻𝗱𝘀</div>
+       <a href="#" id="search-profile-link" class="standalone-profile">👤</a>
+       <div class="search-container">
+           <a href="https://globaltrends.vercel.app/upload.html">What's on your mind?</a>
+       </div>
+       
+  </div>
+
+   <div class="nav-tabs-wrapper">
+       <div class="nav-tab active" id="tab-foryou" onclick="toggleFeed('foryou')">
+          For you 
+          <div class="nav-indicator"></div>
+       </div>
+       <div class="nav-tab" id="tab-following" onclick="toggleFeed('following')">
+          Following 
+          <div class="nav-indicator"></div>
+       </div>
+   </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="tiktok-feed"></div>
+
+<script>
+const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI";
+const myId = localStorage.getItem("user_id");
+let currentVideo = null;
+let allPosts = [];
+
+function nFormatter(num) {
+    if (!num) return 0;
+    if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num/1000).toFixed(1) + 'k';
+    return num;
+}
+
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+function injectAdsterra(containerId) {
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const iframe = document.createElement('iframe');
+    iframe.style.width = "468px"; iframe.style.height = "60px";
+    iframe.style.border = "none";
+    container.appendChild(iframe);
+    const adCode = `<body style="margin:0;background:black;display:flex;justify-content:center;"><script type="text/javascript">atOptions = {'key':'4e3c97da28fabf2cafd3af0705964d94','format':'iframe','height':60,'width':468,'params':{}};\x3c/script><script type="text/javascript" src="https://www.highperformanceformat.com/4e3c97da28fabf2cafd3af0705964d94/invoke.js">\x3c/script></body>`;
+    iframe.contentWindow.document.open(); iframe.contentWindow.document.write(adCode); iframe.contentWindow.document.close();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    if (location.pathname !== "/" && location.pathname !== "/index.html") {
+        document.getElementById("brand-logo").style.display = "none";
+    } else { document.body.classList.add("homepage"); }
+
+    const pLink = document.getElementById("search-profile-link");
+    if (myId) { pLink.href = `https://globaltrends.vercel.app/profile.html?id=${myId.replace(/['"]+/g, '')}`; }
+    else { pLink.onclick = (e) => { e.preventDefault(); showToast("Login to view profile"); }; }
+
+    // We added "!inner" and "status=eq.active" to the URL below
+const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
+    headers: { apikey: SUPABASE_KEY } 
+});
+
+const data = await res.json();
+allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];
+renderFeed(shuffleArray(allPosts)); // only keep posts with videos
+    renderFeed(shuffleArray(allPosts));
+});
+
+async function toggleFeed(type) {
+    document.getElementById('tab-foryou').classList.toggle('active', type === 'foryou');
+    document.getElementById('tab-following').classList.toggle('active', type === 'following');
+
+    const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
+    const followingPosts = allPosts.filter(p => interests.includes(p.user_id));
+    const forYouPosts = allPosts.filter(p => !interests.includes(p.user_id));
+
+    let combined = type === 'foryou' 
+        ? shuffleArray([...followingPosts, ...forYouPosts])
+        : shuffleArray(followingPosts);
+
+    renderFeed(combined);
+}
+
+// Fisher-Yates shuffle
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function renderFeed(posts) {
+    const feed = document.getElementById("tiktok-feed");
+    feed.innerHTML = "";
+    const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
+
+    posts.forEach((post, idx) => {
+        const isLiked = localStorage.getItem("liked_" + post.id);
+        const isFollowed = interests.includes(post.user_id);
+        const div = document.createElement("div");
+        div.className = "tiktok-post";
+        const adId = `ad-container-${idx}`;
+
+        div.innerHTML = `
+            <div class="video-wrapper">
+                <video muted loop playsinline src="${post.video_url}"></video>
+                <div class="video-shield"></div>
+            </div>
+            <div class="ad-container-bottom" id="${adId}"></div>
+            <div class="overlay">
+                <div class="user-row">
+                    <img class="avatar" src="${post.profiles?.avatar_url || 'https://via.placeholder.com/100'}">
+                    <div class="username-container">
+                        <a class="username-link" href="https://globaltrends.vercel.app/profile.html?id=${post.user_id}">
+                            ${post.profiles?.username || "user"}
+                            ${post.profiles?.verified ? '<i class="fa fa-check-circle verify"></i>' : ''}
+                        </a>
+                        <button class="feed-follow-btn ${isFollowed ? 'followed' : ''}" onclick="event.stopPropagation(); handleFollow('${post.user_id}', this)">
+                            ${isFollowed ? 'Following' : 'Follow'}
+                        </button>
+                    </div>
+                </div>
+                <div class="caption">${post.caption || ""}</div>
+            </div>
+            <div class="actions">
+                <div onclick="likePostGlobal('${post.id}', this)">
+                    <div class="heart ${isLiked ? 'liked' : ''}">❤</div>
+                    <div class="action-count">${nFormatter(post.likes)}</div>
+                </div>
+                <div>
+                    <div class="view-icon">👁️‍🗨️</div>
+                    <div class="action-count">${nFormatter(post.views)}</div>
+                </div>
+            </div>`;
+        feed.appendChild(div);
+
+        // Inject ads every 3rd + 5th video
+        if (idx === 2 || (idx > 2 && (idx - 2) % 5 === 0)) injectAdsterra(adId);
+
+        const video = div.querySelector("video");
+        const shield = div.querySelector(".video-shield");
+        let lastTap = 0;
+        shield.onclick = () => {
+            const now = Date.now();
+            if (now - lastTap < 300) likePostGlobal(post.id, div.querySelector(".heart").parentElement);
+            else { video.muted = !video.muted; showToast(video.muted ? "Muted" : "🔊 Sound On"); }
+            lastTap = now;
+        };
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    if (currentVideo && currentVideo !== video) currentVideo.pause();
+                    currentVideo = video; video.play().catch(()=>{});
+                } else { video.pause(); }
+            });
+        }, { threshold: 0.6 });
+        observer.observe(div);
+    });
+}
+
+async function handleFollow(uid, btn) {
+    if(!myId) { showToast("Login to follow"); return; }
+    let cur = JSON.parse(localStorage.getItem("my_interests")) || [];
+    if (!cur.includes(uid)) {
+        btn.textContent = "Following"; btn.classList.add("followed");
+        cur.push(uid);
+    } else {
+        btn.textContent = "Follow"; btn.classList.remove("followed");
+        cur = cur.filter(i => i !== uid);
+    }
+    localStorage.setItem("my_interests", JSON.stringify(cur));
+}
+
+async function likePostGlobal(id, el) {
+    if (!myId) { showToast("Login to like"); return; }
+    const heart = el.querySelector(".heart");
+    const countLabel = el.querySelector(".action-count");
+    let likes = parseInt(countLabel.innerText.replace('k','000')) || 0;
+    if (localStorage.getItem("liked_" + id)) {
+        likes--; localStorage.removeItem("liked_" + id); heart.classList.remove("liked");
+    } else {
+        likes++; localStorage.setItem("liked_" + id, "1"); heart.classList.add("liked");
+    }
+    countLabel.innerText = nFormatter(likes);
+    await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}`, { method: "PATCH", headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ likes: likes }) });
+}
+</script>
 </body>
 </html>
