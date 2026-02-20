@@ -11,7 +11,7 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         html, body { background: #000; font-family: -apple-system, sans-serif; overflow: hidden; width: 100%; height: 100%; color: #fff; }
         
-        /* THE FEED CONTAINER */
+        /* FEED CONTAINER */
         #tiktok-feed { 
             position: absolute; inset: 0; 
             overflow-y: scroll; scroll-snap-type: y mandatory; 
@@ -19,85 +19,91 @@
         }
         #tiktok-feed::-webkit-scrollbar { display: none; }
 
-        /* HEADER AREA (Clean Row) */
+        /* TOP NAVIGATION */
         .header-container {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 2000;
             background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
             padding: 10px 15px 20px;
         }
         .top-row { display: flex; align-items: center; justify-content: space-between; height: 40px; margin-bottom: 12px; }
         .brand-text-logo { font-size: 20px; color: #1DA1F2; font-weight: 900; }
         .icon-bar { display: flex; align-items: center; gap: 15px; }
-        .top-btn { color: white; font-size: 20px; cursor: pointer; }
         
         #chatIcon {
             width: 32px; height: 32px; background: #0084ff; color: white;
             border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px;
         }
 
-        /* TABS */
         .tabs-row { display: flex; justify-content: center; gap: 20px; }
         .nav-tab { color: rgba(255,255,255,0.5); font-size: 15px; font-weight: bold; cursor: pointer; position: relative; padding: 5px 0; }
         .nav-tab.active { color: #fff; }
         .nav-indicator { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 3px; background: #1DA1F2; transition: 0.3s; }
         .nav-tab.active .nav-indicator { width: 100%; }
 
-        /* POST STRUCTURE (The Fix) */
+        /* POST ELEMENTS */
         .tiktok-post { 
             position: relative; height: 100vh; width: 100%; 
-            scroll-snap-align: start; background: #000; overflow: hidden; 
+            scroll-snap-align: start; background: #000; 
         }
-        .video-wrapper { position: absolute; inset: 0; z-index: 2; }
+        
+        /* Video stays in the back */
+        .video-wrapper { position: absolute; inset: 0; z-index: 1; }
         video { width: 100%; height: 100%; object-fit: cover; }
         
-        /* CLICK LAYER (Mute & Double Tap) */
-        .video-shield { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; }
+        /* Interactive layer on top */
+        .ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
 
-        /* OVERLAY (User Info pushed down) */
+        .video-shield { 
+            position: absolute; inset: 0; z-index: 5; 
+            pointer-events: auto; /* This captures taps */
+        }
+
+        /* OVERLAY (User Info) */
         .overlay { 
             position: absolute; bottom: 100px; left: 15px; right: 80px; 
-            z-index: 10; pointer-events: none; 
+            pointer-events: none; 
         }
         .user-info { display: flex; align-items: center; gap: 10px; pointer-events: auto; margin-bottom: 8px; }
         .avatar { width: 45px; height: 45px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
         .username-link { color: #fff; text-decoration: none; font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 4px; }
         .verify-badge { color: #1DA1F2; font-size: 14px; }
-        .caption { font-size: 14px; text-shadow: 1px 1px 3px #000; max-width: 90%; }
+        .caption { font-size: 14px; text-shadow: 1px 1px 3px #000; pointer-events: auto; }
 
         /* SIDE ACTIONS */
         .actions { 
             position: absolute; right: 12px; bottom: 110px; 
             display: flex; flex-direction: column; gap: 20px; 
-            text-align: center; z-index: 10; 
+            text-align: center; pointer-events: auto;
         }
-        .action-item { cursor: pointer; pointer-events: auto; }
+        .action-item { cursor: pointer; }
         .heart-icon.liked { color: #ff2d55; }
         .action-count { font-size: 13px; font-weight: bold; margin-top: 4px; text-shadow: 1px 1px 2px #000; }
 
-        /* ANIMATIONS */
+        /* HEART POP */
         .heart-pop {
             position: absolute; color: white; font-size: 90px;
             opacity: 0; pointer-events: none; z-index: 100;
+            left: 50%; top: 50%; transform: translate(-50%, -50%);
             animation: popHeart 0.6s ease-out;
         }
         @keyframes popHeart {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.4); opacity: 1; }
-            100% { transform: scale(1.6); opacity: 0; }
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
         }
 
         .dropdown {
             display: none; position: absolute; right: 0; top: 40px;
             background: #1c1c1e; border-radius: 12px; width: 250px; 
-            border: 1px solid #333; z-index: 2000;
+            border: 1px solid #333; z-index: 3000;
         }
         .dropdown.show { display: block; }
 
         .toast { 
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); 
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
             background: #1DA1F2; color: #fff; padding: 12px 24px; 
             border-radius: 30px; z-index: 9999; font-weight: bold; 
-            opacity: 0; pointer-events: none; transition: 0.3s;
+            opacity: 0; transition: 0.3s;
         }
         .toast.show { opacity: 1; }
     </style>
@@ -108,10 +114,10 @@
         <div class="top-row">
             <div class="brand-text-logo">𝗚𝗹𝗼𝗯𝗮𝗹𝘁𝗿𝗲𝗻𝗱𝘀</div>
             <div class="icon-bar">
-                <i class="fa-solid fa-magnifying-glass top-btn" onclick="showToast('Search coming soon!')"></i>
+                <i class="fa-solid fa-magnifying-glass" style="color:white;cursor:pointer;" onclick="showToast('Search coming soon!')"></i>
                 <div id="chatIcon" onclick="checkAuthRedirect('messenger')"><i class="fa-brands fa-facebook-messenger"></i></div>
                 <div style="position:relative;">
-                    <i class="fa-solid fa-bell top-btn" onclick="toggleDropdown()"></i>
+                    <i class="fa-solid fa-bell" style="color:white;cursor:pointer;" onclick="toggleDropdown()"></i>
                     <div class="dropdown" id="notifDropdown">
                         <div style="padding:12px; border-bottom:1px solid #333; font-weight:bold;">Notifications</div>
                         <div id="notifContent" style="padding:20px; text-align:center; color:#888;">No notifications yet</div>
@@ -132,7 +138,6 @@
     <script>
         const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
         
         let allPosts = [];
@@ -167,7 +172,7 @@
 
         function renderFeed(posts) {
             const feed = document.getElementById("tiktok-feed");
-            feed.innerHTML = ""; // This clears the overlapping mess
+            feed.innerHTML = "";
             
             posts.forEach((post) => {
                 const isLiked = localStorage.getItem("liked_" + post.id);
@@ -178,26 +183,28 @@
                 div.innerHTML = `
                     <div class="video-wrapper">
                         <video muted loop playsinline src="${post.video_url}"></video>
-                        <div class="video-shield"></div>
                     </div>
-                    <div class="overlay">
-                        <div class="user-info">
-                            <img class="avatar" src="${post.profiles?.avatar_url || ''}">
-                            <a class="username-link" href="profile.html?id=${post.user_id}">
-                                ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
-                            </a>
-                            <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer; pointer-events:auto;">${isFollowed ? 'Following' : 'Follow'}</button>
+                    <div class="video-shield"></div>
+                    <div class="ui-layer">
+                        <div class="overlay">
+                            <div class="user-info">
+                                <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                                <a class="username-link" href="profile.html?id=${post.user_id}">
+                                    ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
+                                </a>
+                                <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>
+                            </div>
+                            <div class="caption">${post.caption || ""}</div>
                         </div>
-                        <div class="caption">${post.caption || ""}</div>
-                    </div>
-                    <div class="actions">
-                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
-                            <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>
-                            <div class="action-count">${nFormatter(post.likes)}</div>
-                        </div>
-                        <div class="action-item">
-                            <i class="fa-solid fa-eye" style="font-size:26px;"></i>
-                            <div class="action-count">${nFormatter(post.views)}</div>
+                        <div class="actions">
+                            <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
+                                <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>
+                                <div class="action-count">${nFormatter(post.likes)}</div>
+                            </div>
+                            <div class="action-item">
+                                <i class="fa-solid fa-eye" style="font-size:26px;"></i>
+                                <div class="action-count">${nFormatter(post.views)}</div>
+                            </div>
                         </div>
                     </div>`;
                 
@@ -210,9 +217,11 @@
                     if (now - lastTap < 300) {
                         const h = document.createElement("i");
                         h.className = "fa-solid fa-heart heart-pop";
-                        shield.appendChild(h);
+                        div.appendChild(h);
                         setTimeout(() => h.remove(), 600);
-                        if (!localStorage.getItem("liked_" + post.id)) likePostGlobal(post.id, div.querySelector(".actions .action-item"));
+                        if (!localStorage.getItem("liked_" + post.id)) {
+                             likePostGlobal(post.id, div.querySelector(".heart-icon").parentElement);
+                        }
                     } else {
                         setTimeout(() => { 
                             if (Date.now() - now >= 300) { 
@@ -226,7 +235,7 @@
 
                 feed.appendChild(div);
 
-                const obs = new IntersectionObserver(entries => {
+                new IntersectionObserver(entries => {
                     entries.forEach(e => {
                         if (e.isIntersecting) { 
                             if(currentVideo) currentVideo.pause(); 
@@ -234,24 +243,16 @@
                             video.play().catch(()=>{}); 
                         } else { video.pause(); }
                     });
-                }, { threshold: 0.6 });
-                obs.observe(div);
+                }, { threshold: 0.6 }).observe(div);
             });
         }
 
         async function toggleFeed(type) {
             if (type === 'following' && !myId) { showToast("Please login to perform this action"); return; }
-            
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.getElementById(`tab-${type}`).classList.add('active');
-
-            let f = [];
-            const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
-
-            if (type === 'trending') f = [...allPosts].sort((a,b) => ((b.likes||0)+(b.views||0)) - ((a.likes||0)+(a.views||0)));
-            else if (type === 'following') f = allPosts.filter(p => interests.includes(p.user_id));
-            else f = allPosts; // For you
-
+            let f = (type === 'trending') ? [...allPosts].sort((a,b) => (b.likes||0) - (a.likes||0)) : 
+                    (type === 'following') ? allPosts.filter(p => (JSON.parse(localStorage.getItem("my_interests")) || []).includes(p.user_id)) : allPosts;
             renderFeed(f);
             document.getElementById("tiktok-feed").scrollTop = 0;
         }
@@ -261,7 +262,6 @@
             const heart = el.querySelector(".heart-icon");
             const countLabel = el.querySelector(".action-count");
             let likes = parseInt(countLabel.innerText.replace('k','000').replace('M','000000')) || 0;
-            
             if (localStorage.getItem("liked_" + id)) {
                 likes--; localStorage.removeItem("liked_" + id); heart.classList.remove("liked");
             } else {
@@ -285,4 +285,4 @@
         }
     </script>
 </body>
-    </html>
+</html>
