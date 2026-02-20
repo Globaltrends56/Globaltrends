@@ -60,8 +60,8 @@
 
         /* OVERLAY (User Info) */
         .overlay { 
-            position: absolute; bottom: 100px; left: 15px; right: 80px; 
-            pointer-events: none; 
+            position: absolute; bottom: 65px; left: 15px; right: 80px; 
+            pointer-events: none; z-index: 10;
         }
         .user-info { display: flex; align-items: center; gap: 10px; pointer-events: auto; margin-bottom: 8px; }
         .avatar { width: 45px; height: 45px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
@@ -71,9 +71,9 @@
 
         /* SIDE ACTIONS */
         .actions { 
-            position: absolute; right: 12px; bottom: 110px; 
+            position: absolute; right: 12px; bottom: 75px; 
             display: flex; flex-direction: column; gap: 20px; 
-            text-align: center; pointer-events: auto;
+            text-align: center; pointer-events: auto; z-index:10;
         }
         .action-item { cursor: pointer; }
         .heart-icon.liked { color: #ff2d55; }
