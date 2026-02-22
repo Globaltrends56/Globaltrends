@@ -49,11 +49,15 @@
         /* Video stays in the back */
         .video-wrapper { position: absolute; inset: 0; z-index: 1; }
          video { width: 100%; height: 100%; object-fit: cover; }
+         /* Container for ads under each video */
         .ad-under-video {
          width: 100%;
-         background: #000;
-         position: relative;
-        }
+         height: 60px;        /* Adjust height as per ad network requirements */
+         margin: 8px 0;       /* spacing between video and ad */
+         display: flex;
+         justify-content: center;
+         align-items: center;
+      }
         /* Interactive layer on top */
         .ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
 
@@ -169,28 +173,22 @@
 ========================= */
    function injectAdUnderVideo(containerId) {
     const container = document.getElementById(containerId);
-    if (!container || container.dataset.loaded) return;
-    container.dataset.loaded = "1";
+    if (!container) return;
 
-    container.style.minHeight = "70px";
-    container.style.display = "flex";
-    container.style.justifyContent = "center";
-    container.style.alignItems = "center";
-    container.style.margin = "12px 0";
+    // Clear any previous ad (just in case)
+    container.innerHTML = '';
 
-    // Copy the Appstera snippet dynamically
-    const adDiv = document.createElement("div");
-    adDiv.id = `container-6bdee4564a569eb0ea52e8e5bdf7b53c`;
-
+    // Create ad script dynamically
     const adScript = document.createElement("script");
     adScript.async = true;
-    adScript.setAttribute("data-cfasync", "false");
     adScript.src = "https://pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js";
 
+    // Create ad container div required by Appstera
+    const adDiv = document.createElement("div");
+    adDiv.id = `container-${containerId}`;
     container.appendChild(adDiv);
     container.appendChild(adScript);
- }
-   
+  }
         document.addEventListener("DOMContentLoaded", async () => {
             const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
                 headers: { apikey: SUPABASE_KEY } 
