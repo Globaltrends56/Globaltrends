@@ -50,14 +50,22 @@
         .video-wrapper { position: absolute; inset: 0; z-index: 1; }
          video { width: 100%; height: 100%; object-fit: cover; }
          /* Container for ads under each video */
-        .ad-under-video {
-         width: 100%;
-         height: 60px;        /* Adjust height as per ad network requirements */
-         margin: 8px 0;       /* spacing between video and ad */
-         display: flex;
-         justify-content: center;
-         align-items: center;
-      }
+           .ad-under-video {
+            width: 100%;
+            min-height: 100px; /* Adjust based on your ad size */
+            background: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            margin-bottom: 20px;
+         }
+
+            /* Ensure the video-wrapper doesn't cover the ad */
+            .tiktok-post {
+             display: flex;
+             flex-direction: column;
+         }
         /* Interactive layer on top */
         .ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
 
@@ -175,19 +183,24 @@
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Clear any previous ad (just in case)
-    container.innerHTML = '';
+    // Adsterra requires a specific container ID and a script to match it.
+    // We create a fresh iframe/container for the ad to prevent it from breaking the feed.
+    const adFrame = document.createElement("div");
+    adFrame.style.width = "100%";
+    adFrame.style.textAlign = "center";
+    adFrame.style.padding = "10px 0";
+    
+    // This is the container Adsterra looks for
+    adFrame.innerHTML = `<div id="container-6bdee4564a569eb0ea52e8e5bdf7b53c"></div>`;
+    container.appendChild(adFrame);
 
-    // Create ad script dynamically
-    const adScript = document.createElement("script");
-    adScript.async = true;
-    adScript.src = "https://pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js";
-
-    // Create ad container div required by Appstera
-    const adDiv = document.createElement("div");
-    adDiv.id = `container-${containerId}`;
-    container.appendChild(adDiv);
-    container.appendChild(adScript);
+    // Now inject the script
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.async = true;
+    script.src = "//pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js";
+    
+    container.appendChild(script);
   }
         document.addEventListener("DOMContentLoaded", async () => {
             const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
@@ -280,9 +293,12 @@
 ========================= */
 const index = posts.indexOf(post);
 
-// show ad under 3rd video, then every 5 videos
-if (index === 2 || (index > 2 && (index - 2) % 5 === 0)) {
-    injectAdUnderVideo(`ad-${post.id}`);
+// Show ad after the 2nd video, then every 4 videos
+if (index > 0 && index % 2 === 0) {
+    // We add a slight delay to make sure the DOM is ready for the script
+    setTimeout(() => {
+        injectAdUnderVideo(`ad-${post.id}`);
+    }, 500);
 }
 
         // IntersectionObserver for auto-play
