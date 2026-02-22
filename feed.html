@@ -198,52 +198,57 @@
             return num;
         }
 
-        function checkAuthRedirect(type) {
-            if (!myId) { showToast("Please login to perform this action"); return; }
-            if (type === 'messenger') window.location.href = "https://globaltrends56.blogspot.com/p/gt-messenger.html?m=1";
-        }
-          /* =========================
-   AD FUNCTION (ADD HERE)
+        /* =========================
+   AD FUNCTION
 ========================= */
-        function injectAdUnderVideo(containerId) {
-           const container = document.getElementById(containerId);
-           if (!container) return;
+function injectAdUnderVideo(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-        // Use the Iframe Trick to stop the "flash and disappear" glitch
-           const adCode = `
-           <body style="margin:0; padding:0; display:flex; justify-content:center; background-color:black;">
+    // Fixed adCode block
+    const adCode = `
+        <body style="margin:0; padding:0; display:flex; justify-content:center; background-color:black;">
             <div id="container-6bdee4564a569eb0ea52e8e5bdf7b53c"></div>
             <script async="async" data-cfasync="false" src="//pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js"></script>
         </body>
     `;
 
-            const iframe = document.createElement('iframe');
-            iframe.style.width = "100%";
-            iframe.style.height = "300px"; // Height for 1-box ad
-            iframe.style.border = "none";
-    
-            container.appendChild(iframe);
-    
-            const doc = iframe.contentWindow.document;
-            doc.open();
-            doc.write(adCode);
-            doc.close();
-        }
-        document.addEventListener("DOMContentLoaded", async () => {
-            const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
-                headers: { apikey: SUPABASE_KEY } 
-            });
-            const data = await res.json();
-            allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];
-            renderFeed(allPosts);
-        });
-       
-        
-        function renderFeed(posts, isFollowingTab = false) {
-    const feed = document.getElementById("tiktok-feed");
-    feed.innerHTML = ""; // Clears old videos to prevent overlapping layout
+    const iframe = document.createElement('iframe');
+    iframe.style.width = "100%";
+    iframe.style.height = "300px"; 
+    iframe.style.border = "none";
 
-    // Check if Following tab is empty
+    container.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(adCode);
+    doc.close();
+}
+
+/* =========================
+   DATA LOADING
+========================= */
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
+            headers: { apikey: SUPABASE_KEY } 
+        });
+        const data = await res.json();
+        allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];
+        renderFeed(allPosts);
+    } catch (err) {
+        console.error("Error loading feed:", err);
+    }
+});
+
+/* =========================
+   RENDER FEED
+========================= */
+function renderFeed(posts, isFollowingTab = false) {
+    const feed = document.getElementById("tiktok-feed");
+    feed.innerHTML = ""; 
+
     if (posts.length === 0 && isFollowingTab) {
         feed.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">
@@ -261,36 +266,45 @@
         
         const div = document.createElement("div");
         div.className = "tiktok-post";
-        div.innerHTML = `
-    <div class="video-wrapper">
-        <video muted loop playsinline src="${post.video_url}"></video>
-    </div>
-    
-    <div class="video-shield"></div>
-    <div class="ui-layer">
-        <div class="overlay">
-            <div class="user-info">
-                <img class="avatar" src="${post.profiles?.avatar_url || ''}">
-                <a class="username-link" href="profile.html?id=${post.user_id}">
-                    ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
-                </a>
-                <button onclick="handleFollow('${post.user_id}', this)" class="follow-btn">${isFollowed ? 'Following' : 'Follow'}</button>
-            </div>
-            <div class="caption">${post.caption || ""}</div>
-        </div>
-        <div class="actions">
-            </div>
-    </div>
-
-    <div class="ad-wrapper">
-        <div class="sponsored-label">
-            <i class="fa-solid fa-circle-info"></i> Sponsored
-        </div>
-        <div class="ad-under-video" id="ad-${post.id}"></div>
-    </div>
-`;
         
-    const shield = div.querySelector(".video-shield");
+        div.innerHTML = `
+            <div class="video-wrapper">
+                <video muted loop playsinline src="${post.video_url}"></video>
+            </div>
+            
+            <div class="video-shield"></div>
+            <div class="ui-layer">
+                <div class="overlay">
+                    <div class="user-info">
+                        <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                        <a class="username-link" href="profile.html?id=${post.user_id}">
+                            ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
+                        </a>
+                        <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>
+                    </div>
+                    <div class="caption">${post.caption || ""}</div>
+                </div>
+                <div class="actions">
+                    <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
+                        <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>
+                        <div class="action-count">${nFormatter(post.likes)}</div>
+                    </div>
+                    <div class="action-item">
+                        <i class="fa-solid fa-eye" style="font-size:26px;"></i>
+                        <div class="action-count">${nFormatter(post.views)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ad-wrapper">
+                <div class="sponsored-label">
+                    <i class="fa-solid fa-circle-info"></i> Sponsored
+                </div>
+                <div class="ad-under-video" id="ad-${post.id}"></div>
+            </div>
+        `;
+
+        const shield = div.querySelector(".video-shield");
         const video = div.querySelector("video");
         let lastTap = 0;
 
@@ -314,18 +328,14 @@
         };
 
         feed.appendChild(div);
-        /* =========================
-   AD INJECTION (ADD HERE)
-========================= */
-const index = posts.indexOf(post);
 
-// Show ad after the 2nd video, then every 4 videos
-if (index > 0 && index % 2 === 0) {
-    // We add a slight delay to make sure the DOM is ready for the script
-    setTimeout(() => {
-        injectAdUnderVideo(`ad-${post.id}`);
-    }, 500);
-}
+        // Ad Logic: Show ad after every 3 videos
+        const index = posts.indexOf(post);
+        if (index === 1 || (index > 1 && (index - 1) % 3 === 0)) {
+            setTimeout(() => {
+                injectAdUnderVideo(`ad-${post.id}`);
+            }, 1000);
+        }
 
         // IntersectionObserver for auto-play
         new IntersectionObserver(entries => {
@@ -338,7 +348,13 @@ if (index > 0 && index % 2 === 0) {
             });
         }, { threshold: 0.6 }).observe(div);
     });
+                }
+         
+        function checkAuthRedirect(type) {
+            if (!myId) { showToast("Please login to perform this action"); return; }
+            if (type === 'messenger') window.location.href = "https://globaltrends56.blogspot.com/p/gt-messenger.html?m=1";
         }
+                  
          
         async function toggleFeed(type) {
     // 1. Check Login for Following Tab
