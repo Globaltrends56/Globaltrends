@@ -160,7 +160,39 @@
             if (!myId) { showToast("Please login to perform this action"); return; }
             if (type === 'messenger') window.location.href = "https://globaltrends56.blogspot.com/p/gt-messenger.html?m=1";
         }
+          /* =========================
+   AD FUNCTION (ADD HERE)
+========================= */
+function injectAdUnderVideo(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
+    const iframe = document.createElement("iframe");
+    iframe.style.width = "100%";
+    iframe.style.height = "60px";
+    iframe.style.border = "none";
+
+    container.appendChild(iframe);
+
+    const adCode = `
+      <body style="margin:0;display:flex;justify-content:center;">
+        <script type="text/javascript">
+          atOptions = {
+            'key' : 'YOUR_AD_KEY',
+            'format' : 'iframe',
+            'height' : 60,
+            'width' : 468,
+            'params' : {}
+          };
+        <\/script>
+        <script src="https://www.highperformanceformat.com/YOUR_AD_KEY/invoke.js"><\/script>
+      </body>
+    `;
+
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(adCode);
+    iframe.contentWindow.document.close();
+}
         document.addEventListener("DOMContentLoaded", async () => {
             const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
                 headers: { apikey: SUPABASE_KEY } 
@@ -197,6 +229,8 @@
             <div class="video-wrapper">
                 <video muted loop playsinline src="${post.video_url}"></video>
             </div>
+            <!-- AD CONTAINER (ADD HERE) -->
+<div class="ad-under-video" id="ad-${post.id}"></div>
             <div class="video-shield"></div>
             <div class="ui-layer">
                 <div class="overlay">
@@ -245,6 +279,15 @@
         };
 
         feed.appendChild(div);
+        /* =========================
+   AD INJECTION (ADD HERE)
+========================= */
+const index = posts.indexOf(post);
+
+// show ad under 3rd video, then every 5 videos
+if (index === 2 || (index > 2 && (index - 2) % 5 === 0)) {
+    injectAdUnderVideo(`ad-${post.id}`);
+}
 
         // IntersectionObserver for auto-play
         new IntersectionObserver(entries => {
