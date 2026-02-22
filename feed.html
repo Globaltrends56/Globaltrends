@@ -177,19 +177,18 @@
     <div id="tiktok-feed"></div>
     <div id="toast" class="toast"></div>
 
- <script>
+<script>
 const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI"; // keep yours
-const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
+const SUPABASE_KEY = "YOUR_KEY";
+const myId = localStorage.getItem("user_id")?.replace(/['"]+/g,'');
 
 let allPosts = [];
 let currentVideo = null;
 
-/* ---------------- TOAST ---------------- */
 function showToast(msg){
-  const t=document.getElementById("toast");
+  const t = document.getElementById("toast");
   if(!t) return;
-  t.textContent=msg;
+  t.textContent = msg;
   t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),3000);
 }
@@ -201,166 +200,172 @@ function nFormatter(num){
   return num;
 }
 
-/* ---------------- ADSTERRA SAFE INJECT ---------------- */
-function injectAdUnderVideo(containerId){
-  const container=document.getElementById(containerId);
+/* =========================
+   SAFE AD INJECTION (NO FLASH)
+========================= */
+function injectAdUnderVideo(container){
   if(!container || container.dataset.loaded) return;
 
-  container.dataset.loaded="1";
+  container.dataset.loaded = "true";
 
-  const iframe=document.createElement("iframe");
-  iframe.style.width="100%";
-  iframe.style.height="260px";
-  iframe.style.border="0";
-  iframe.loading="lazy";
-  iframe.sandbox="allow-scripts allow-same-origin";
+  const iframe = document.createElement("iframe");
+  iframe.style.width = "100%";
+  iframe.style.height = "250px";
+  iframe.style.border = "none";
 
   container.appendChild(iframe);
 
-  const doc=iframe.contentWindow.document;
-  doc.open();
-  doc.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        html,body{
-          margin:0;
-          padding:0;
-          background:#000;
-          display:flex;
-          justify-content:center;
-        }
-      </style>
-    </head>
-    <body>
+  iframe.contentWindow.document.open();
+  iframe.contentWindow.document.write(`
+    <body style="margin:0;background:#000">
       <div id="container-6bdee4564a569eb0ea52e8e5bdf7b53c"></div>
       <script async data-cfasync="false"
-        src="https://pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js">
+        src="//pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js">
       <\/script>
     </body>
-    </html>
   `);
-  doc.close();
+  iframe.contentWindow.document.close();
 }
 
-/* ---------------- LOAD POSTS ---------------- */
-document.addEventListener("DOMContentLoaded", async()=>{
-  try{
-    const res=await fetch(
-      SUPABASE_URL+"/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active",
-      {headers:{apikey:SUPABASE_KEY}}
-    );
-    const data=await res.json();
-    allPosts=Array.isArray(data)?data.filter(p=>p.video_url):[];
-    renderFeed(allPosts);
-  }catch(e){console.error(e);}
+/* =========================
+   LOAD POSTS
+========================= */
+document.addEventListener("DOMContentLoaded", async ()=>{
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`,
+    { headers:{apikey:SUPABASE_KEY} }
+  );
+  const data = await res.json();
+  allPosts = data.filter(p=>p.video_url);
+  renderFeed(allPosts);
 });
 
-/* ---------------- RENDER FEED ---------------- */
-function renderFeed(posts,isFollowingTab=false){
-  const feed=document.getElementById("tiktok-feed");
-  if(!feed) return;
-  feed.innerHTML="";
+/* =========================
+   RENDER FEED
+========================= */
+function renderFeed(posts,isFollowing=false){
+  const feed = document.getElementById("tiktok-feed");
+  feed.innerHTML = "";
 
-  if(posts.length===0 && isFollowingTab){
-    feed.innerHTML=`
-      <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#888;text-align:center">
-        <i class="fa-solid fa-user-plus" style="font-size:60px;color:#1DA1F2"></i>
-        <h3 style="color:#fff">You haven't followed anyone yet</h3>
-        <button onclick="toggleFeed('foryou')" style="margin-top:20px;padding:12px 30px;border-radius:25px;border:none;background:#1DA1F2;color:#fff">Explore</button>
-      </div>`;
+  if(isFollowing && posts.length===0){
+    feed.innerHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">
+                <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>
+                <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>
+                <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow your favorite creators to see their latest videos here.</p>
+                <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Explore</button>
+            </div>`;
     return;
   }
 
   posts.forEach((post,index)=>{
-    const isLiked=localStorage.getItem("liked_"+post.id);
-    const followed=(JSON.parse(localStorage.getItem("my_interests"))||[]).includes(post.user_id);
+    const div = document.createElement("div");
+    div.className = "tiktok-post";
 
-    const div=document.createElement("div");
-    div.className="tiktok-post";
+    const isLiked = localStorage.getItem("liked_"+post.id);
+    const followed = (JSON.parse(localStorage.getItem("my_interests"))||[]).includes(post.user_id);
 
-    div.innerHTML=`
+    div.innerHTML = `
       <div class="video-wrapper">
-        <video muted loop playsinline src="${post.video_url}"></video>
+        <video playsinline muted loop src="${post.video_url}"></video>
       </div>
 
       <div class="ui-layer">
-        <div class="overlay">
-          <div class="user-info">
-            <img class="avatar" src="${post.profiles?.avatar_url||''}">
-            <span>${post.profiles?.username||'User'}
-              ${post.profiles?.verified?'<i class="fa-solid fa-circle-check"></i>':''}
-            </span>
-            <button onclick="handleFollow('${post.user_id}',this)">
-              ${followed?'Following':'Follow'}
-            </button>
-          </div>
-          <div class="caption">${post.caption||""}</div>
+        <div class="user-info">
+          <img class="avatar" src="${post.profiles.avatar_url||''}">
+          <span>
+            ${post.profiles.username}
+            ${post.profiles.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
+          </span>
+          <button class="follow-btn ${followed?'following':''}"
+            onclick="handleFollow('${post.user_id}',this)">
+            ${followed?'Following':'Follow'}
+          </button>
         </div>
 
         <div class="actions">
-          <div class="action-item" onclick="likePostGlobal('${post.id}',this)">
-            <i class="fa-solid fa-heart ${isLiked?'liked':''}"></i>
-            <span>${nFormatter(post.likes)}</span>
+          <div class="action-item" onclick="likePost('${post.id}',this)">
+            <i class="fa-solid fa-heart ${isLiked?'liked':''}" style="font-size:30px"></i>
+            <div class="action-count">${nFormatter(post.likes)}</div>
           </div>
           <div class="action-item">
-            <i class="fa-solid fa-eye"></i>
-            <span>${nFormatter(post.views)}</span>
+            <i class="fa-solid fa-eye" style="font-size:26px"></i>
+            <div class="action-count">${nFormatter(post.views)}</div>
           </div>
         </div>
       </div>
 
       <div class="ad-wrapper">
-        <div class="sponsored-label">Sponsored</div>
-        <div class="ad-under-video" id="ad-${post.id}"></div>
+        <div class="ad-under-video"></div>
       </div>
     `;
 
+    const video = div.querySelector("video");
+    let lastTap = 0;
+
+    div.onclick = ()=>{
+      const now = Date.now();
+      if(now-lastTap<300){
+        likePost(post.id, div.querySelector(".action-item"));
+      }else{
+        video.muted = !video.muted;
+        showToast(video.muted?"🔇 Muted":"🔊 Sound On");
+      }
+      lastTap = now;
+    };
+
     feed.appendChild(div);
 
-    /* AD EVERY 3 VIDEOS */
-    if(index>0 && index%3===0){
-      setTimeout(()=>injectAdUnderVideo("ad-"+post.id),800);
+    if(index===2 || (index>2 && (index-2)%5===0)){
+      injectAdUnderVideo(div.querySelector(".ad-under-video"));
     }
 
-    const video=div.querySelector("video");
     new IntersectionObserver(entries=>{
       entries.forEach(e=>{
         if(e.isIntersecting){
-          if(currentVideo) currentVideo.pause();
-          currentVideo=video;
+          currentVideo?.pause();
+          currentVideo = video;
           video.play().catch(()=>{});
         }else video.pause();
       });
-    },{threshold:.6}).observe(div);
+    },{threshold:0.6}).observe(div);
   });
 }
 
-/* ---------------- FOLLOW / LIKE ---------------- */
-async function likePostGlobal(id,el){
+/* =========================
+   INTERACTIONS
+========================= */
+function likePost(id,el){
   if(!myId){showToast("Login required");return;}
-  let count=parseInt(el.querySelector("span").innerText.replace(/[kM]/,''))||0;
-  const liked=localStorage.getItem("liked_"+id);
-  count+=liked?-1:1;
-  localStorage[liked?"removeItem":"setItem"]("liked_"+id,"1");
-  el.querySelector("span").innerText=nFormatter(count);
-
-  fetch(SUPABASE_URL+"/rest/v1/posts?id=eq."+id,{
-    method:"PATCH",
-    headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({likes:count})
-  });
+  const liked = localStorage.getItem("liked_"+id);
+  localStorage.setItem("liked_"+id, liked?"":"1");
 }
 
 function handleFollow(uid,btn){
   if(!myId){showToast("Login required");return;}
-  let arr=JSON.parse(localStorage.getItem("my_interests"))||[];
-  if(arr.includes(uid)){arr=arr.filter(i=>i!==uid);btn.textContent="Follow";}
-  else{arr.push(uid);btn.textContent="Following";}
-  localStorage.setItem("my_interests",JSON.stringify(arr));
+  let cur = JSON.parse(localStorage.getItem("my_interests"))||[];
+  if(cur.includes(uid)){
+    cur = cur.filter(i=>i!==uid);
+    btn.classList.remove("following");
+    btn.textContent="Follow";
+  }else{
+    cur.push(uid);
+    btn.classList.add("following");
+    btn.textContent="Following";
+  }
+  localStorage.setItem("my_interests",JSON.stringify(cur));
 }
-</script>               
+
+function toggleFeed(type){
+  if(type==="following" && !myId){
+    showToast("Login required");
+    return;
+  }
+  let posts =
+    type==="trending" ? [...allPosts].sort((a,b)=>b.likes-a.likes) :
+    type==="following" ? allPosts.filter(p=>(JSON.parse(localStorage.getItem("my_interests"))||[]).includes(p.user_id)) :
+    allPosts;
+  renderFeed(posts, type==="following");
+}
+</script>  
 </body>
 </html>
