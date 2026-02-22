@@ -170,34 +170,26 @@
    function injectAdUnderVideo(containerId) {
     const container = document.getElementById(containerId);
     if (!container || container.dataset.loaded) return;
-
     container.dataset.loaded = "1";
+
     container.style.minHeight = "70px";
     container.style.display = "flex";
     container.style.justifyContent = "center";
     container.style.alignItems = "center";
     container.style.margin = "12px 0";
-    container.style.zIndex = "5";
 
-    const adScript1 = document.createElement("script");
-    adScript1.type = "text/javascript";
-    adScript1.innerHTML = `
-        atOptions = {
-            'key' : '6bdee4564a569eb0ea52e8e5bdf7b53c',
-            'format' : 'iframe',
-            'height' : 60,
-            'width' : 468,
-            'params' : {}
-        };
-    `;
+    // Copy the Appstera snippet dynamically
+    const adDiv = document.createElement("div");
+    adDiv.id = `container-6bdee4564a569eb0ea52e8e5bdf7b53c`;
 
-    const adScript2 = document.createElement("script");
-    adScript2.type = "text/javascript";
-    adScript2.src = "https://www.highperformanceformat.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js";
+    const adScript = document.createElement("script");
+    adScript.async = true;
+    adScript.setAttribute("data-cfasync", "false");
+    adScript.src = "https://pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js";
 
-    container.appendChild(adScript1);
-    container.appendChild(adScript2);
-}
+    container.appendChild(adDiv);
+    container.appendChild(adScript);
+ }
    
         document.addEventListener("DOMContentLoaded", async () => {
             const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
