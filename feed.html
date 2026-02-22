@@ -49,25 +49,49 @@
         /* Video stays in the back */
         .video-wrapper { position: absolute; inset: 0; z-index: 1; }
          video { width: 100%; height: 100%; object-fit: cover; }
-         /* Container for ads under each video */
-            .ad-under-video {
-             order: 2; /* Ensures it stays below the video */
-             width: 100%;
-             max-width: 400px; /* Limits width to look like one block */
-             height: 320px;    /* Height of one ad block + title */
-             overflow: hidden; /* Hides the other 3 boxes */
-             margin: 10px auto 30px auto;
-             border-radius: 12px;
-             background: #1a1a1a; /* Dark background while loading */
-             display: flex;
-             justify-content: center;
-         }
+         /* 1. THE WRAPPER: Keeps the label and ad together */
+.ad-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 15px;
+    margin-top: 10px;
+    margin-bottom: 25px;
+    order: 2; /* Ensures it stays under the video */
+}
 
-         /* This targets the internal Adsterra container to center the first box */
-         .ad-under-video div[id^="container-"] {
-          width: 100% !important;
-          display: block !important;
-         }
+/* 2. THE LABEL: Your professional "Sponsored" text */
+.sponsored-label {
+    font-size: 11px;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+}
+
+/* 3. THE AD BOX: The "Shield" that stops the flashing */
+.ad-under-video {
+    width: 100%;
+    min-height: 280px; 
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    contain: content; /* Stops the flash/disappear glitch */
+    overflow: hidden !important; 
+    border-radius: 8px;
+}
+
+/* 4. THE INTERNAL FIX: Keeps the Adsterra box from collapsing */
+.ad-under-video iframe, 
+.ad-under-video div {
+    min-width: 300px;
+    min-height: 250px;
+}
         /* Interactive layer on top */
         .ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
 
@@ -181,20 +205,29 @@
           /* =========================
    AD FUNCTION (ADD HERE)
 ========================= */
-         function injectAdUnderVideo(containerId) {
-            const container = document.getElementById(containerId);
-             if (!container) return;
+        function injectAdUnderVideo(containerId) {
+           const container = document.getElementById(containerId);
+           if (!container) return;
 
-             // Clear and set up the specific ID Adsterra expects
-             container.innerHTML = `<div id="container-6bdee4564a569eb0ea52e8e5bdf7b53c"></div>`;
+        // Use the Iframe Trick to stop the "flash and disappear" glitch
+           const adCode = `
+           <body style="margin:0; padding:0; display:flex; justify-content:center; background-color:black;">
+            <div id="container-6bdee4564a569eb0ea52e8e5bdf7b53c"></div>
+            <script async="async" data-cfasync="false" src="//pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js"></script>
+        </body>
+    `;
 
-             const adScript = document.createElement("script");
-             adScript.type = "text/javascript";
-             adScript.async = true;
-             // We use the direct invoke link provided by Adsterra
-             adScript.src = "//pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js";
-
-             container.appendChild(adScript);
+            const iframe = document.createElement('iframe');
+            iframe.style.width = "100%";
+            iframe.style.height = "300px"; // Height for 1-box ad
+            iframe.style.border = "none";
+    
+            container.appendChild(iframe);
+    
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write(adCode);
+            doc.close();
         }
         document.addEventListener("DOMContentLoaded", async () => {
             const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
@@ -204,7 +237,7 @@
             allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];
             renderFeed(allPosts);
         });
-
+       
         
         function renderFeed(posts, isFollowingTab = false) {
     const feed = document.getElementById("tiktok-feed");
@@ -229,36 +262,35 @@
         const div = document.createElement("div");
         div.className = "tiktok-post";
         div.innerHTML = `
-            <div class="video-wrapper">
-                <video muted loop playsinline src="${post.video_url}"></video>
+    <div class="video-wrapper">
+        <video muted loop playsinline src="${post.video_url}"></video>
+    </div>
+    
+    <div class="video-shield"></div>
+    <div class="ui-layer">
+        <div class="overlay">
+            <div class="user-info">
+                <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                <a class="username-link" href="profile.html?id=${post.user_id}">
+                    ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
+                </a>
+                <button onclick="handleFollow('${post.user_id}', this)" class="follow-btn">${isFollowed ? 'Following' : 'Follow'}</button>
             </div>
-            <!-- AD CONTAINER (ADD HERE) -->
-<div class="ad-under-video" id="ad-${post.id}"></div>
-            <div class="video-shield"></div>
-            <div class="ui-layer">
-                <div class="overlay">
-                    <div class="user-info">
-                        <img class="avatar" src="${post.profiles?.avatar_url || ''}">
-                        <a class="username-link" href="profile.html?id=${post.user_id}">
-                            ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
-                        </a>
-                        <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>
-                    </div>
-                    <div class="caption">${post.caption || ""}</div>
-                </div>
-                <div class="actions">
-                    <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
-                        <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>
-                        <div class="action-count">${nFormatter(post.likes)}</div>
-                    </div>
-                    <div class="action-item">
-                        <i class="fa-solid fa-eye" style="font-size:26px;"></i>
-                        <div class="action-count">${nFormatter(post.views)}</div>
-                    </div>
-                </div>
-            </div>`;
+            <div class="caption">${post.caption || ""}</div>
+        </div>
+        <div class="actions">
+            </div>
+    </div>
+
+    <div class="ad-wrapper">
+        <div class="sponsored-label">
+            <i class="fa-solid fa-circle-info"></i> Sponsored
+        </div>
+        <div class="ad-under-video" id="ad-${post.id}"></div>
+    </div>
+`;
         
-        const shield = div.querySelector(".video-shield");
+    const shield = div.querySelector(".video-shield");
         const video = div.querySelector("video");
         let lastTap = 0;
 
