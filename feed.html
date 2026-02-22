@@ -49,53 +49,7 @@
         /* Video stays in the back */
         .video-wrapper { position: absolute; inset: 0; z-index: 1; }
          video { width: 100%; height: 100%; object-fit: cover; }
-         /* 1. THE WRAPPER: Keeps the label and ad together */
-/* Container for Video + Ad */
-.tiktok-post {
-    display: flex;
-    flex-direction: column !important;
-    height: auto !important;
-    background: #000;
-}
-
-/* Ad Wrapper & Label */
-.ad-wrapper {
-    width: 100%;
-    padding: 10px 15px 30px 15px;
-    background: #000;
-    order: 2; /* Keeps it strictly under the video */
-}
-
-.sponsored-label {
-    font-size: 11px;
-    color: #888;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-}
-
-.sponsored-label i {
-    margin-right: 5px;
-}
-
-/* The Ad Container */
-.ad-under-video {
-    width: 100%;
-    min-height: 100px;
-    display: flex;
-    justify-content: center;
-    background: #111;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-/* Fix Adsterra internal width */
-[id^="container-"] {
-    width: 100% !important;
-}
+         
         /* Interactive layer on top */
         .ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
 
@@ -172,7 +126,7 @@
             </div>
         </div>
         <div class="tabs-row">
-            <div class="nav-tab active" id="tab-foryou" onclick="toggleFeed('foryou')">For you <div class="nav-indicator"></div></div>
+            <div class="nav-tb active" id="tab-foryou" onclick="toggleFeed('foryou')">For you <div class="nav-indicator"></div></div>
             <div class="nav-tab" id="tab-following" onclick="toggleFeed('following')">Following <div class="nav-indicator"></div></div>
             <div class="nav-tab" id="tab-trending" onclick="toggleFeed('trending')">Trending <div class="nav-indicator"></div></div>
         </div>
@@ -181,171 +135,186 @@
     <div id="tiktok-feed"></div>
     <div id="toast" class="toast"></div>
 
- <script>
-    const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI";
-    const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
-    
-    let allPosts = [];
-    let currentVideo = null;
+ <script>  
+    const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";  
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI";  
+    const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');  
+      
+    let allPosts = [];  
+    let currentVideo = null;  
 
-    function showToast(msg) {
-        const t = document.getElementById("toast");
-        if (t) {
-            t.textContent = msg; 
-            t.classList.add("show");
-            setTimeout(() => t.classList.remove("show"), 3000);
-        }
-    }
+    function showToast(msg) {  
+        const t = document.getElementById("toast");  
+        t.textContent = msg; t.classList.add("show");  
+        setTimeout(() => t.classList.remove("show"), 3000);  
+    }  
 
-    function nFormatter(num) {
-        if (!num) return 0;
-        if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
-        if (num >= 1000) return (num/1000).toFixed(1) + 'k';
-        return num;
-    }
+    function nFormatter(num) {  
+        if (!num) return 0;  
+        if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';  
+        if (num >= 1000) return (num/1000).toFixed(1) + 'k';  
+        return num;  
+    }  
 
-    /* DIRECT INJECTION - NO IFRAME */
-    function injectAdUnderVideo(containerId) {
-        const container = document.getElementById(containerId);
-        if (!container || container.dataset.loaded === "true") return;
+    function checkAuthRedirect(type) {  
+        if (!myId) { showToast("Please login to perform this action"); return; }  
+        if (type === 'messenger') window.location.href = "https://globaltrends56.blogspot.com/p/gt-messenger.html?m=1";  
+    }  
 
-        // Create Adsterra div
-        const adDiv = document.createElement('div');
-        adDiv.id = "container-6bdee4564a569eb0ea52e8e5bdf7b53c";
-        container.appendChild(adDiv);
+    document.addEventListener("DOMContentLoaded", async () => {  
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
+            headers: { apikey: SUPABASE_KEY }   
+        });  
+        const data = await res.json();  
+        allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];  
+        renderFeed(allPosts);  
+    });  
 
-        // Create Adsterra script
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = "//pl28767412.effectivegatecpm.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js";
-        
-        container.appendChild(script);
-        container.dataset.loaded = "true";
-    }
+      
+    function renderFeed(posts, isFollowingTab = false) {  
+const feed = document.getElementById("tiktok-feed");  
+feed.innerHTML = ""; // Clears old videos to prevent overlapping layout  
 
-    document.addEventListener("DOMContentLoaded", async () => {
-        try {
-            const res = await fetch(SUPABASE_URL + "/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active", { 
-                headers: { apikey: SUPABASE_KEY } 
-            });
-            const data = await res.json();
-            allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];
-            renderFeed(allPosts);
-        } catch (err) {
-            console.error("Fetch error:", err);
-        }
-    });
+// Check if Following tab is empty  
+if (posts.length === 0 && isFollowingTab) {  
+    feed.innerHTML = `  
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">  
+            <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>  
+            <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>  
+            <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow your favorite creators to see their latest videos here.</p>  
+            <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Explore Trending</button>  
+        </div>`;  
+    return;  
+}  
 
-    function renderFeed(posts, isFollowingTab = false) {
-        const feed = document.getElementById("tiktok-feed");
-        if (!feed) return;
-        feed.innerHTML = ""; 
+posts.forEach((post) => {  
+    const isLiked = localStorage.getItem("liked_" + post.id);  
+    const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
+      
+    const div = document.createElement("div");  
+    div.className = "tiktok-post";  
+    div.innerHTML = `  
+        <div class="video-wrapper">  
+            <video muted loop playsinline src="${post.video_url}"></video>  
+        </div>  
+        <div class="video-shield"></div>  
+        <div class="ui-layer">  
+            <div class="overlay">  
+                <div class="user-info">  
+                    <img class="avatar" src="${post.profiles?.avatar_url || ''}">  
+                    <a class="username-link" href="profile.html?id=${post.user_id}">  
+                        ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}  
+                    </a>  
+                    <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>  
+                </div>  
+                <div class="caption">${post.caption || ""}</div>  
+            </div>  
+            <div class="actions">  
+                <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
+                    <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>  
+                    <div class="action-count">${nFormatter(post.likes)}</div>  
+                </div>  
+                <div class="action-item">  
+                    <i class="fa-solid fa-eye" style="font-size:26px;"></i>  
+                    <div class="action-count">${nFormatter(post.views)}</div>  
+                </div>  
+            </div>  
+        </div>`;  
+      
+    const shield = div.querySelector(".video-shield");  
+    const video = div.querySelector("video");  
+    let lastTap = 0;  
 
-        if (posts.length === 0 && isFollowingTab) {
-            feed.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">
-                <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>
-                <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>
-                <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow your favorite creators to see their latest videos here.</p>
-                <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Explore</button>
-            </div>`;
-            return;
-        }
+    shield.onclick = () => {  
+        const now = Date.now();  
+        if (now - lastTap < 300) {  
+            const h = document.createElement("i");  
+            h.className = "fa-solid fa-heart heart-pop";  
+            div.appendChild(h);  
+            setTimeout(() => h.remove(), 600);  
+            if (!localStorage.getItem("liked_" + post.id)) likePostGlobal(post.id, div.querySelector(".heart-icon").parentElement);  
+        } else {  
+            setTimeout(() => {   
+                if (Date.now() - now >= 300) {   
+                    video.muted = !video.muted;   
+                    showToast(video.muted ? "🔇 Muted" : "🔊 Sound On");   
+                }   
+            }, 300);  
+        }  
+        lastTap = now;  
+    };  
 
-        posts.forEach((post) => {
-            const isLiked = localStorage.getItem("liked_" + post.id);
-            const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);
-            
-            const div = document.createElement("div");
-            div.className = "tiktok-post";
-            
-            div.innerHTML = `
-                <div class="video-wrapper">
-                    <video muted loop playsinline src="${post.video_url}"></video>
-                </div>
-                <div class="video-shield"></div>
-                <div class="ui-layer">
-                    <div class="overlay">
-                        <div class="user-info">
-                            <img class="avatar" src="${post.profiles?.avatar_url || ''}">
-                            <span class="username-link">${post.profiles?.username || 'User'}</span>
-                            <button onclick="handleFollow('${post.user_id}', this)" class="follow-btn">${isFollowed ? 'Following' : 'Follow'}</button>
-                        </div>
-                        <div class="caption">${post.caption || ""}</div>
-                    </div>
-                    <div class="actions">
-                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
-                            <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart"></i></div>
-                            <div class="action-count">${nFormatter(post.likes)}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="ad-wrapper">
-                    <div class="sponsored-label"><i class="fa-solid fa-circle-info"></i> Sponsored</div>
-                    <div class="ad-under-video" id="ad-${post.id}"></div>
-                </div>
-            `;
+    feed.appendChild(div);  
 
-            feed.appendChild(div);
+    // IntersectionObserver for auto-play  
+    new IntersectionObserver(entries => {  
+        entries.forEach(e => {  
+            if (e.isIntersecting) {   
+                if(currentVideo) currentVideo.pause();   
+                currentVideo = video;   
+                video.play().catch(()=>{});   
+            } else { video.pause(); }  
+        });  
+    }, { threshold: 0.6 }).observe(div);  
+});  
+    }  
+       
+    async function toggleFeed(type) {  
+// 1. Check Login for Following Tab  
+if (type === 'following' && !myId) {   
+    showToast("Please login to perform this action");   
+    return;   
+}  
+  
+// 2. Update Tab UI  
+document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
+document.getElementById(`tab-${type}`).classList.add('active');  
 
-            // Ad Logic
-            const index = posts.indexOf(post);
-            if (index === 1 || (index > 1 && (index - 1) % 3 === 0)) {
-                setTimeout(() => injectAdUnderVideo("ad-" + post.id), 1200);
-            }
+let filteredPosts = [];  
+const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
 
-            // Video Observer
-            const video = div.querySelector("video");
-            new IntersectionObserver(entries => {
-                entries.forEach(e => {
-                    if (e.isIntersecting) { 
-                        if(currentVideo) currentVideo.pause(); 
-                        currentVideo = video; 
-                        video.play().catch(()=>{}); 
-                    } else { video.pause(); }
-                });
-            }, { threshold: 0.6 }).observe(div);
-        });
-    }
+// 3. Filter Data  
+if (type === 'trending') {  
+    filteredPosts = [...allPosts].sort((a,b) => (b.likes||0) - (a.likes||0));  
+} else if (type === 'following') {  
+    filteredPosts = allPosts.filter(p => interests.includes(p.user_id));  
+} else {  
+    filteredPosts = allPosts; // Default: For You  
+}  
 
-    async function toggleFeed(type) {
-        if (type === 'following' && !myId) { showToast("Please login"); return; }
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        const tab = document.getElementById("tab-" + type);
-        if (tab) tab.classList.add('active');
-        
-        let filtered = (type === 'trending') ? [...allPosts].sort((a,b) => (b.likes||0)-(a.likes||0)) :
-                       (type === 'following') ? allPosts.filter(p => (JSON.parse(localStorage.getItem("my_interests")) || []).includes(p.user_id)) : allPosts;
+// 4. Render (Pass 'true' if it's the following tab)  
+renderFeed(filteredPosts, type === 'following');  
+  
+// 5. Scroll to top so the first video starts playing  
+document.getElementById("tiktok-feed").scrollTop = 0;  
+    }  
 
-        renderFeed(filtered, type === 'following');
-        document.getElementById("tiktok-feed").scrollTop = 0;
-    }
+    async function likePostGlobal(id, el) {  
+        if (!myId) { showToast("Please login to perform this action"); return; }  
+        const heart = el.querySelector(".heart-icon");  
+        const countLabel = el.querySelector(".action-count");  
+        let likes = parseInt(countLabel.innerText.replace('k','000').replace('M','000000')) || 0;  
+        if (localStorage.getItem("liked_" + id)) {  
+            likes--; localStorage.removeItem("liked_" + id); heart.classList.remove("liked");  
+        } else {  
+            likes++; localStorage.setItem("liked_" + id, "1"); heart.classList.add("liked");  
+        }  
+        countLabel.innerText = nFormatter(likes);  
+        fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}`, {   
+            method: "PATCH",   
+            headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },   
+            body: JSON.stringify({ likes: likes })   
+        });  
+    }  
 
-    async function likePostGlobal(id, el) {
-        if (!myId) { showToast("Please login"); return; }
-        const countLabel = el.querySelector(".action-count");
-        let likes = parseInt(countLabel.innerText.replace('k','000')) || 0;
-        if (localStorage.getItem("liked_" + id)) {
-            likes--; localStorage.removeItem("liked_" + id); el.querySelector(".heart-icon").classList.remove("liked");
-        } else {
-            likes++; localStorage.setItem("liked_" + id, "1"); el.querySelector(".heart-icon").classList.add("liked");
-        }
-        countLabel.innerText = nFormatter(likes);
-        fetch(SUPABASE_URL + "/rest/v1/posts?id=eq." + id, { 
-            method: "PATCH", 
-            headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ likes: likes }) 
-        });
-    }
-
-    async function handleFollow(uid, btn) {
-        if (!myId) { showToast("Please login"); return; }
-        let cur = JSON.parse(localStorage.getItem("my_interests")) || [];
-        if (!cur.includes(uid)) { btn.textContent = "Following"; cur.push(uid); }
-        else { btn.textContent = "Follow"; cur = cur.filter(i => i !== uid); }
-        localStorage.setItem("my_interests", JSON.stringify(cur));
-    }
-        </script>
+    function toggleDropdown() { document.getElementById('notifDropdown').classList.toggle('show'); }  
+    async function handleFollow(uid, btn) {  
+        if (!myId) { showToast("Please login to perform this action"); return; }  
+        let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
+        if (!cur.includes(uid)) { btn.textContent = "Following"; cur.push(uid); }  
+        else { btn.textContent = "Follow"; cur = cur.filter(i => i !== uid); }  
+        localStorage.setItem("my_interests", JSON.stringify(cur));  
+    }  
+                       </script>
 </body>
 </html>
