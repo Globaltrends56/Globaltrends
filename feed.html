@@ -187,10 +187,11 @@
 
     function showToast(msg) {
         const t = document.getElementById("toast");
-        if (!t) return;
-        t.textContent = msg; 
-        t.classList.add("show");
-        setTimeout(() => t.classList.remove("show"), 3000);
+        if (t) {
+            t.textContent = msg; 
+            t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 3000);
+        }
     }
 
     function nFormatter(num) {
@@ -200,9 +201,6 @@
         return num;
     }
 
-    /* =========================
-       AD FUNCTION
-    ========================= */
     function injectAdUnderVideo(containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -218,8 +216,7 @@
         iframe.style.width = "100%";
         iframe.style.height = "300px"; 
         iframe.style.border = "none";
-
-        container.innerHTML = ''; // Clear previous content
+        container.innerHTML = ''; 
         container.appendChild(iframe);
 
         const doc = iframe.contentWindow.document;
@@ -228,44 +225,33 @@
         doc.close();
     }
 
-    /* =========================
-       DATA LOADING
-    ========================= */
     document.addEventListener("DOMContentLoaded", async () => {
         try {
-            const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
+            const res = await fetch(SUPABASE_URL + "/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active", { 
                 headers: { apikey: SUPABASE_KEY } 
             });
             const data = await res.json();
             allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];
             renderFeed(allPosts);
         } catch (err) {
-            console.error("Error loading feed:", err);
+            console.error("Error:", err);
         }
     });
 
-    /* =========================
-       RENDER FEED
-    ========================= */
     function renderFeed(posts, isFollowingTab = false) {
         const feed = document.getElementById("tiktok-feed");
         if (!feed) return;
         feed.innerHTML = ""; 
 
         if (posts.length === 0 && isFollowingTab) {
-            feed.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">
-                    <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>
-                    <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>
-                    <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow your favorite creators to see their latest videos here.</p>
-                    <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Explore</button>
-                </div>`;
+            feed.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:30px;color:#888;"><i class="fa-solid fa-user-plus" style="font-size:60px;margin-bottom:20px;color:#1DA1F2;"></i><h2 style="color:#fff;font-size:20px;">You haven\'t followed any account yet</h2><p style="font-size:14px;margin-top:10px;">Follow creators to see videos.</p><button onclick="toggleFeed(\'foryou\')" style="margin-top:25px;background:#1DA1F2;border:none;color:#fff;padding:12px 30px;border-radius:25px;font-weight:bold;">Explore</button></div>';
             return;
         }
 
         posts.forEach((post) => {
             const isLiked = localStorage.getItem("liked_" + post.id);
-            const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);
+            const myInterests = JSON.parse(localStorage.getItem("my_interests")) || [];
+            const isFollowed = myInterests.includes(post.user_id);
             
             const div = document.createElement("div");
             div.className = "tiktok-post";
@@ -274,16 +260,15 @@
                 <div class="video-wrapper">
                     <video muted loop playsinline src="${post.video_url}"></video>
                 </div>
-                
                 <div class="video-shield"></div>
                 <div class="ui-layer">
                     <div class="overlay">
                         <div class="user-info">
                             <img class="avatar" src="${post.profiles?.avatar_url || ''}">
-                            <a class="username-link" href="profile.html?id=${post.user_id}">
-                                ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
-                            </a>
-                            <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>
+                            <span class="username-link">
+                                ${post.profiles?.username || 'User'} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check"></i>' : ''}
+                            </span>
+                            <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2;border:none;color:white;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>
                         </div>
                         <div class="caption">${post.caption || ""}</div>
                     </div>
@@ -298,11 +283,8 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="ad-wrapper">
-                    <div class="sponsored-label">
-                        <i class="fa-solid fa-circle-info"></i> Sponsored
-                    </div>
+                    <div class="sponsored-label"><i class="fa-solid fa-circle-info"></i> Sponsored</div>
                     <div class="ad-under-video" id="ad-${post.id}"></div>
                 </div>
             `;
@@ -334,9 +316,7 @@
 
             const index = posts.indexOf(post);
             if (index === 1 || (index > 1 && (index - 1) % 3 === 0)) {
-                setTimeout(() => {
-                    injectAdUnderVideo(`ad-${post.id}`);
-                }, 1000);
+                setTimeout(() => injectAdUnderVideo("ad-" + post.id), 1000);
             }
 
             new IntersectionObserver(entries => {
@@ -348,12 +328,7 @@
                     } else { video.pause(); }
                 });
             }, { threshold: 0.6 }).observe(div);
-        }); // Corrected end of forEach
-    } // Corrected end of renderFeed
-
-    function checkAuthRedirect(type) {
-        if (!myId) { showToast("Please login to perform this action"); return; }
-        if (type === 'messenger') window.location.href = "https://globaltrends56.blogspot.com/p/gt-messenger.html?m=1";
+        });
     }
 
     async function toggleFeed(type) {
@@ -361,48 +336,32 @@
             showToast("Please login to perform this action"); 
             return; 
         }
-        
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        const activeTab = document.getElementById(`tab-${type}`);
-        if(activeTab) activeTab.classList.add('active');
+        const tab = document.getElementById("tab-" + type);
+        if (tab) tab.classList.add('active');
 
-        let filteredPosts = [];
-        const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
+        let filtered = (type === 'trending') ? [...allPosts].sort((a,b) => (b.likes||0)-(a.likes||0)) :
+                       (type === 'following') ? allPosts.filter(p => (JSON.parse(localStorage.getItem("my_interests")) || []).includes(p.user_id)) : allPosts;
 
-        if (type === 'trending') {
-            filteredPosts = [...allPosts].sort((a,b) => (b.likes||0) - (a.likes||0));
-        } else if (type === 'following') {
-            filteredPosts = allPosts.filter(p => interests.includes(p.user_id));
-        } else {
-            filteredPosts = allPosts;
-        }
-
-        renderFeed(filteredPosts, type === 'following');
-        const feed = document.getElementById("tiktok-feed");
-        if(feed) feed.scrollTop = 0;
+        renderFeed(filtered, type === 'following');
+        document.getElementById("tiktok-feed").scrollTop = 0;
     }
 
     async function likePostGlobal(id, el) {
         if (!myId) { showToast("Please login to perform this action"); return; }
-        const heart = el.querySelector(".heart-icon");
         const countLabel = el.querySelector(".action-count");
         let likes = parseInt(countLabel.innerText.replace('k','000').replace('M','000000')) || 0;
         if (localStorage.getItem("liked_" + id)) {
-            likes--; localStorage.removeItem("liked_" + id); heart.classList.remove("liked");
+            likes--; localStorage.removeItem("liked_" + id); el.querySelector(".heart-icon").classList.remove("liked");
         } else {
-            likes++; localStorage.setItem("liked_" + id, "1"); heart.classList.add("liked");
+            likes++; localStorage.setItem("liked_" + id, "1"); el.querySelector(".heart-icon").classList.add("liked");
         }
         countLabel.innerText = nFormatter(likes);
-        fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}`, { 
+        fetch(SUPABASE_URL + "/rest/v1/posts?id=eq." + id, { 
             method: "PATCH", 
             headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ likes: likes }) 
         });
-    }
-
-    function toggleDropdown() { 
-        const drop = document.getElementById('notifDropdown');
-        if(drop) drop.classList.toggle('show'); 
     }
 
     async function handleFollow(uid, btn) {
@@ -411,7 +370,7 @@
         if (!cur.includes(uid)) { btn.textContent = "Following"; cur.push(uid); }
         else { btn.textContent = "Follow"; cur = cur.filter(i => i !== uid); }
         localStorage.setItem("my_interests", JSON.stringify(cur));
-    }
-                </script>
+    } 
+                </script>                       
 </body>
 </html>
