@@ -167,36 +167,39 @@
           /* =========================
    AD FUNCTION (ADD HERE)
 ========================= */
+         <script>
 function injectAdUnderVideo(containerId) {
     const container = document.getElementById(containerId);
-    if (!container) return;
+    if (!container || container.dataset.loaded) return;
 
-    const iframe = document.createElement("iframe");
-    iframe.style.width = "100%";
-    iframe.style.height = "60px";
-    iframe.style.border = "none";
+    container.dataset.loaded = "1";
+    container.style.minHeight = "70px";
+    container.style.display = "flex";
+    container.style.justifyContent = "center";
+    container.style.alignItems = "center";
+    container.style.margin = "12px 0";
+    container.style.zIndex = "5";
 
-    container.appendChild(iframe);
-
-    const adCode = `
-      <body style="margin:0;display:flex;justify-content:center;">
-        <script type="text/javascript">
-          atOptions = {
+    const adScript1 = document.createElement("script");
+    adScript1.type = "text/javascript";
+    adScript1.innerHTML = `
+        atOptions = {
             'key' : '6bdee4564a569eb0ea52e8e5bdf7b53c',
             'format' : 'iframe',
             'height' : 60,
             'width' : 468,
             'params' : {}
-          };
-        <\/script>
-        <script src="https://www.highperformanceformat.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js"><\/script>
-      </body>
+        };
     `;
 
-    iframe.contentWindow.document.open();
-    iframe.contentWindow.document.write(adCode);
-    iframe.contentWindow.document.close();
+    const adScript2 = document.createElement("script");
+    adScript2.type = "text/javascript";
+    adScript2.src = "https://www.highperformanceformat.com/6bdee4564a569eb0ea52e8e5bdf7b53c/invoke.js";
+
+    container.appendChild(adScript1);
+    container.appendChild(adScript2);
 }
+   
         document.addEventListener("DOMContentLoaded", async () => {
             const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, { 
                 headers: { apikey: SUPABASE_KEY } 
