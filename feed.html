@@ -138,6 +138,22 @@
 .dropdown-item:hover { background: #2c2c2e; }
 
 .submenu-box { display: none; flex-direction: column; background: #111; }
+.submenu-item {
+  padding: 12px 15px;
+  font-size: 14px;
+  display: flex;
+  align-items: center; /* This centers the text vertically with the image */
+  gap: 12px;           /* Adds perfect spacing between image and text */
+  cursor: pointer;
+  color: #eee;
+}
+.submenu-item img {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: cover;
+  display: block;
+  }
     </style>
 </head>
 <body>
@@ -410,7 +426,7 @@ function postVideo() { window.location.href = "https://globaltrends.vercel.app/u
 // --- Hamburger / Menu Items ---
 function openAds() { window.location.href = "https://globaltrends56.blogspot.com/p/adsponsorship-policy.html"; }
 function openStore() { showToast("Marketplace opening soon!"); }
-function goToVerified() { showToast("Verification center is under maintenance"); }
+function goToVerified() { showToast("GT Verified is unavailable in this region"); }
 function goToHelpCenter() { window.location.href = "https://globaltrends56.blogspot.com/p/help-center.html"; }
 function goToAbout() { window.location.href = "https://globaltrends56.blogspot.com/p/about-us.html"; }
 function goToGTAppStore() { window.location.href = "https://globaltrends.vercel.app"; }
@@ -433,27 +449,44 @@ function openSearch() { window.location.href = "https://globaltrends.vercel.app/
         </div>
       </div>
 
-      <div class="menu-item profile-dropdown">
-        <div class="profile-circle" onclick="toggleProfile(event)"><i class="fa-solid fa-user"></i></div>
-        <div id="profileMenu" class="dropdown-box">
-          <div class="dropdown-header">Account</div>
-          <div class="dropdown-item" onclick="goToProfile()"><i class="fa-solid fa-circle-user"></i> View profile</div>
-          <div class="dropdown-item" onclick="checkAuthRedirect('messenger')"><i class="fa-brands fa-facebook-messenger"></i> Messenger</div>
-        </div>
+      <div id="profileMenu" class="dropdown-box">
+  <div class="dropdown-header">Account</div>
+  
+  <div class="dropdown-item" onclick="switchAccount()">
+    <i class="fa-solid fa-right-left"></i> Switch account
+  </div>
+
+  <div class="dropdown-item" onclick="goToProfile()">
+    <i class="fa-solid fa-circle-user"></i> View profile
+  </div>
       </div>
 
-      <div class="menu-item hamburger-dropdown">
-        <i class="fa-solid fa-bars" onclick="toggleMenu(event)"></i>
-        <div id="hamburgerMenu" class="dropdown-box">
-          <div class="dropdown-header">Menu</div>
-          <div class="dropdown-item" onclick="window.location.href='https://globaltrends56.blogspot.com/p/help-center.html'"><i class="fa-solid fa-circle-question"></i> Help Center</div>
-          <div class="dropdown-item" onclick="toggleMetadata(event)"><i class="fa-solid fa-chevron-down"></i> Also by METADATA</div>
-          <div id="metadataMenu" class="submenu-box">
-            <div class="submenu-item" onclick="window.location.href='https://globaltrends.vercel.app'"><img src="https://dgutisejlixevktsqdaq.supabase.co/storage/v1/object/public/Apps/GT-APPSTORE.png" style="width:20px; margin:10px;"> GT APPSTORE</div>
-          </div>
-        </div>
+      <div id="hamburgerMenu" class="dropdown-box">
+  <div class="dropdown-header">Menu</div>
+
+  <div class="dropdown-item" onclick="openAds()">
+    <i class="fa-solid fa-bullhorn"></i> Advert Center
+  </div>
+
+  <div class="dropdown-item" onclick="openStore()">
+    <i class="fa-solid fa-shop"></i> Marketplace
+  </div>
+
+  <div class="dropdown-item" onclick="toggleMetadata(event)">
+    <i class="fa-solid fa-chevron-down" style="transition: transform 0.3s;"></i> Also by METADATA
+  </div>
+  
+  <div id="metadataMenu" class="submenu-box">
+     <div class="submenu-item" onclick="goToGTAppStore()">
+        <img src="https://dgutisejlixevktsqdaq.supabase.co/storage/v1/object/public/Apps/GT-APPSTORE.png" />
+        GT APPSTORE
+     </div>
+  </div>
+
+  <div class="dropdown-item" onclick="goToHelpCenter()">
+    <i class="fa-solid fa-circle-question"></i> Help Center
+  </div>
       </div>
-    </div>
     </div>
 </body>
 </html>
