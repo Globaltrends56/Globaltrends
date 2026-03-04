@@ -425,71 +425,81 @@ function postVideo() { window.location.href = "https://globaltrends.vercel.app/u
 
 // --- Hamburger / Menu Items ---
 function openAds() { window.location.href = "https://globaltrends56.blogspot.com/p/adsponsorship-policy.html"; }
-function openStore() { showToast("Marketplace opening soon!"); }
+function openStore() { showToast("Marketplace unavailable!"); }
 function goToVerified() { showToast("GT Verified is unavailable in this region"); }
 function goToHelpCenter() { window.location.href = "https://globaltrends56.blogspot.com/p/help-center.html"; }
 function goToAbout() { window.location.href = "https://globaltrends56.blogspot.com/p/about-us.html"; }
 function goToGTAppStore() { window.location.href = "https://globaltrends.vercel.app"; }
-
-// --- Home & Search ---
 function showHome() { window.location.reload(); } // Refreshes the feed
 function openSearch() { window.location.href = "https://globaltrends.vercel.app/search.html"; }
 </script>
     <div id="bottomMenu">
     <div class="menu-bar">
-      <div class="menu-item" onclick="location.reload()"><i class="fa-solid fa-house"></i></div>
-      <div class="menu-item" onclick="showToast('Search coming soon!')"><i class="fa-solid fa-magnifying-glass"></i></div>
-      
-      <div class="menu-item upload-dropdown">
+    <div class="menu-item" onclick="location.reload()">
+        <i class="fa-solid fa-house"></i>
+    </div>
+
+    <div class="menu-item" onclick="openSearch()">
+        <i class="fa-solid fa-magnifying-glass"></i>
+    </div>
+
+    <div class="menu-item upload-dropdown">
         <i class="fa-solid fa-square-plus" onclick="toggleUpload(event)" style="font-size:28px;"></i>
         <div id="uploadMenu" class="dropdown-box">
-          <div class="dropdown-header">Create post</div>
-          <div class="dropdown-item" onclick="postPhoto()"><i class="fa-solid fa-image"></i> Post Photo</div>
-          <div class="dropdown-item" onclick="postVideo()"><i class="fa-solid fa-video"></i> Post Video</div>
+            <div class="dropdown-header">Create post</div>
+            <div class="dropdown-item" onclick="postPhoto()"><i class="fa-solid fa-image"></i> Post Photo</div>
+            <div class="dropdown-item" onclick="postVideo()"><i class="fa-solid fa-video"></i> Post Video</div>
         </div>
-      </div>
+    </div>
 
-      <div id="profileMenu" class="dropdown-box">
-  <div class="dropdown-header">Account</div>
-  
-  <div class="dropdown-item" onclick="switchAccount()">
-    <i class="fa-solid fa-right-left"></i> Switch account
-  </div>
+    <div class="menu-item profile-dropdown">
+        <div class="profile-circle" onclick="toggleProfile(event)">
+            <i class="fa-solid fa-user"></i>
+        </div>
+        <div id="profileMenu" class="dropdown-box">
+            <div class="dropdown-header">Account</div>
+            <div class="dropdown-item" onclick="switchAccount()">
+                <i class="fa-solid fa-right-left"></i> Switch account
+            </div>
+            <div class="dropdown-item" onclick="goToProfile()">
+                <i class="fa-solid fa-circle-user"></i> View profile
+            </div>
+        </div>
+    </div>
 
-  <div class="dropdown-item" onclick="goToProfile()">
-    <i class="fa-solid fa-circle-user"></i> View profile
-  </div>
-      </div>
+    <div class="menu-item hamburger-dropdown">
+        <i class="fa-solid fa-bars" onclick="toggleMenu(event)"></i>
+        <div id="hamburgerMenu" class="dropdown-box">
+            <div class="dropdown-header">Menu</div>
+            <div class="dropdown-item" onclick="openAds()">
+                <i class="fa-solid fa-bullhorn"></i> Advert Center
+            </div>
+            <div class="dropdown-item" onclick="openStore()">
+                <i class="fa-solid fa-shop"></i> Marketplace
+            </div>
+            <div class="dropdown-item" onclick="goToVerified()">
+                <i class="fa-solid fa-check-circle"></i> GT Verified
+            </div>
+            
+            <div class="dropdown-item" onclick="toggleMetadata(event)">
+                <i class="fa-solid fa-chevron-down" style="transition: transform 0.3s;"></i> Also by METADATA
+            </div>
+            <div id="metadataMenu" class="submenu-box">
+                <div class="submenu-item" onclick="goToGTAppStore()">
+                    <img src="https://dgutisejlixevktsqdaq.supabase.co/storage/v1/object/public/Apps/GT-APPSTORE.png" />
+                    GT APPSTORE
+                </div>
+            </div>
 
-      <div id="hamburgerMenu" class="dropdown-box">
-  <div class="dropdown-header">Menu</div>
+            <div class="dropdown-item" onclick="goToHelpCenter()">
+                <i class="fa-solid fa-circle-question"></i> Help Center
+            </div>
 
-  <div class="dropdown-item" onclick="openAds()">
-    <i class="fa-solid fa-bullhorn"></i> Advert Center
-  </div>
-
-  <div class="dropdown-item" onclick="openStore()">
-    <i class="fa-solid fa-shop"></i> Marketplace
-  </div>
-
-  <div class="dropdown-item" onclick="toggleMetadata(event)">
-    <i class="fa-solid fa-chevron-down" style="transition: transform 0.3s;"></i> Also by METADATA
-  </div>
-  
-  <div id="metadataMenu" class="submenu-box">
-     <div class="submenu-item" onclick="goToGTAppStore()">
-        <img src="https://dgutisejlixevktsqdaq.supabase.co/storage/v1/object/public/Apps/GT-APPSTORE.png" />
-        GT APPSTORE
-     </div>
-  </div>
-
-  <div class="dropdown-item" onclick="goToHelpCenter()">
-    <i class="fa-solid fa-circle-question"></i> Help Center
-  </div>
-      </div>
+            <div class="dropdown-item" onclick="goToAbout()">
+                <i class="fa-solid fa-info-circle"></i> About Us
+            </div>
+        </div>
     </div>
     </div>
-</div>
-</div>
 </body>
 </html>
