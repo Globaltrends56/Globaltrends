@@ -33,13 +33,44 @@
             width: 32px; height: 32px; background: #0084ff; color: white;
             border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px;
         }
+/**FOR YOU**FOLLOWING**TABS ROW**/
+    .tabs-row { 
+    display: flex; 
+    justify-content: center; 
+    align-items: flex-end; /* Keeps all text on the same level */
+    gap: 20px; 
+    height: 45px; /* Added height to give the tabs breathing room */
+}
 
-        .tabs-row { display: flex; justify-content: center; gap: 20px; }
-        .nav-tab { color: rgba(255,255,255,0.5); font-size: 15px; font-weight: bold; cursor: pointer; position: relative; padding: 5px 0; }
-        .nav-tab.active { color: #fff; }
-        .nav-indicator { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 3px; background: #1DA1F2; transition: 0.3s; }
-        .nav-tab.active .nav-indicator { width: 100%; }
+.nav-tab { 
+    color: rgba(255,255,255,0.5); 
+    font-size: 15px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    position: relative; 
+    padding-bottom: 10px; /* Space for the line below the text */
+}
 
+.nav-tab.active { 
+    color: #fff; 
+}
+
+/* KEEP THESE: This makes the blue line actually show up */
+.nav-indicator { 
+    position: absolute; 
+    bottom: 0; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    width: 0; 
+    height: 3px; 
+    background: #1DA1F2; 
+    transition: 0.3s; 
+    border-radius: 2px;
+}
+
+.nav-tab.active .nav-indicator { 
+ width: 100%; /* Or set to 20px if you want a shorter line like TikTok */
+}
         /* POST ELEMENTS */
         .tiktok-post { 
             position: relative; height: 100vh; width: 100%; 
@@ -177,9 +208,9 @@
             </div>
         </div>
         <div class="tabs-row">
-            <div class="nav-tb active" id="tab-foryou" onclick="toggleFeed('foryou')">For you <div class="nav-indicator"></div></div>
-            <div class="nav-tab" id="tab-following" onclick="toggleFeed('following')">Following <div class="nav-indicator"></div></div>
-            <div class="nav-tab" id="tab-trending" onclick="toggleFeed('trending')">Trending <div class="nav-indicator"></div></div>
+    <div class="nav-tab active" id="tab-foryou" onclick="toggleFeed('foryou')">For you <div class="nav-indicator"></div></div>
+    <div class="nav-tab" id="tab-following" onclick="toggleFeed('following')">Following <div class="nav-indicator"></div></div>
+    <div class="nav-tab" id="tab-trending" onclick="toggleFeed('trending')">Trending <div class="nav-indicator"></div></div>
         </div>
     </div>
 
