@@ -33,44 +33,46 @@
             width: 32px; height: 32px; background: #0084ff; color: white;
             border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px;
         }
-/==FOR YOU**FOLLOWING**TABS ROW==/
-    .tabs-row { 
-    display: flex; 
+    
+/* The For you and Following tab row */
+.tabs-row { 
+    display: flex !important; 
+    flex-direction: row !important; /* Forces side-by-side */
     justify-content: center; 
-    align-items: flex-end; /* Keeps all text on the same level */
+    align-items: center; 
     gap: 20px; 
-    height: 45px; /* Added height to give the tabs breathing room */
-    margin-top: -15px; 
+    width: 100%;
+    margin-top: 18px; /* Adjust this to move them higher/lower */
 }
 
+/* This makes each tab its own little box */
 .nav-tab { 
     color: rgba(255,255,255,0.5); 
     font-size: 15px; 
     font-weight: bold; 
     cursor: pointer; 
     position: relative; 
-    padding-bottom: 10px; /* Space for the line below the text */
+    padding: 10px 5px; /* Adds space around text */
+    white-space: nowrap; /* Prevents text from breaking into two lines */
 }
 
 .nav-tab.active { 
     color: #fff; 
 }
 
-/* KEEP THESE: This makes the blue line actually show up */
+/* Fix the blue line so it stays UNDER the text only */
 .nav-indicator { 
     position: absolute; 
     bottom: 0; 
-    left: 50%; 
-    transform: translateX(-50%); 
+    left: 0; 
     width: 0; 
     height: 3px; 
     background: #1DA1F2; 
     transition: 0.3s; 
-    border-radius: 2px;
 }
 
 .nav-tab.active .nav-indicator { 
- width: 100%; /* Or set to 20px if you want a shorter line like TikTok */
+    width: 100%; /* Now it only fills the width of that specific tab */
 }
         /* POST ELEMENTS */
         .tiktok-post { 
