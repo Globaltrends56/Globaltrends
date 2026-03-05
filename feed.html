@@ -136,38 +136,38 @@
         
         /* CENTERED UPLOAD BOTTUN DROPDOWN */
 #uploadMenu {
-    display: none; /* No !important here so JS works */
+    /* CRITICAL: ONLY display: none here. No other display rules for this ID! */
+    display: none; 
     position: absolute;
     
-    /* POSITIONING: Centered above the button with a very slight nudge left */
+    /* POSITIONING: Centered with a safe slight nudge left (-60%) */
     left: 50% !important;
     transform: translateX(-60%) !important; 
     right: auto !important;
-    bottom: 80px !important; /* Slightly higher to clear the TikTok button */
+    bottom: 80px !important; 
     top: auto !important;
     
     /* SHAPE & UI */
     width: 170px !important;
-    height: 110px !important; /* Clean rectangle height */
+    height: 110px !important; 
     background: #1c1c1e;
-    border-radius: 16px; /* Smoother rounded corners */
+    border-radius: 16px; 
     border: 1px solid #333;
     z-index: 5000;
     box-shadow: 0 10px 30px rgba(0,0,0,0.7);
     
-    /* INTERNAL LAYOUT */
-    display: flex; /* This is toggled by JS, but defined here for flex properties */
+    /* LAYOUT - This only activates when JS changes display to 'flex' */
     flex-direction: column;
     justify-content: center;
-    overflow: hidden; /* Keeps highlight effect inside corners */
+    overflow: hidden;
 }
 
-/* 2. THE CONTENT ROWS (PHOTO/VIDEO) */
+/* 2. THE CONTENT ROWS */
 #uploadMenu .dropdown-item {
     width: 100%;
-    height: 50%; /* Splits the rectangle into two equal halves */
+    height: 55px; /* Exactly half of the 110px height */
     display: flex !important;
-    flex-direction: row !important; /* Keeps icons and text horizontal */
+    flex-direction: row !important;
     align-items: center;
     justify-content: flex-start;
     padding: 0 20px;
@@ -177,18 +177,16 @@
     color: #ffffff;
     cursor: pointer;
     box-sizing: border-box;
-    transition: background 0.2s;
 }
 
-/* 3. ICON STYLING */
+/* 3. ICON & TEXT STYLING */
 #uploadMenu .dropdown-item i {
     font-size: 18px;
     width: 24px;
-    color: #1DA1F2; /* Your theme color */
+    color: #1DA1F2;
     text-align: center;
 }
 
-/* 4. TAP EFFECT */
 #uploadMenu .dropdown-item:active {
     background: #2c2c2e;
 }
