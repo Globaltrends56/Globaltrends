@@ -139,46 +139,56 @@
     display: none;
     position: absolute;
     
-    /* 1. POSITIONING */
+    /* 1. POSITIONING: Centered then nudged left */
     left: 50% !important;
-    transform: translateX(-100%) !important; 
+    transform: translateX(-105%) !important; /* Nudged slightly more to avoid center-line */
     right: auto !important;
     
-    /* 2. SQUARE SHAPE */
-    width: 150px !important;
-    height: 150px !important; 
-    bottom: 70px !important; 
+    /* 2. RECTANGLE SHAPE (Not too slim) */
+    width: 180px !important;  /* Wider than it is tall */
+    height: 130px !important; /* Enough height to feel balanced */
+    
+    /* 3. POSITION ABOVE ICON */
+    bottom: 75px !important; 
     top: auto !important;
     
-    /* 3. STYLING */
+    /* 4. STYLING & INTERNAL ALIGNMENT */
     background: #1c1c1e;
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid #333;
     display: flex;
-    flex-direction: column; /* This keeps the ROWS stacked vertically */
-    justify-content: center; 
+    flex-direction: column;
+    justify-content: center; /* Centers the rows vertically inside the rectangle */
     z-index: 5000;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
 }
 
-/* 4. HORIZONTAL ALIGNMENT FOR ITEMS */
+/* 5. THE CONTENT ROWS */
 #uploadMenu .dropdown-item {
     width: 100%;
     display: flex;
-    flex-direction: row !important; /* Forces Icon and Text to be side-by-side */
+    flex-direction: row !important;
     align-items: center;
-    justify-content: flex-start; /* Aligns them to the left of the square */
-    gap: 12px;                  /* Space between icon and text */
-    padding: 15px 20px;         /* Padding to keep them away from the edges */
-    font-size: 13px;
+    justify-content: flex-start;
+    gap: 15px;
+    padding: 12px 20px;
+    font-size: 14px;
     color: #fff;
     box-sizing: border-box;
+    transition: background 0.2s;
+}
+
+/* Highlight effect when tapping */
+#uploadMenu .dropdown-item:active {
+    background: #2c2c2e;
 }
 
 #uploadMenu .dropdown-item i {
     font-size: 18px;
-    width: 25px; /* Keeps icons aligned in a straight vertical line */
+    width: 24px;
+    color: #1DA1F2; /* Optional: adds your theme color to the icons */
     text-align: center;
-}       
+}
         .toast { 
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
             background: #1DA1F2; color: #fff; padding: 12px 24px; 
