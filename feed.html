@@ -42,7 +42,7 @@
     align-items: center; 
     gap: 20px; 
     width: 100%;
-    margin-top: -20px; /* Adjust this to move them higher/lower */
+    margin-top: -19px; /* Adjust this to move them higher/lower */
 }
 
 /* This makes each tab its own little box */
@@ -204,6 +204,59 @@
   }
   .rotate-chevron {
    transform: rotate(180deg);
+  }
+        /* Container for the specific TikTok upload button style */
+.tiktok-upload-wrapper {
+    position: relative;
+    width: 45px; /* The overall button width */
+    height: 30px; /* The overall button height */
+    margin: 0 auto; /* Center in the menu item */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Background "Color Shadows" (Pseudo-elements) */
+.tiktok-upload-wrapper::before,
+.tiktok-upload-wrapper::after {
+    content: '';
+    position: absolute;
+    width: 32px;  /* The main square size */
+    height: 32px; /* The main square size */
+    border-radius: 8px; /* TikTok uses slightly rounded corners */
+}
+
+/* 1. Left (Cyan) shadow */
+.tiktok-upload-wrapper::before {
+    background-color: #00f2ea;
+    left: 2px; /* Pull left */
+}
+
+/* 2. Right (Magenta) shadow */
+.tiktok-upload-wrapper::after {
+    background-color: #ff0050;
+    right: 2px; /* Pull right */
+}
+
+/* 3. The Main White Square */
+.tiktok-upload-square {
+    position: relative; /* Sits above the shadows */
+    width: 32px;
+    height: 32px;
+    background-color: #fff;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1; /* Ensures it sits on top */
+}
+
+/* 4. The Plus (+) Icon itself */
+.tiktok-upload-square i {
+    color: #000 !important; /* Forces the icon to be black on the white box */
+    font-size: 18px !important; /* Adjust size to fit in the box */
+    margin: 0 !important; /* Removes default margins */
   }
     </style>
 </head>
@@ -498,12 +551,18 @@ function openSearch() { window.location.href = "https://globaltrends.vercel.app/
     </div>
 
     <div class="menu-item upload-dropdown">
-        <i class="fa-solid fa-square-plus" onclick="toggleUpload(event)" style="font-size:28px;"></i>
-        <div id="uploadMenu" class="dropdown-box">
-            <div class="dropdown-header">Create post</div>
-            <div class="dropdown-item" onclick="postPhoto()"><i class="fa-solid fa-image"></i> Post Photo</div>
-            <div class="dropdown-item" onclick="postVideo()"><i class="fa-solid fa-video"></i> Post Video</div>
+  
+    <div class="tiktok-upload-wrapper" onclick="toggleUpload(event)">
+        <div class="tiktok-upload-square">
+            <i class="fa-solid fa-plus"></i>
         </div>
+    </div>
+
+    <div id="uploadMenu" class="dropdown-box">
+      <div class="dropdown-header">Create post</div>
+      <div class="dropdown-item" onclick="postPhoto()"><i class="fa-solid fa-image"></i> Post Photo</div>
+      <div class="dropdown-item" onclick="postVideo()"><i class="fa-solid fa-video"></i> Post Video</div>
+    </div>
     </div>
 
     <div class="menu-item profile-dropdown">
