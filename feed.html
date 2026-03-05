@@ -136,35 +136,45 @@
         
         /* CENTERED UPLOAD BOTTUN DROPDOWN */
 #uploadMenu {
-    display: none;      /* Hidden by default */
+    display: none;      /* Hidden until clicked */
     position: absolute;
     
-    /* 1. Center horizontally */
-    left: 50% !important;
+    /* 1. PUSH TO THE LEFT */
+    left: -80px !important;   /* Adjust this number to move it further left or right */
     right: auto !important;
-    transform: translateX(-50%) !important;
+    transform: none !important; /* Remove the centering transform */
     
-    /* 2. Position it ABOVE the icon */
-    bottom: 60px !important; 
+    /* 2. MAKE IT A SQUARE */
+    width: 140px !important;
+    height: 140px !important; /* Matches width for a perfect square */
+    
+    /* 3. POSITION ABOVE ICON */
+    bottom: 70px !important; 
     top: auto !important;
     
-    /* 3. Style it to look like a clean pop-up */
-    width: 160px;
+    /* 4. STYLING */
     background: #1c1c1e;
     border-radius: 12px;
     border: 1px solid #333;
     flex-direction: column;
+    justify-content: center; /* Centers items vertically in the square */
+    align-items: center;     /* Centers items horizontally in the square */
     z-index: 5000;
 }
 
-/* Ensure the parent allows the centering to work */
-.upload-dropdown {
-    position: relative;
-    display: flex;
+/* Make the items inside look better in a square */
+#uploadMenu .dropdown-item {
+    width: 100%;
     justify-content: center;
-    align-items: center;
+    padding: 15px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #222;
 }
-      
+
+#uploadMenu .dropdown-item:last-child {
+    border-bottom: none;
+}
+        
         .toast { 
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
             background: #1DA1F2; color: #fff; padding: 12px 24px; 
