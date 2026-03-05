@@ -136,43 +136,52 @@
         
         /* CENTERED UPLOAD BOTTUN DROPDOWN */
 #uploadMenu {
-    display: none;      /* Hidden until clicked */
+    display: none;
     position: absolute;
     
-    /* 1. PUSH TO THE LEFT */
-    left: -80px !important;   /* Adjust this number to move it further left or right */
+    /* 1. POSITIONING: Center first, then nudge left */
+    left: 50% !important;
+    /* -100% moves it one full width to the left of the center */
+    transform: translateX(-100%) !important; 
     right: auto !important;
-    transform: none !important; /* Remove the centering transform */
     
     /* 2. MAKE IT A SQUARE */
-    width: 140px !important;
-    height: 140px !important; /* Matches width for a perfect square */
+    width: 150px !important;
+    height: 150px !important; 
     
     /* 3. POSITION ABOVE ICON */
     bottom: 70px !important; 
     top: auto !important;
     
-    /* 4. STYLING */
+    /* 4. STYLING & INTERNAL ALIGNMENT */
     background: #1c1c1e;
-    border-radius: 12px;
+    border-radius: 16px; /* Slightly rounder for a modern look */
     border: 1px solid #333;
+    display: flex;
     flex-direction: column;
-    justify-content: center; /* Centers items vertically in the square */
-    align-items: center;     /* Centers items horizontally in the square */
+    justify-content: center; /* Centers items vertically */
+    align-items: center;     /* Centers items horizontally */
     z-index: 5000;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5); /* Adds depth */
 }
 
-/* Make the items inside look better in a square */
+/* Adjust the items inside the square */
 #uploadMenu .dropdown-item {
     width: 100%;
+    display: flex;
+    flex-direction: column; /* Stack Icon on top of Text */
+    align-items: center;
     justify-content: center;
-    padding: 15px 0;
-    font-size: 13px;
-    border-bottom: 1px solid #222;
+    gap: 5px;
+    padding: 10px 0;
+    font-size: 12px;
+    color: #fff;
 }
 
-#uploadMenu .dropdown-item:last-child {
-    border-bottom: none;
+/* Make the icons inside the square look bigger and cleaner */
+#uploadMenu .dropdown-item i {
+    font-size: 20px;
+    margin-bottom: 4px;
 }
         
         .toast { 
