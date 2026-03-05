@@ -136,58 +136,61 @@
         
         /* CENTERED UPLOAD BOTTUN DROPDOWN */
 #uploadMenu {
-    display: none;
+    display: none; /* No !important here so JS works */
     position: absolute;
     
-    /* 1. POSITIONING: Centered then nudged left */
+    /* POSITIONING: Centered above the button with a very slight nudge left */
     left: 50% !important;
-    transform: translateX(-105%) !important; /* Nudged slightly more to avoid center-line */
+    transform: translateX(-60%) !important; 
     right: auto !important;
-    
-    /* 2. RECTANGLE SHAPE (Not too slim) */
-    width: 180px !important;  /* Wider than it is tall */
-    height: 130px !important; /* Enough height to feel balanced */
-    
-    /* 3. POSITION ABOVE ICON */
-    bottom: 75px !important; 
+    bottom: 80px !important; /* Slightly higher to clear the TikTok button */
     top: auto !important;
     
-    /* 4. STYLING & INTERNAL ALIGNMENT */
+    /* SHAPE & UI */
+    width: 170px !important;
+    height: 110px !important; /* Clean rectangle height */
     background: #1c1c1e;
-    border-radius: 14px;
+    border-radius: 16px; /* Smoother rounded corners */
     border: 1px solid #333;
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Centers the rows vertically inside the rectangle */
     z-index: 5000;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    
+    /* INTERNAL LAYOUT */
+    display: flex; /* This is toggled by JS, but defined here for flex properties */
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden; /* Keeps highlight effect inside corners */
 }
 
-/* 5. THE CONTENT ROWS */
+/* 2. THE CONTENT ROWS (PHOTO/VIDEO) */
 #uploadMenu .dropdown-item {
     width: 100%;
-    display: flex;
-    flex-direction: row !important;
+    height: 50%; /* Splits the rectangle into two equal halves */
+    display: flex !important;
+    flex-direction: row !important; /* Keeps icons and text horizontal */
     align-items: center;
     justify-content: flex-start;
+    padding: 0 20px;
     gap: 15px;
-    padding: 12px 20px;
     font-size: 14px;
-    color: #fff;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
     box-sizing: border-box;
     transition: background 0.2s;
 }
 
-/* Highlight effect when tapping */
-#uploadMenu .dropdown-item:active {
-    background: #2c2c2e;
-}
-
+/* 3. ICON STYLING */
 #uploadMenu .dropdown-item i {
     font-size: 18px;
     width: 24px;
-    color: #1DA1F2; /* Optional: adds your theme color to the icons */
+    color: #1DA1F2; /* Your theme color */
     text-align: center;
+}
+
+/* 4. TAP EFFECT */
+#uploadMenu .dropdown-item:active {
+    background: #2c2c2e;
 }
         .toast { 
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
