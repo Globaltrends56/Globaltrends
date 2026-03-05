@@ -125,14 +125,46 @@
             50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
         }
-
+        
+        /**NOTIFICATION BELL DROPDOWN**/ 
         .dropdown {
             display: none; position: absolute; right: 0; top: 40px;
             background: #1c1c1e; border-radius: 12px; width: 250px; 
             border: 1px solid #333; z-index: 3000;
         }
         .dropdown.show { display: block; }
+        
+        /* CENTERED UPLOAD BOTTUN DROPDOWN */
+#uploadMenu {
+    display: none;      /* Hidden by default */
+    position: absolute;
+    
+    /* 1. Center horizontally */
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    
+    /* 2. Position it ABOVE the icon */
+    bottom: 60px !important; 
+    top: auto !important;
+    
+    /* 3. Style it to look like a clean pop-up */
+    width: 160px;
+    background: #1c1c1e;
+    border-radius: 12px;
+    border: 1px solid #333;
+    flex-direction: column;
+    z-index: 5000;
+}
 
+/* Ensure the parent allows the centering to work */
+.upload-dropdown {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+      
         .toast { 
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
             background: #1DA1F2; color: #fff; padding: 12px 24px; 
@@ -140,21 +172,22 @@
             opacity: 0; transition: 0.3s;
         }
         .toast.show { opacity: 1; }
+        
         /***BOTTOM-FLOATING-MENU***/
         .menu-bar {
-  display: flex; justify-content: space-around; align-items: center;
-  padding: 5px 0; position: fixed; bottom: 0; left: 0; width: 100%;
-  background: rgba(0, 0, 0, 0.9); /* Darker for video feed */
-  backdrop-filter: blur(10px); border-top: 1px solid #333; z-index: 9999;
-}
+          display: flex; justify-content: space-around; align-items: center;
+          padding: 5px 0; position: fixed; bottom: 0; left: 0; width: 100%;
+          background: rgba(0, 0, 0, 0.9); /* Darker for video feed */
+          backdrop-filter: blur(10px); border-top: 1px solid #333; z-index: 9999;
+         }
 
-.menu-item { text-align: center; cursor: pointer; color: #fff; }
-.menu-item i { font-size: 18px; display: block; }
+        .menu-item { text-align: center; cursor: pointer; color: #fff; }
+        .menu-item i { font-size: 18px; display: block; }
 
-.profile-circle {
-  width: 28px; height: 28px; background-color: #333;
-  border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;
-}
+        .profile-circle {
+          width: 28px; height: 28px; background-color: #333;
+          border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;
+         }
 
 .dropdown-box {
   position: absolute; bottom: 65px; right: 10px; width: 220px;
