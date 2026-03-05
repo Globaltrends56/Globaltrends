@@ -127,10 +127,24 @@
         }
 
         .dropdown {
-            display: none; position: absolute; right: 0; top: 40px;
-            background: #1c1c1e; border-radius: 12px; width: 250px; 
-            border: 1px solid #333; z-index: 3000;
-        }
+    display: none; 
+    position: absolute; 
+    
+    /* 1. Position the LEFT edge at the 50% mark of the icon */
+    left: 50%; 
+    right: auto; /* This cancels the "right: 0" that was pulling it */
+    
+    /* 2. Shift the menu back by half its own width to center it */
+    transform: translateX(-50%); 
+    
+    /* 3. Keep your original styling */
+    top: 40px;
+    background: #1c1c1e; 
+    border-radius: 12px; 
+    width: 250px; 
+    border: 1px solid #333; 
+    z-index: 3000;
+    }
         .dropdown.show { display: block; }
 
         .toast { 
@@ -560,8 +574,8 @@ function openSearch() { window.location.href = "https://globaltrends.vercel.app/
 
     <div id="uploadMenu" class="dropdown-box">
       <div class="dropdown-header">Create post</div>
-      <div class="dropdown-item" onclick="postPhoto()"><i class="fa-solid fa-image"></i> Post Photo</div>
-      <div class="dropdown-item" onclick="postVideo()"><i class="fa-solid fa-video"></i> Post Video</div>
+      <div class="dropdown-item" onclick="postPhoto()"><i class="fa-solid fa-image"></i> PHOTO</div>
+      <div class="dropdown-item" onclick="postVideo()"><i class="fa-solid fa-video"></i> VIDEO</div>
     </div>
     </div>
 
