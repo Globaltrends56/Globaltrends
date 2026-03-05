@@ -139,51 +139,46 @@
     display: none;
     position: absolute;
     
-    /* 1. POSITIONING: Center first, then nudge left */
+    /* 1. POSITIONING */
     left: 50% !important;
-    /* -100% moves it one full width to the left of the center */
     transform: translateX(-100%) !important; 
     right: auto !important;
     
-    /* 2. MAKE IT A SQUARE */
+    /* 2. SQUARE SHAPE */
     width: 150px !important;
     height: 150px !important; 
-    
-    /* 3. POSITION ABOVE ICON */
     bottom: 70px !important; 
     top: auto !important;
     
-    /* 4. STYLING & INTERNAL ALIGNMENT */
+    /* 3. STYLING */
     background: #1c1c1e;
-    border-radius: 16px; /* Slightly rounder for a modern look */
+    border-radius: 16px;
     border: 1px solid #333;
     display: flex;
-    flex-direction: column;
-    justify-content: center; /* Centers items vertically */
-    align-items: center;     /* Centers items horizontally */
+    flex-direction: column; /* This keeps the ROWS stacked vertically */
+    justify-content: center; 
     z-index: 5000;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5); /* Adds depth */
 }
 
-/* Adjust the items inside the square */
+/* 4. HORIZONTAL ALIGNMENT FOR ITEMS */
 #uploadMenu .dropdown-item {
     width: 100%;
     display: flex;
-    flex-direction: column; /* Stack Icon on top of Text */
+    flex-direction: row !important; /* Forces Icon and Text to be side-by-side */
     align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 10px 0;
-    font-size: 12px;
+    justify-content: flex-start; /* Aligns them to the left of the square */
+    gap: 12px;                  /* Space between icon and text */
+    padding: 15px 20px;         /* Padding to keep them away from the edges */
+    font-size: 13px;
     color: #fff;
+    box-sizing: border-box;
 }
 
-/* Make the icons inside the square look bigger and cleaner */
 #uploadMenu .dropdown-item i {
-    font-size: 20px;
-    margin-bottom: 4px;
-}
-        
+    font-size: 18px;
+    width: 25px; /* Keeps icons aligned in a straight vertical line */
+    text-align: center;
+}       
         .toast { 
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
             background: #1DA1F2; color: #fff; padding: 12px 24px; 
