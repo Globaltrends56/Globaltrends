@@ -367,7 +367,7 @@
     }  
 
     function checkAuthRedirect(type) {  
-        if (!myId) { showToast("Please login to perform this action"); return; }  
+        if (!myId) { showToast("Please login"); return; }  
         if (type === 'messenger') window.location.href = "https://globaltrends56.blogspot.com/p/gt-messenger.html?m=1";  
     }  
 
@@ -382,17 +382,17 @@
 
       
     function renderFeed(posts, isFollowingTab = false) {  
-const feed = document.getElementById("tiktok-feed");  
-feed.innerHTML = ""; // Clears old videos to prevent overlapping layout  
+    const feed = document.getElementById("tiktok-feed");  
+    feed.innerHTML = ""; // Clears old videos to prevent overlapping layout  
 
-// Check if Following tab is empty  
-if (posts.length === 0 && isFollowingTab) {  
+    // Check if Following tab is empty  
+    if (posts.length === 0 && isFollowingTab) {  
     feed.innerHTML = `  
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">  
             <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>  
             <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>  
             <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow your favorite creators to see their latest videos here.</p>  
-            <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Explore Trending</button>  
+            <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Back</button>  
         </div>`;  
     return;  
 }  
@@ -472,7 +472,7 @@ posts.forEach((post) => {
     async function toggleFeed(type) {  
 // 1. Check Login for Following Tab  
 if (type === 'following' && !myId) {   
-    showToast("Please login to perform this action");   
+    showToast("Please login");   
     return;   
 }  
   
@@ -500,7 +500,7 @@ document.getElementById("tiktok-feed").scrollTop = 0;
     }  
 
     async function likePostGlobal(id, el) {  
-        if (!myId) { showToast("Please login to perform this action"); return; }  
+        if (!myId) { showToast("Please login"); return; }  
         const heart = el.querySelector(".heart-icon");  
         const countLabel = el.querySelector(".action-count");  
         let likes = parseInt(countLabel.innerText.replace('k','000').replace('M','000000')) || 0;  
@@ -519,7 +519,7 @@ document.getElementById("tiktok-feed").scrollTop = 0;
 
     function toggleDropdown() { document.getElementById('notifDropdown').classList.toggle('show'); }  
     async function handleFollow(uid, btn) {  
-        if (!myId) { showToast("Please login to perform this action"); return; }  
+        if (!myId) { showToast("Please login"); return; }  
         let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
         if (!cur.includes(uid)) { btn.textContent = "Following"; cur.push(uid); }  
         else { btn.textContent = "Follow"; cur = cur.filter(i => i !== uid); }  
