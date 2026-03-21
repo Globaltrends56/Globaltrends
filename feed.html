@@ -60,20 +60,24 @@
     color: #fff; 
 }
 
-/* Fix the blue line so it stays UNDER the text only */
+/* 1. The "Base" for the blue line */
 .nav-indicator { 
     position: absolute; 
-    bottom: 0; 
-    left: 10; 
+    bottom: -2px;     /* Moves it slightly below the text */
+    left: 50%;        /* Move the start point to the middle of the tab */
+    transform: translateX(-50%); /* Pulls the line back so its center matches the text center */
     width: 0; 
     height: 3px; 
     background: #1DA1F2; 
-    transition: 0.3s; 
+    border-radius: 10px; /* Makes the ends of the line rounded/smooth */
+    transition: 0.3s ease; 
 }
 
+/* 2. The "Active" state */
 .nav-tab.active .nav-indicator { 
-    width: 50%; /* Now it only fills the width of that specific tab */
+    width: 25px; /* Set a fixed width so it looks like a clean tab indicator */
 }
+        
         /* POST ELEMENTS */
         .tiktok-post { 
             position: relative; height: 100vh; width: 100%; 
