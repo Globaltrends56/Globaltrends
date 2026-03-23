@@ -320,7 +320,29 @@
     font-size: 18px !important; /* Adjust size to fit in the box */
     margin: 0 !important; /* Removes default margins */
   }
-    </style>
+        
+/* REPORT POPUP STYLING */
+.report-popup {
+    display: none; /* Hidden by default */
+    position: absolute;
+    right: 50px; /* Positions it to the left of the sidebar icons */
+    bottom: 10px;
+    background: #1c1c1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px;
+    z-index: 5000;
+    white-space: nowrap;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.report-option {
+    color: #ff4d4d;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+  </style>
 </head>
 <body>
 
@@ -428,12 +450,19 @@ posts.forEach((post) => {
                     <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>  
                     <div class="action-count">${nFormatter(post.likes)}</div>  
                 </div>  
+                
                 <div class="action-item">  
                     <i class="fa-solid fa-eye" style="font-size:26px;"></i>  
                     <div class="action-count">${nFormatter(post.views)}</div>  
-                </div>  
-            </div>  
-        </div>`;  
+                </div>
+
+                <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
+                    <i class="fa-solid fa-ellipsis" style="font-size:26px; color: white;"></i>
+                    <div id="reportPopup-${post.id}" class="report-popup">
+                        <div class="report-option" onclick="handleReport('${post.id}')">Report Post</div>
+                    </div>
+                </div>
+            </div>
       
     const shield = div.querySelector(".video-shield");  
     const video = div.querySelector("video");  
@@ -601,6 +630,30 @@ function goToAbout() { window.location.href = "https://globaltrends56.blogspot.c
 function goToGTAppStore() { window.location.href = "https://globaltrends.vercel.app"; }
 function showHome() { window.location.reload(); } // Refreshes the feed
 function openSearch() { window.location.href = "https://globaltrends.vercel.app/search.html"; }
+// Function to show/hide the report menu
+function toggleReportMenu(event, postId) {
+    event.stopPropagation(); // Stops video from pausing
+    const popup = document.getElementById(`reportPopup-${postId}`);
+    
+    // Close any other open report menus
+    document.querySelectorAll('.report-popup').forEach(p => {
+        if (p !== popup) p.style.display = 'none';
+    });
+
+    popup.style.display = (popup.style.display === 'block') ? 'none' : 'block';
+}
+
+// Function to handle the actual report click
+function handleReport(postId) {
+    showToast("Reported to Globaltrends");
+    // You can add your Supabase 'reports' table logic here later
+    document.querySelectorAll('.report-popup').forEach(p => p.style.display = 'none');
+}
+
+// Ensure the menu closes if user clicks elsewhere
+document.addEventListener("click", () => {
+    document.querySelectorAll('.report-popup').forEach(p => p.style.display = 'none');
+});
 </script>
     <div id="bottomMenu">
     <div class="menu-bar">
