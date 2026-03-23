@@ -406,101 +406,101 @@
         renderFeed(allPosts);  
     });  
 
-      
     function renderFeed(posts, isFollowingTab = false) {  
-    const feed = document.getElementById("tiktok-feed");  
-    feed.innerHTML = ""; // Clears old videos to prevent overlapping layout  
+        const feed = document.getElementById("tiktok-feed");  
+        feed.innerHTML = ""; 
 
-    // Check if Following tab is empty  
-    if (posts.length === 0 && isFollowingTab) {  
-    feed.innerHTML = `  
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">  
-            <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>  
-            <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>  
-            <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow your favorite creators to see their latest videos here.</p>  
-            <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Back</button>  
-        </div>`;  
-    return;  
-}  
-
-posts.forEach((post) => {  
-    const isLiked = localStorage.getItem("liked_" + post.id);  
-    const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
-      
-    const div = document.createElement("div");  
-    div.className = "tiktok-post";  
-    div.innerHTML = `  
-        <div class="video-wrapper">  
-            <video muted loop playsinline src="${post.video_url}"></video>  
-        </div>  
-        <div class="video-shield"></div>  
-        <div class="ui-layer">  
-            <div class="overlay">  
-                <div class="user-info">  
-                    <img class="avatar" src="${post.profiles?.avatar_url || ''}">  
-                    <a class="username-link" href="profile.html?id=${post.user_id}">  
-                        ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}  
-                    </a>  
-                    <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>  
-                </div>  
-                <div class="caption">${post.caption || ""}</div>  
-            </div>  
-            <div class="actions">  
-                <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
-                    <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>  
-                    <div class="action-count">${nFormatter(post.likes)}</div>  
-                </div>  
-                
-                <div class="action-item">  
-                    <i class="fa-solid fa-eye" style="font-size:26px;"></i>  
-                    <div class="action-count">${nFormatter(post.views)}</div>  
-                </div>
-
-                <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
-                    <i class="fa-solid fa-ellipsis" style="font-size:26px; color: white;"></i>
-                    <div id="reportPopup-${post.id}" class="report-popup">
-                        <div class="report-option" onclick="handleReport('${post.id}')">Report Post</div>
-                    </div>
-                </div>
-            </div>
-      
-    const shield = div.querySelector(".video-shield");  
-    const video = div.querySelector("video");  
-    let lastTap = 0;  
-
-    shield.onclick = () => {  
-        const now = Date.now();  
-        if (now - lastTap < 300) {  
-            const h = document.createElement("i");  
-            h.className = "fa-solid fa-heart heart-pop";  
-            div.appendChild(h);  
-            setTimeout(() => h.remove(), 600);  
-            if (!localStorage.getItem("liked_" + post.id)) likePostGlobal(post.id, div.querySelector(".heart-icon").parentElement);  
-        } else {  
-            setTimeout(() => {   
-                if (Date.now() - now >= 300) {   
-                    video.muted = !video.muted;   
-                    showToast(video.muted ? "🔇 Muted" : "🔊 Sound On");   
-                }   
-            }, 300);  
+        if (posts.length === 0 && isFollowingTab) {  
+            feed.innerHTML = `  
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">  
+                    <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>  
+                    <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>  
+                    <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow your favorite creators to see their latest videos here.</p>  
+                    <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Back</button>  
+                </div>`;  
+            return;  
         }  
-        lastTap = now;  
-    };  
 
-    feed.appendChild(div);  
+        posts.forEach((post) => {  
+            const isLiked = localStorage.getItem("liked_" + post.id);  
+            const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
+            
+            const div = document.createElement("div");  
+            div.className = "tiktok-post";  
+            
+            // FIXED: Added missing backticks and closed all divs properly
+            div.innerHTML = `  
+                <div class="video-wrapper">  
+                    <video muted loop playsinline src="${post.video_url}"></video>  
+                </div>  
+                <div class="video-shield"></div>  
+                <div class="ui-layer">  
+                    <div class="overlay">  
+                        <div class="user-info">  
+                            <img class="avatar" src="${post.profiles?.avatar_url || ''}">  
+                            <a class="username-link" href="profile.html?id=${post.user_id}">  
+                                ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}  
+                            </a>  
+                            <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>  
+                        </div>  
+                        <div class="caption">${post.caption || ""}</div>  
+                    </div>  
+                    <div class="actions">  
+                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
+                            <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>  
+                            <div class="action-count">${nFormatter(post.likes)}</div>  
+                        </div>  
+                        
+                        <div class="action-item">  
+                            <i class="fa-solid fa-eye" style="font-size:26px;"></i>  
+                            <div class="action-count">${nFormatter(post.views)}</div>  
+                        </div>
 
-    // IntersectionObserver for auto-play  
-    new IntersectionObserver(entries => {  
-        entries.forEach(e => {  
-            if (e.isIntersecting) {   
-                if(currentVideo) currentVideo.pause();   
-                currentVideo = video;   
-                video.play().catch(()=>{});   
-            } else { video.pause(); }  
+                        <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
+                            <i class="fa-solid fa-ellipsis" style="font-size:26px; color: white;"></i>
+                            <div id="reportPopup-${post.id}" class="report-popup">
+                                <div class="report-option" onclick="handleReport('${post.id}')">Report Post</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;  
+            
+            const shield = div.querySelector(".video-shield");  
+            const video = div.querySelector("video");  
+            let lastTap = 0;  
+
+            shield.onclick = () => {  
+                const now = Date.now();  
+                if (now - lastTap < 300) {  
+                    const h = document.createElement("i");  
+                    h.className = "fa-solid fa-heart heart-pop";  
+                    div.appendChild(h);  
+                    setTimeout(() => h.remove(), 600);  
+                    if (!localStorage.getItem("liked_" + post.id)) likePostGlobal(post.id, div.querySelector(".heart-icon").parentElement);  
+                } else {  
+                    setTimeout(() => {   
+                        if (Date.now() - now >= 300) {   
+                            video.muted = !video.muted;   
+                            showToast(video.muted ? "🔇 Muted" : "🔊 Sound On");   
+                        }   
+                    }, 300);  
+                }  
+                lastTap = now;  
+            };  
+
+            feed.appendChild(div);  
+
+            new IntersectionObserver(entries => {  
+                entries.forEach(e => {  
+                    if (e.isIntersecting) {   
+                        if(currentVideo) currentVideo.pause();   
+                        currentVideo = video;   
+                        video.play().catch(()=>{});   
+                    } else { video.pause(); }  
+                });  
+            }, { threshold: 0.6 }).observe(div);  
         });  
-    }, { threshold: 0.6 }).observe(div);  
-});  
-    }  
+      }
        
     async function toggleFeed(type) {  
 // 1. Check Login for Following Tab  
