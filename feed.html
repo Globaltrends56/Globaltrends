@@ -70,6 +70,19 @@
 .twitter-actions .action-item i {
     font-size: 18px;
 }
+        /* This allows Trending to show multiple posts in a list */
+#tiktok-feed.trending-mode .tiktok-post {
+    height: auto !important;
+    min-height: auto !important;
+    scroll-snap-align: none !important;
+    border-bottom: 1px solid #2f3336;
+    padding-bottom: 10px;
+}
+
+/* Glass Header tweak to ensure it doesn't overlap first post too much */
+#tiktok-feed.trending-mode {
+    padding-top: 90px !important;
+}
         /* TIKTOK FEED CSS */
 #tiktok-feed.trending-mode {
     padding-top: 80px; /* Space for your glass header */
@@ -528,7 +541,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;  
         }  
 
-        posts.forEach((post) => {  
+    posts.forEach((post) => {  
     const isLiked = localStorage.getItem("liked_" + post.id);  
     const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
     const isTrending = document.getElementById('tab-trending').classList.contains('active');
@@ -538,51 +551,38 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 1. IF TRENDING (Twitter Layout)
     if (isTrending) {
-    // 1. Force the media into an array so we can loop through it
-    const mediaList = Array.isArray(post.video_url) ? post.video_url : [post.video_url];
-    
+    // 1. ENSURE WE HAVE A LIST: Convert string to array if it's just one photo
+    let mediaList = [];
+    if (post.video_url) {
+        mediaList = Array.isArray(post.video_url) ? post.video_url : [post.video_url];
+    }
+
     div.innerHTML = `
-        <div class="twitter-card">
+        <div class="twitter-card" style="padding: 15px; background: #000;">
             <div class="user-info">
-                <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px;">
-                <div style="display:flex; flex-direction:column;">
-                    <span style="font-weight:bold; font-size:15px; color:#fff;">
-                        ${post.profiles?.username} 
-                        ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
-                    </span>
-                </div>
+                <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px; border-radius:50%;">
+                <span style="font-weight:bold; color:#fff;">${post.profiles?.username}</span>
             </div>
 
-            <div class="post-text">${post.caption || ""}</div>
+            <div class="post-text" style="margin: 10px 0; color:#fff;">${post.caption || ""}</div>
             
-            ${mediaList[0] ? `
-                <div class="carousel-wrapper">
+            ${mediaList.length > 0 ? `
+                <div class="carousel-wrapper" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 15px; border: 1px solid #333;">
                     ${mediaList.map(url => `
-                        <div class="carousel-item">
-                            <img src="${url}" loading="lazy">
+                        <div class="carousel-item" style="flex: 0 0 100%; scroll-snap-align: start;">
+                            <img src="${url}" style="width:100%; height:auto; display:block;">
                         </div>
                     `).join('')}
                 </div>
             ` : ''}
 
-            <div class="twitter-actions" style="display:flex; justify-content:space-between; max-width:300px; margin-top:12px; color:#71767b;">
-                <div class="action-item" onclick="likePostGlobal('${post.id}', this)" style="display:flex; align-items:center; gap:5px;">
-                    <i class="fa-regular fa-heart ${isLiked ? 'fa-solid liked' : ''}" style="font-size:18px;"></i>
-                    <span style="font-size:13px;">${nFormatter(post.likes)}</span>
-                </div>
-                <div class="action-item" style="display:flex; align-items:center; gap:5px;">
-                    <i class="fa-regular fa-chart-bar" style="font-size:18px;"></i>
-                    <span style="font-size:13px;">${nFormatter(post.views)}</span>
-                </div>
-                <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')" style="position:relative;">
-                    <i class="fa-solid fa-ellipsis" style="font-size:18px;"></i>
-                    <div id="reportPopup-${post.id}" class="report-popup">
-                        <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
-                    </div>
-                </div>
+            <div class="twitter-actions" style="display:flex; justify-content:space-between; width:70%; margin-top:15px; color:#71767b;">
+                <div onclick="likePostGlobal('${post.id}', this)"><i class="fa-regular fa-heart"></i> ${nFormatter(post.likes)}</div>
+                <div><i class="fa-regular fa-chart-bar"></i> ${nFormatter(post.views)}</div>
+                <div onclick="toggleReportMenu(event, '${post.id}')"><i class="fa-solid fa-ellipsis"></i></div>
             </div>
         </div>`;
-    }
+      }
                                                                                               
     // 2. IF FOR YOU / FOLLOWING (Video Layout)
     else {
