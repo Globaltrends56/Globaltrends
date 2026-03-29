@@ -504,17 +504,18 @@
 
 // DOMContentLoaded block
 document.addEventListener("DOMContentLoaded", async () => {  
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
-        headers: { apikey: SUPABASE_KEY }   
-    });  
-    const data = await res.json();  
-    
-    // 1. Store the RAW data (everything: photos AND videos)
-    allPosts = Array.isArray(data) ? data : [];  
-    
-    // 2. Let the toggleFeed function handle the filtering logic
-    // This ensures that when you click "Trending", it pulls from allPosts again
-    toggleFeed('foryou');  
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
+            headers: { apikey: SUPABASE_KEY }   
+        });  
+        const data = await res.json();  
+        allPosts = Array.isArray(data) ? data : [];  
+        
+        // This triggers the first load
+        toggleFeed('foryou');  
+    } catch (err) {
+        console.error("Failed to load posts:", err);
+    }
 });
 
     function renderFeed(posts, isFollowingTab = false) {  
@@ -629,7 +630,59 @@ document.addEventListener("DOMContentLoaded", async () => {
         feed.appendChild(div); 
     });
 }
-                                                      
+
+
+    async function toggleFeed(type) {  
+    const feed = document.getElementById("tiktok-feed");
+    console.log("Switching to tab:", type); // Check your browser console for this!
+
+    if (type === 'following' && !myId) {   
+        showToast("Please login");   
+        return;   
+    }  
+  
+    // 1. Update active tab UI
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
+    const activeTab = document.getElementById(`tab-${type}`);
+    if (activeTab) activeTab.classList.add('active');  
+
+    // 2. Handle Scrolling Mode CSS
+    if (type === 'trending') {
+        feed.classList.add('trending-mode');
+    } else {
+        feed.classList.remove('trending-mode');
+    }
+
+    // 3. Filtering Logic
+    let filteredPosts = [];  
+    const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
+    
+    // Helper to detect videos
+    const isVideo = (url) => {
+        if (!url) return false;
+        // If it's an array, check the first item
+        const checkUrl = Array.isArray(url) ? url[0] : url;
+        return checkUrl.match(/\.(mp4|mov|m4v|webm)/i);
+    };
+
+    if (type === 'trending') {  
+        // Show ONLY Photos (Not videos)
+        filteredPosts = allPosts.filter(p => !isVideo(p.video_url)); 
+    } else if (type === 'following') {  
+        // Show videos from followed users
+        filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && isVideo(p.video_url)); 
+    } else {  
+        // FOR YOU: Show only videos
+        filteredPosts = allPosts.filter(p => isVideo(p.video_url)); 
+    }  
+
+    console.log("Posts found for this tab:", filteredPosts.length);
+    
+    // 4. Update the screen
+    renderFeed(filteredPosts, type === 'following');  
+    feed.scrollTop = 0;  
+    }
+     
     async function likePostGlobal(id, el) {  
         if (!myId) { showToast("Please login"); return; }  
         const heart = el.querySelector(".heart-icon");  
