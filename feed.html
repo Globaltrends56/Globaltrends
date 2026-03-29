@@ -12,33 +12,84 @@
         html, body { background: #000; font-family: -apple-system, sans-serif; overflow: hidden; width: 100%; height: 100%; color: #fff; }
         /* TWITTER-LIKE CARD STYLING */
 .twitter-card {
-    padding: 15px;
+    padding: 12px 16px;
     background: #000;
-    border-bottom: 1px solid #222;
-    min-height: 250px;
+    border-bottom: 1px solid #2f3336; /* X/Twitter uses this subtle grey */
     display: flex;
     flex-direction: column;
-    gap: 12px;
+}
+
+.twitter-card .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.twitter-card .post-text {
+    font-size: 15px;
+    line-height: 20px;
+    color: #e7e9ea;
+    margin-bottom: 12px;
+    word-wrap: break-word;
 }
 
 .post-image-container {
     width: 100%;
-    border-radius: 12px;
+    max-height: 512px; /* Prevents super long images from taking over */
+    border-radius: 16px;
     overflow: hidden;
-    border: 1px solid #333;
+    border: 1px solid #2f3336;
+    margin-bottom: 12px;
 }
 
 .post-image-container img {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover; /* Keeps images looking uniform */
     display: block;
 }
 
-.post-text {
-    font-size: 15px;
-    line-height: 1.4;
-    color: #fff;
+/* Specific styling for the horizontal actions */
+.twitter-actions {
+    display: flex;
+    justify-content: space-between;
+    max-width: 425px;
+    padding-top: 4px;
+    color: #71767b; /* Muted grey for icons */
 }
+
+.twitter-actions .action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    transition: 0.2s;
+}
+
+.twitter-actions .action-item i {
+    font-size: 18px;
+}
+        /* TIKTOK FEED CSS */
+#tiktok-feed.trending-mode {
+    padding-top: 100px; /* Space for the floating header */
+    scroll-snap-type: none !important;
+    overflow-y: auto !important;
+}
+
+#tiktok-feed.trending-mode .tiktok-post {
+    height: auto !important;
+    min-height: 200px;
+    scroll-snap-align: none !important;
+    border-bottom: 1px solid #222;
+    background: #000;
+}
+
+/* Ensure the header stays visible over everything */
+.header-container {
+    background: rgba(0,0,0,0.9) !important;
+    backdrop-filter: blur(10px);
+        }
         
         /* FEED CONTAINER */
         #tiktok-feed { 
@@ -426,14 +477,19 @@
         if (type === 'messenger') window.location.href = "https://globaltrends56.blogspot.com/p/gt-messenger.html?m=1";  
     }  
 
-    document.addEventListener("DOMContentLoaded", async () => {  
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
-            headers: { apikey: SUPABASE_KEY }   
-        });  
-        const data = await res.json();  
-        allPosts = Array.isArray(data) ? data.filter(p => p.video_url) : [];  
-        renderFeed(allPosts);  
+    // DOMContentLoaded block
+document.addEventListener("DOMContentLoaded", async () => {  
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
+        headers: { apikey: SUPABASE_KEY }   
     });  
+    const data = await res.json();  
+    // FIX: Don't filter out photos here! Store everything in allPosts.
+    allPosts = Array.isArray(data) ? data : [];  
+    
+    // Start by showing only videos in the "For You" tab
+    const initialVideos = allPosts.filter(p => p.video_url && p.video_url.match(/\.(mp4|mov|m4v|webm)/i));
+    renderFeed(initialVideos);  
+});
 
     function renderFeed(posts, isFollowingTab = false) {  
         const feed = document.getElementById("tiktok-feed");  
@@ -460,39 +516,45 @@
 
     // 1. IF TRENDING (Twitter Layout)
     if (isTrending) {
-        div.innerHTML = `
-            <div class="twitter-card" style="padding: 15px; border-bottom: 1px solid #222;">
-                <div class="user-info" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:40px; height:40px; border-radius:50%;">
-                    <span style="font-weight:bold; color:white;">${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check" style="color:#1DA1F2;"></i>' : ''}</span>
+    div.innerHTML = `
+        <div class="twitter-card">
+            <div class="user-info">
+                <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px;">
+                <div style="display:flex; flex-direction:column;">
+                    <span style="font-weight:bold; font-size:15px;">
+                        ${post.profiles?.username} 
+                        ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
+                    </span>
                 </div>
+            </div>
 
-                <div class="post-text" style="margin-bottom:12px; font-size:16px; color:white;">${post.caption || ""}</div>
-                
-                ${post.video_url ? 
-                    `<div class="post-image-container" style="border-radius:12px; overflow:hidden; border:1px solid #333; margin-bottom:10px;">
-                        <img src="${post.video_url}" style="width:100%; height:auto; display:block;">
-                    </div>` : ''
-                }
+            <div class="post-text">${post.caption || ""}</div>
+            
+            ${post.video_url ? 
+                `<div class="post-image-container">
+                    <img src="${post.video_url}" loading="lazy">
+                </div>` : ''
+            }
 
-                <div class="actions" style="position:static; flex-direction:row; justify-content:space-between; width:70%; padding:10px 0;">
-                    <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
-                        <i class="fa-solid fa-heart ${isLiked ? 'liked' : ''}" style="font-size:20px;"></i>
-                        <span class="action-count">${nFormatter(post.likes)}</span>
-                    </div>
-                    <div class="action-item">
-                        <i class="fa-solid fa-eye" style="font-size:18px;"></i>
-                        <span class="action-count">${nFormatter(post.views)}</span>
-                    </div>
-                    <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')">
-                        <i class="fa-solid fa-ellipsis" style="font-size:18px;"></i>
-                        <div id="reportPopup-${post.id}" class="report-popup">
-                            <div class="report-option" onclick="handleReport('${post.id}')">Report Post</div>
-                        </div>
+            <div class="twitter-actions">
+                <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
+                    <i class="fa-regular fa-heart ${isLiked ? 'fa-solid liked' : ''}"></i>
+                    <span>${nFormatter(post.likes)}</span>
+                </div>
+                <div class="action-item">
+                    <i class="fa-regular fa-chart-bar"></i>
+                    <span>${nFormatter(post.views)}</span>
+                </div>
+                <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')">
+                    <i class="fa-solid fa-ellipsis"></i>
+                    <div id="reportPopup-${post.id}" class="report-popup">
+                        <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
                     </div>
                 </div>
-            </div>`;
-                                                                                              }
+            </div>
+        </div>`;
+    }
+                                                                                              
     // 2. IF FOR YOU / FOLLOWING (Video Layout)
     else {
         div.innerHTML = `  
@@ -559,7 +621,8 @@
         });  
       }
        
-    async function toggleFeed(type) {  
+    // Replace your toggleFeed function with this
+async function toggleFeed(type) {  
     const feed = document.getElementById("tiktok-feed");
 
     if (type === 'following' && !myId) {   
@@ -568,11 +631,11 @@
     }  
   
     if (type === 'trending') {
-        feed.style.scrollSnapType = "none"; 
         feed.classList.add('trending-mode');
+        feed.style.scrollSnapType = "none"; 
     } else {
-        feed.style.scrollSnapType = "y mandatory"; 
         feed.classList.remove('trending-mode');
+        feed.style.scrollSnapType = "y mandatory"; 
     }
 
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
@@ -582,24 +645,22 @@
     const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
 
     if (type === 'trending') {  
-        // 1. First, get all posts
-        // 2. Filter out anything that is a video (.mp4, .mov, .m4v)
-        // 3. Sort by likes
+        // TRENDING: Only Photos/Text (Filter OUT videos)
         filteredPosts = allPosts
-            .filter(p => !p.video_url.match(/\.(mp4|mov|m4v|webm)/i)) 
+            .filter(p => !p.video_url || !p.video_url.match(/\.(mp4|mov|m4v|webm)/i)) 
             .sort((a,b) => (b.likes||0) - (a.likes||0));  
             
     } else if (type === 'following') {  
-        filteredPosts = allPosts.filter(p => interests.includes(p.user_id));  
+        // FOLLOWING: Show videos of people you follow
+        filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && p.video_url.match(/\.(mp4|mov|m4v|webm)/i)); 
     } else {  
-        // For You: Only show videos (optional, if you want For You to stay pure video)
-        filteredPosts = allPosts.filter(p => p.video_url.match(/\.(mp4|mov|m4v|webm)/i)); 
+        // FOR YOU: Only show videos
+        filteredPosts = allPosts.filter(p => p.video_url && p.video_url.match(/\.(mp4|mov|m4v|webm)/i)); 
     }  
 
     renderFeed(filteredPosts, type === 'following');  
     feed.scrollTop = 0;  
-            }
-
+}
     async function likePostGlobal(id, el) {  
         if (!myId) { showToast("Please login"); return; }  
         const heart = el.querySelector(".heart-icon");  
