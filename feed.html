@@ -70,34 +70,24 @@
 .twitter-actions .action-item i {
     font-size: 18px;
 }
-        /* This allows Trending to show multiple posts in a list */
-#tiktok-feed.trending-mode .tiktok-post {
-    height: auto !important;
-    min-height: auto !important;
-    scroll-snap-align: none !important;
-    border-bottom: 1px solid #2f3336;
-    padding-bottom: 10px;
-}
 
-/* Glass Header tweak to ensure it doesn't overlap first post too much */
-#tiktok-feed.trending-mode {
-    padding-top: 90px !important;
-}
-        /* TIKTOK FEED CSS */
-#tiktok-feed.trending-mode {
-    padding-top: 80px; /* Space for your glass header */
-    scroll-snap-type: none !important;
+ #tiktok-feed.trending-mode {
+    padding-top: 100px !important; /* Fixed: Prevents header from covering the first post */
+    scroll-snap-type: none !important; /* Allows smooth list scrolling */
     overflow-y: auto !important;
     height: 100vh;
-}
+ }
 
+/* This allows Trending to show multiple posts in a list */
 #tiktok-feed.trending-mode .tiktok-post {
-    height: auto !important; /* This allows multiple posts to show in a list */
+    height: auto !important; /* Allows posts to shrink/grow based on content */
+    min-height: auto !important;
     scroll-snap-align: none !important;
-    background: transparent;
+    background: #000;
     border-bottom: 1px solid #2f3336;
-    }
-        
+    padding-bottom: 15px;
+    display: block !important; /* Ensures it doesn't try to behave like a video slide */
+} 
         /* Carousel Scroll Container */
 .carousel-wrapper {
     display: flex;
@@ -512,132 +502,164 @@
         if (type === 'messenger') window.location.href = "https://globaltrends56.blogspot.com/p/gt-messenger.html?m=1";  
     }  
 
-    // DOMContentLoaded block
+// DOMContentLoaded block
 document.addEventListener("DOMContentLoaded", async () => {  
     const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
         headers: { apikey: SUPABASE_KEY }   
     });  
     const data = await res.json();  
-    // FIX: Don't filter out photos here! Store everything in allPosts.
+    
+    // 1. Store the RAW data (everything: photos AND videos)
     allPosts = Array.isArray(data) ? data : [];  
     
-    // Start by showing only videos in the "For You" tab
-    const initialVideos = allPosts.filter(p => p.video_url && p.video_url.match(/\.(mp4|mov|m4v|webm)/i));
-    renderFeed(initialVideos);  
+    // 2. Let the toggleFeed function handle the filtering logic
+    // This ensures that when you click "Trending", it pulls from allPosts again
+    toggleFeed('foryou');  
 });
 
-    function renderFeed(posts, isFollowingTab = false) {  
-        const feed = document.getElementById("tiktok-feed");  
-        feed.innerHTML = ""; 
+          function renderFeed(posts, isFollowingTab = false) {  
+    const feed = document.getElementById("tiktok-feed");  
+    feed.innerHTML = ""; 
 
-        if (posts.length === 0 && isFollowingTab) {  
-            feed.innerHTML = `  
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px; color: #888;">  
-                    <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>  
-                    <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>  
-                    <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow your favorite creators to see their latest videos here.</p>  
-                    <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Back</button>  
-                </div>`;  
-            return;  
-        }  
+    if (posts.length === 0 && isFollowingTab) {  
+        feed.innerHTML = `<div style="text-align:center; padding:50px; color:#888;">Follow creators to see their videos here.</div>`;  
+        return;  
+    }  
 
     posts.forEach((post) => {  
-    const isLiked = localStorage.getItem("liked_" + post.id);  
-    const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
-    const isTrending = document.getElementById('tab-trending').classList.contains('active');
-    
-    const div = document.createElement("div");  
-    div.className = "tiktok-post"; 
+        const isLiked = localStorage.getItem("liked_" + post.id);  
+        const isTrending = document.getElementById('tab-trending').classList.contains('active');
+        const div = document.createElement("div");  
+        div.className = "tiktok-post"; 
 
-    // 1. IF TRENDING (Twitter Layout)
-    if (isTrending) {
-    // 1. ENSURE WE HAVE A LIST: Convert string to array if it's just one photo
-    let mediaList = [];
-    if (post.video_url) {
-        mediaList = Array.isArray(post.video_url) ? post.video_url : [post.video_url];
-    }
+        if (isTrending) {
+            // TRENDING (Twitter Style)
+            let rawUrl = post.video_url;
+            let mediaList = Array.isArray(rawUrl) ? rawUrl : (rawUrl ? [rawUrl] : []);
 
-    div.innerHTML = `
-        <div class="twitter-card" style="padding: 15px; background: #000; border-bottom: 1px solid #2f3336;">
-            <div class="user-info" style="display:flex; align-items:center; gap:10px;">
-                <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px; border-radius:50%; object-fit: cover;">
-                <div style="display:flex; align-items: center; gap: 5px;">
-                    <span style="font-weight:bold; color:#fff; font-size:15px;">${post.profiles?.username}</span>
-                    ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check" style="color:#1DA1F2; font-size: 14px;"></i>' : ''}
-                </div>
-            </div>
-
-            <div class="post-text" style="margin: 10px 0; color:#fff; font-size:15px; line-height:1.4;">${post.caption || ""}</div>
-            
-            ${mediaList.length > 0 ? `
-                <div class="carousel-wrapper" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: 15px; border: 1px solid #333; margin-bottom: 10px;">
-                    ${mediaList.map(url => `
-                        <div class="carousel-item" style="flex: 0 0 100%; scroll-snap-align: start;">
-                            <img src="${url}" style="width:100%; height:auto; display:block; border-radius: 15px;">
+            div.innerHTML = `
+                <div class="twitter-card">
+                    <div class="user-info">
+                        <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <span style="font-weight:bold; color:#fff;">${post.profiles?.username}</span>
+                            ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
                         </div>
-                    `).join('')}
-                </div>
-            ` : ''}
-
-            <div class="twitter-actions" style="display:flex; align-items: center; justify-content: space-between; color:#71767b; padding-top: 5px;">
-                <div style="display: flex; gap: 30px;">
-                    <div class="action-item" onclick="likePostGlobal('${post.id}', this)" style="display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-regular fa-heart ${isLiked ? 'fa-solid liked' : ''}" style="font-size: 18px;"></i> 
-                        <span style="font-size: 13px;">${nFormatter(post.likes)}</span>
                     </div>
-                    <div class="action-item" style="display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-regular fa-chart-bar" style="font-size: 18px;"></i> 
-                        <span style="font-size: 13px;">${nFormatter(post.views)}</span>
+                    <div class="post-text">${post.caption || ""}</div>
+                    ${mediaList.length > 0 ? `
+                        <div class="carousel-wrapper">
+                            ${mediaList.map(url => `
+                                <div class="carousel-item"><img src="${url}" loading="lazy"></div>
+                            `).join('')}
+                        </div>` : ''}
+                    <div class="twitter-actions">
+                        <div style="display:flex; gap:30px;">
+                            <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
+                                <i class="fa-regular fa-heart ${isLiked ? 'fa-solid liked' : ''}"></i>
+                                <span class="action-count">${nFormatter(post.likes)}</span>
+                            </div>
+                            <div class="action-item">
+                                <i class="fa-regular fa-chart-bar"></i>
+                                <span class="action-count">${nFormatter(post.views)}</span>
+                            </div>
+                        </div>
+                        <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')">
+                            <i class="fa-solid fa-ellipsis"></i>
+                            <div id="reportPopup-${post.id}" class="report-popup" style="right:0; bottom:30px;">
+                                <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
+                            </div>
+                        </div>
                     </div>
+                </div>`;
+        } else {
+            // FOR YOU / FOLLOWING (TikTok Style)
+            div.innerHTML = `
+                <div class="video-wrapper">
+                    <video loop playsinline webkit-playsinline src="${post.video_url}"></video>
                 </div>
-                <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')" style="position: relative; cursor: pointer;">
-                    <i class="fa-solid fa-ellipsis" style="font-size: 18px;"></i>
-                    <div id="reportPopup-${post.id}" class="report-popup" style="right: 0; bottom: 30px;">
-                        <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
+                <div class="video-shield"></div>
+                <div class="overlay">
+                    <div class="user-info">
+                        <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                        <span class="username-link">${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}</span>
                     </div>
+                    <div class="caption">${post.caption || ''}</div>
                 </div>
-            </div>
-        </div>`;
-      }
-            
-    feed.appendChild(div);
-            
-            const shield = div.querySelector(".video-shield");  
-            const video = div.querySelector("video");  
-            let lastTap = 0;  
+                <div class="actions">
+                    <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
+                        <i class="fa-solid fa-heart heart-icon ${isLiked ? 'liked' : ''}"></i>
+                        <div class="action-count">${nFormatter(post.likes)}</div>
+                    </div>
+                    <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')"><i class="fa-solid fa-share-nodes"></i></div>
+                </div>`;
 
-            shield.onclick = () => {  
-                const now = Date.now();  
-                if (now - lastTap < 300) {  
-                    const h = document.createElement("i");  
-                    h.className = "fa-solid fa-heart heart-pop";  
-                    div.appendChild(h);  
-                    setTimeout(() => h.remove(), 600);  
-                    if (!localStorage.getItem("liked_" + post.id)) likePostGlobal(post.id, div.querySelector(".heart-icon").parentElement);  
-                } else {  
-                    setTimeout(() => {   
-                        if (Date.now() - now >= 300) {   
-                            video.muted = !video.muted;   
-                            showToast(video.muted ? "🔇 Muted" : "🔊 Sound On");   
-                        }   
-                    }, 300);  
-                }  
-                lastTap = now;  
-            };  
+            // Video Observer (Keep your original video logic)
+            const video = div.querySelector("video");
+            new IntersectionObserver(entries => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        if(currentVideo) currentVideo.pause();
+                        currentVideo = video;
+                        video.play().catch(()=>{});
+                    } else { video.pause(); }
+                });
+            }, { threshold: 0.6 }).observe(div);
+        }
+        
+        feed.appendChild(div); // This is the only append call you need!
+    });  
+        }
+    
+            // --- VIDEO LOGIC (Only runs if a video exists) ---
+        const shield = div.querySelector(".video-shield");
+        const video = div.querySelector("video");
+        let lastTap = 0;
 
-            feed.appendChild(div);  
+        if (shield && video) {
+            shield.onclick = () => {
+                const now = Date.now();
+                if (now - lastTap < 300) {
+                    const h = document.createElement("i");
+                    h.className = "fa-solid fa-heart heart-pop";
+                    div.appendChild(h);
+                    setTimeout(() => h.remove(), 600);
+                    
+                    // Find the heart icon based on layout
+                    const heartBtn = div.querySelector(".heart-icon")?.parentElement || div.querySelector(".fa-heart")?.parentElement;
+                    if (!localStorage.getItem("liked_" + post.id) && heartBtn) {
+                        likePostGlobal(post.id, heartBtn);
+                    }
+                } else {
+                    setTimeout(() => {
+                        if (Date.now() - now >= 300) {
+                            video.muted = !video.muted;
+                            showToast(video.muted ? "🔇 Muted" : "🔊 Sound On");
+                        }
+                    }, 300);
+                }
+                lastTap = now;
+            };
 
-            new IntersectionObserver(entries => {  
-                entries.forEach(e => {  
-                    if (e.isIntersecting) {   
-                        if(currentVideo) currentVideo.pause();   
-                        currentVideo = video;   
-                        video.play().catch(()=>{});   
-                    } else { video.pause(); }  
-                });  
-            }, { threshold: 0.6 }).observe(div);  
-        });  
-      }
+            // Intersection Observer for Auto-Play
+            new IntersectionObserver(entries => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        if (currentVideo && currentVideo !== video) currentVideo.pause();
+                        currentVideo = video;
+                        video.play().catch(() => {});
+                    } else {
+                        video.pause();
+                    }
+                });
+            }, { threshold: 0.6 }).observe(div);
+        }
+
+        // --- FINAL STEP: Append the post to the feed ---
+        // This must be OUTSIDE any if-statements so both photos and videos show up!
+        feed.appendChild(div);
+    }); // This closes the posts.forEach
+} // This closes the renderFeed function
        
     // Replace your toggleFeed function with this
 async function toggleFeed(type) {  
@@ -648,37 +670,36 @@ async function toggleFeed(type) {
         return;   
     }  
   
-    if (type === 'trending') {
-        feed.classList.add('trending-mode');
-        feed.style.scrollSnapType = "none"; 
-    } else {
-        feed.classList.remove('trending-mode');
-        feed.style.scrollSnapType = "y mandatory"; 
-    }
-
+    // Update active tab UI
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
     document.getElementById(`tab-${type}`).classList.add('active');  
 
+    // Handle Scrolling Mode
+    if (type === 'trending') {
+        feed.classList.add('trending-mode');
+    } else {
+        feed.classList.remove('trending-mode');
+    }
+
     let filteredPosts = [];  
     const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
+    const isVideo = (url) => url && url.match(/\.(mp4|mov|m4v|webm)/i);
 
     if (type === 'trending') {  
-        // TRENDING: Only Photos/Text (Filter OUT videos)
-        filteredPosts = allPosts
-            .filter(p => !p.video_url || !p.video_url.match(/\.(mp4|mov|m4v|webm)/i)) 
-            .sort((a,b) => (b.likes||0) - (a.likes||0));  
-            
+        // TRENDING: Only show posts that are NOT videos
+        filteredPosts = allPosts.filter(p => !isVideo(p.video_url))
+                                .sort((a,b) => (b.likes||0) - (a.likes||0));  
     } else if (type === 'following') {  
-        // FOLLOWING: Show videos of people you follow
-        filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && p.video_url.match(/\.(mp4|mov|m4v|webm)/i)); 
+        // FOLLOWING: Videos from people you follow
+        filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && isVideo(p.video_url)); 
     } else {  
-        // FOR YOU: Only show videos
-        filteredPosts = allPosts.filter(p => p.video_url && p.video_url.match(/\.(mp4|mov|m4v|webm)/i)); 
+        // FOR YOU: Show only videos
+        filteredPosts = allPosts.filter(p => isVideo(p.video_url)); 
     }  
 
     renderFeed(filteredPosts, type === 'following');  
     feed.scrollTop = 0;  
-}
+                                                      }
     async function likePostGlobal(id, el) {  
         if (!myId) { showToast("Please login"); return; }  
         const heart = el.querySelector(".heart-icon");  
