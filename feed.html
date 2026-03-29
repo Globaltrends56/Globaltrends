@@ -460,39 +460,39 @@
 
     // 1. IF TRENDING (Twitter Layout)
     if (isTrending) {
-        div.style.height = "auto"; // Let it scroll like a normal feed
-        div.style.scrollSnapAlign = "none"; 
-        
         div.innerHTML = `
-            <div class="twitter-card">
-                <div class="user-info">
-                    <img class="avatar" src="${post.profiles?.avatar_url || ''}">
-                    <a class="username-link" href="profile.html?id=${post.user_id}">
-                        ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
-                    </a>
+            <div class="twitter-card" style="padding: 15px; border-bottom: 1px solid #222;">
+                <div class="user-info" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:40px; height:40px; border-radius:50%;">
+                    <span style="font-weight:bold; color:white;">${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check" style="color:#1DA1F2;"></i>' : ''}</span>
                 </div>
-                <div class="post-text">${post.caption || ""}</div>
-                ${post.video_url.match(/\.(jpeg|jpg|gif|png)$/) != null || post.video_url.includes('image') ? 
-                  `<div class="post-image-container"><img src="${post.video_url}"></div>` : ''}
+
+                <div class="post-text" style="margin-bottom:12px; font-size:16px; color:white;">${post.caption || ""}</div>
                 
-                <div class="actions" style="position:static; flex-direction:row; justify-content:space-around; padding:10px 0; border-top:1px solid #222; margin-top:10px;">
+                ${post.video_url ? 
+                    `<div class="post-image-container" style="border-radius:12px; overflow:hidden; border:1px solid #333; margin-bottom:10px;">
+                        <img src="${post.video_url}" style="width:100%; height:auto; display:block;">
+                    </div>` : ''
+                }
+
+                <div class="actions" style="position:static; flex-direction:row; justify-content:space-between; width:70%; padding:10px 0;">
                     <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
-                        <i class="fa-solid fa-heart ${isLiked ? 'liked' : ''}" style="font-size:22px;"></i>
+                        <i class="fa-solid fa-heart ${isLiked ? 'liked' : ''}" style="font-size:20px;"></i>
                         <span class="action-count">${nFormatter(post.likes)}</span>
                     </div>
                     <div class="action-item">
-                        <i class="fa-solid fa-eye" style="font-size:20px;"></i>
+                        <i class="fa-solid fa-eye" style="font-size:18px;"></i>
                         <span class="action-count">${nFormatter(post.views)}</span>
                     </div>
                     <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')">
-                        <i class="fa-solid fa-ellipsis" style="font-size:20px;"></i>
+                        <i class="fa-solid fa-ellipsis" style="font-size:18px;"></i>
                         <div id="reportPopup-${post.id}" class="report-popup">
                             <div class="report-option" onclick="handleReport('${post.id}')">Report Post</div>
                         </div>
                     </div>
                 </div>
             </div>`;
-    } 
+                                                                                              }
     // 2. IF FOR YOU / FOLLOWING (Video Layout)
     else {
         div.innerHTML = `  
@@ -562,47 +562,43 @@
     async function toggleFeed(type) {  
     const feed = document.getElementById("tiktok-feed");
 
-    // 1. SECURITY: Check Login for Following Tab  
     if (type === 'following' && !myId) {   
         showToast("Please login");   
         return;   
     }  
   
-    // 2. SCROLL BEHAVIOR: Switch between "Snap" (Video) and "Smooth" (Twitter)
     if (type === 'trending') {
         feed.style.scrollSnapType = "none"; 
-        feed.classList.add('trending-mode'); // This matches the CSS I gave you earlier
+        feed.classList.add('trending-mode');
     } else {
         feed.style.scrollSnapType = "y mandatory"; 
         feed.classList.remove('trending-mode');
     }
 
-    // 3. UI: Update the Tab underline/active state
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
     document.getElementById(`tab-${type}`).classList.add('active');  
 
     let filteredPosts = [];  
     const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
 
-    // 4. FILTERING: Pick which posts to show
     if (type === 'trending') {  
-        // Sort by likes for the Trending tab
-        filteredPosts = [...allPosts].sort((a,b) => (b.likes||0) - (a.likes||0));  
+        // 1. First, get all posts
+        // 2. Filter out anything that is a video (.mp4, .mov, .m4v)
+        // 3. Sort by likes
+        filteredPosts = allPosts
+            .filter(p => !p.video_url.match(/\.(mp4|mov|m4v|webm)/i)) 
+            .sort((a,b) => (b.likes||0) - (a.likes||0));  
+            
     } else if (type === 'following') {  
-        // Only show people I follow
         filteredPosts = allPosts.filter(p => interests.includes(p.user_id));  
     } else {  
-        // Default: Show everything (For You)
-        filteredPosts = allPosts; 
+        // For You: Only show videos (optional, if you want For You to stay pure video)
+        filteredPosts = allPosts.filter(p => p.video_url.match(/\.(mp4|mov|m4v|webm)/i)); 
     }  
 
-    // 5. RENDER: Draw the posts on the screen
-    // Pass 'true' if it's the following tab to show the "No follows" message if empty
     renderFeed(filteredPosts, type === 'following');  
-  
-    // 6. RESET: Jump back to the top of the list
     feed.scrollTop = 0;  
-     }
+            }
 
     async function likePostGlobal(id, el) {  
         if (!myId) { showToast("Please login"); return; }  
