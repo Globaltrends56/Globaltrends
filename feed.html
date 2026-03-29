@@ -10,6 +10,35 @@
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         html, body { background: #000; font-family: -apple-system, sans-serif; overflow: hidden; width: 100%; height: 100%; color: #fff; }
+        /* TWITTER-LIKE CARD STYLING */
+.twitter-card {
+    padding: 15px;
+    background: #000;
+    border-bottom: 1px solid #222;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.post-image-container {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #333;
+}
+
+.post-image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.post-text {
+    font-size: 15px;
+    line-height: 1.4;
+    color: #fff;
+}
         
         /* FEED CONTAINER */
         #tiktok-feed { 
@@ -422,48 +451,76 @@
         }  
 
         posts.forEach((post) => {  
-            const isLiked = localStorage.getItem("liked_" + post.id);  
-            const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
-            
-            const div = document.createElement("div");  
-            div.className = "tiktok-post";  
-            
-            // FIXED: Added missing backticks and closed all divs properly
-            div.innerHTML = `  
-                <div class="video-wrapper">  
-                    <video muted loop playsinline src="${post.video_url}"></video>  
-                </div>  
-                <div class="video-shield"></div>  
-                <div class="ui-layer">  
-                    <div class="overlay">  
-                        <div class="user-info">  
-                            <img class="avatar" src="${post.profiles?.avatar_url || ''}">  
-                            <a class="username-link" href="profile.html?id=${post.user_id}">  
-                                ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}  
-                            </a>  
-                            <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold; cursor:pointer;">${isFollowed ? 'Following' : 'Follow'}</button>  
-                        </div>  
-                        <div class="caption">${post.caption || ""}</div>  
-                    </div>  
-                    <div class="actions">  
-                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
-                            <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>  
-                            <div class="action-count">${nFormatter(post.likes)}</div>  
-                        </div>  
-                        
-                        <div class="action-item">  
-                            <i class="fa-solid fa-eye" style="font-size:26px;"></i>  
-                            <div class="action-count">${nFormatter(post.views)}</div>  
-                        </div>
+    const isLiked = localStorage.getItem("liked_" + post.id);  
+    const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
+    const isTrending = document.getElementById('tab-trending').classList.contains('active');
+    
+    const div = document.createElement("div");  
+    div.className = "tiktok-post"; 
 
-                        <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
-                            <i class="fa-solid fa-ellipsis" style="font-size:26px; color: white;"></i>
-                            <div id="reportPopup-${post.id}" class="report-popup">
-                                <div class="report-option" onclick="handleReport('${post.id}')">Report Post</div>
-                            </div>
+    // 1. IF TRENDING (Twitter Layout)
+    if (isTrending) {
+        div.style.height = "auto"; // Let it scroll like a normal feed
+        div.style.scrollSnapAlign = "none"; 
+        
+        div.innerHTML = `
+            <div class="twitter-card">
+                <div class="user-info">
+                    <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                    <a class="username-link" href="profile.html?id=${post.user_id}">
+                        ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
+                    </a>
+                </div>
+                <div class="post-text">${post.caption || ""}</div>
+                ${post.video_url.match(/\.(jpeg|jpg|gif|png)$/) != null || post.video_url.includes('image') ? 
+                  `<div class="post-image-container"><img src="${post.video_url}"></div>` : ''}
+                
+                <div class="actions" style="position:static; flex-direction:row; justify-content:space-around; padding:10px 0; border-top:1px solid #222; margin-top:10px;">
+                    <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
+                        <i class="fa-solid fa-heart ${isLiked ? 'liked' : ''}" style="font-size:22px;"></i>
+                        <span class="action-count">${nFormatter(post.likes)}</span>
+                    </div>
+                    <div class="action-item">
+                        <i class="fa-solid fa-eye" style="font-size:20px;"></i>
+                        <span class="action-count">${nFormatter(post.views)}</span>
+                    </div>
+                    <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')">
+                        <i class="fa-solid fa-ellipsis" style="font-size:20px;"></i>
+                        <div id="reportPopup-${post.id}" class="report-popup">
+                            <div class="report-option" onclick="handleReport('${post.id}')">Report Post</div>
                         </div>
                     </div>
-                </div>`;  
+                </div>
+            </div>`;
+    } 
+    // 2. IF FOR YOU / FOLLOWING (Video Layout)
+    else {
+        div.innerHTML = `  
+            <div class="video-wrapper"><video muted loop playsinline src="${post.video_url}"></video></div>  
+            <div class="video-shield"></div>  
+            <div class="ui-layer">  
+                <div class="overlay">
+                    <div class="user-info">
+                        <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                        <a class="username-link">${post.profiles?.username}</a>
+                    </div>
+                    <div class="caption">${post.caption || ""}</div>
+                </div>
+                <div class="actions">
+                    <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
+                        <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart" style="font-size:32px;"></i></div>
+                        <div class="action-count">${nFormatter(post.likes)}</div>
+                    </div>
+                    <div class="action-item"><i class="fa-solid fa-eye" style="font-size:26px;"></i><div class="action-count">${nFormatter(post.views)}</div></div>
+                    <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
+                        <i class="fa-solid fa-ellipsis" style="font-size:26px; color: white;"></i>
+                        <div id="reportPopup-${post.id}" class="report-popup"><div class="report-option" onclick="handleReport('${post.id}')">Report Post</div></div>
+                    </div>
+                </div>
+            </div>`;
+    }
+    
+    feed.appendChild(div);
             
             const shield = div.querySelector(".video-shield");  
             const video = div.querySelector("video");  
@@ -503,34 +560,49 @@
       }
        
     async function toggleFeed(type) {  
-// 1. Check Login for Following Tab  
-if (type === 'following' && !myId) {   
-    showToast("Please login");   
-    return;   
-}  
-  
-// 2. Update Tab UI  
-document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
-document.getElementById(`tab-${type}`).classList.add('active');  
+    const feed = document.getElementById("tiktok-feed");
 
-let filteredPosts = [];  
-const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
-
-// 3. Filter Data  
-if (type === 'trending') {  
-    filteredPosts = [...allPosts].sort((a,b) => (b.likes||0) - (a.likes||0));  
-} else if (type === 'following') {  
-    filteredPosts = allPosts.filter(p => interests.includes(p.user_id));  
-} else {  
-    filteredPosts = allPosts; // Default: For You  
-}  
-
-// 4. Render (Pass 'true' if it's the following tab)  
-renderFeed(filteredPosts, type === 'following');  
-  
-// 5. Scroll to top so the first video starts playing  
-document.getElementById("tiktok-feed").scrollTop = 0;  
+    // 1. SECURITY: Check Login for Following Tab  
+    if (type === 'following' && !myId) {   
+        showToast("Please login");   
+        return;   
     }  
+  
+    // 2. SCROLL BEHAVIOR: Switch between "Snap" (Video) and "Smooth" (Twitter)
+    if (type === 'trending') {
+        feed.style.scrollSnapType = "none"; 
+        feed.classList.add('trending-mode'); // This matches the CSS I gave you earlier
+    } else {
+        feed.style.scrollSnapType = "y mandatory"; 
+        feed.classList.remove('trending-mode');
+    }
+
+    // 3. UI: Update the Tab underline/active state
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
+    document.getElementById(`tab-${type}`).classList.add('active');  
+
+    let filteredPosts = [];  
+    const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
+
+    // 4. FILTERING: Pick which posts to show
+    if (type === 'trending') {  
+        // Sort by likes for the Trending tab
+        filteredPosts = [...allPosts].sort((a,b) => (b.likes||0) - (a.likes||0));  
+    } else if (type === 'following') {  
+        // Only show people I follow
+        filteredPosts = allPosts.filter(p => interests.includes(p.user_id));  
+    } else {  
+        // Default: Show everything (For You)
+        filteredPosts = allPosts; 
+    }  
+
+    // 5. RENDER: Draw the posts on the screen
+    // Pass 'true' if it's the following tab to show the "No follows" message if empty
+    renderFeed(filteredPosts, type === 'following');  
+  
+    // 6. RESET: Jump back to the top of the list
+    feed.scrollTop = 0;  
+     }
 
     async function likePostGlobal(id, el) {  
         if (!myId) { showToast("Please login"); return; }  
