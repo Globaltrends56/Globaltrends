@@ -560,7 +560,7 @@
                     <div class="action-item"><i class="fa-regular fa-eye"></i> <span>${nFormatter(post.views)}</span></div>
                     <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')"><i class="fa-solid fa-ellipsis"></i></div>
                 </div>`;
-        } else {
+            } else {
             div.className = "tiktok-post";  
             div.innerHTML = `  
                 <div class="video-wrapper"><video loop playsinline src="${post.video_url}"></video></div>  
@@ -574,24 +574,23 @@
                         <div class="caption">${post.caption || ""}</div>
                     </div>  
                     <div class="actions">  
-    <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
-        <i class="fa-solid fa-heart heart-icon ${isLiked ? 'liked' : ''}"></i>  
-        <div class="action-count">${nFormatter(post.likes)}</div>  
-    </div>  
-    
-    <div class="action-item">  
-        <i class="fa-solid fa-eye"></i>  
-        <div class="action-count">${nFormatter(post.views)}</div>  
-    </div>
-
-    <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
-        <i class="fa-solid fa-ellipsis"></i>
-        <div id="reportPopup-${post.id}" class="report-popup">
-            <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
-        </div>
-    </div>
-</div>
-        
+                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
+                            <i class="fa-solid fa-heart heart-icon ${isLiked ? 'liked' : ''}"></i>  
+                            <div class="action-count">${nFormatter(post.likes)}</div>  
+                        </div>  
+                        <div class="action-item">  
+                            <i class="fa-solid fa-eye"></i>  
+                            <div class="action-count">${nFormatter(post.views)}</div>  
+                        </div>
+                        <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
+                            <i class="fa-solid fa-ellipsis"></i>
+                            <div id="reportPopup-${post.id}" class="report-popup">
+                                <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;  
+        }
 
         // 3. ATTACH VIDEO LOGIC (Shield & Observer)
         const shield = div.querySelector(".video-shield");
@@ -633,12 +632,11 @@
         }
 
         // 4. THE ONLY APPEND CHILD YOU NEED
-        // This puts the finished 'div' (whether Twitter or TikTok style) into the feed.
         feed.appendChild(div);  
 
     }); // End forEach
 } // End renderFeed
-       
+        
     async function toggleFeed(type) {  
     const feed = document.getElementById("tiktok-feed");
     if (type === 'following' && !myId) { showToast("Please login"); return; }  
