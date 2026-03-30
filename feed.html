@@ -21,8 +21,8 @@
     position: absolute;
     top: 5px;          /* Vertical position above the 'g' */
     right: -4px;       /* Horizontal position */
-    width: 7px;        
-    height: 7px;
+    width: 5px;        
+    height: 5px;
     background-color: #1DA1F2; 
     border-radius: 50%;
     box-shadow: 0 0 6px rgba(29, 161, 242, 0.9);
@@ -586,6 +586,7 @@
 
     posts.forEach((post) => {  
         const isLiked = localStorage.getItem("liked_" + post.id);  
+        const isVerified = post.profiles?.verified === true;
         const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
         const div = document.createElement("div");  
         
