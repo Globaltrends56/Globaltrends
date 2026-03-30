@@ -71,16 +71,6 @@
     width: 100%;
     scroll-snap-align: none !important;
 }
-        
-.twitter-user-row .follow-btn {
-    background: #1DA1F2;
-    border: none;
-    color: white;
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-size: 13px;
-    margin-left: auto; /* Pushes follow button to the right */
-    }
 
 .twitter-user-row {
     display: flex;
@@ -728,14 +718,15 @@
     if (type === 'trending') {
     document.getElementById('tab-trending').style.setProperty('--show-dot', 'none');
     }
-
     if (type === 'trending') {  
         feed.classList.add('trending-mode');
-        // Show only photos, sorted by likes
-        filteredPosts = allPosts.filter(p => !isVideo(p.video_url)).sort((a,b) => (b.likes||0) - (a.likes||0));  
-    } else if (type === 'following') {  
+        // CHANGE: Allow all posts in Trending, but sort them by likes
+        // This ensures if a post has an image OR a video, it shows up
+        filteredPosts = allPosts.sort((a,b) => (b.likes||0) - (a.likes||0));  
+    } else {
         feed.classList.remove('trending-mode');
-        filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && isVideo(p.video_url));  
+        // Keep For You/Following strictly as videos
+        filteredPosts = allPosts.filter(p => isVideo(p.video_url));
     } else {  
         feed.classList.remove('trending-mode');
         filteredPosts = allPosts.filter(p => isVideo(p.video_url));  
