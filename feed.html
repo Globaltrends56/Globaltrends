@@ -473,18 +473,20 @@
     toggleFeed('foryou');  
 });
 
-            function renderFeed(posts, isFollowingTab = false) {  
+            
+    function renderFeed(posts, isFollowingTab = false) {  
     const feed = document.getElementById("tiktok-feed");  
     const isTrending = document.getElementById('tab-trending').classList.contains('active');
     feed.innerHTML = ""; 
 
+    // 1. Handle Empty State
     if (posts.length === 0 && isFollowingTab) {  
         feed.innerHTML = `  
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; text-align: center; padding: 30px; color: #888;">  
                 <i class="fa-solid fa-user-plus" style="font-size: 60px; margin-bottom: 20px; color: #1DA1F2;"></i>  
                 <h2 style="color: #fff; font-size: 20px;">You haven't followed any account yet</h2>  
-                <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow creators to see their latest videos here.</p>  
-                <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer;">Explore Content</button>  
+                <p style="font-size: 14px; margin-top: 10px; max-width: 250px;">Follow creators to see their videos here.</p>  
+                <button onclick="toggleFeed('foryou')" style="margin-top: 25px; background: #1DA1F2; border: none; color: #fff; padding: 12px 30px; border-radius: 25px; font-weight: bold;">Explore Content</button>  
             </div>`;  
         return;  
     }  
@@ -494,16 +496,13 @@
         const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
         const div = document.createElement("div");  
         
+        // 2. CHOOSE THE LAYOUT (No appendChild here!)
         if (isTrending) {
-            // --- TWITTER STYLE (PHOTOS) ---
             div.className = "twitter-card";  
             div.innerHTML = `  
                 <div class="twitter-user-row">
                     <img class="avatar" src="${post.profiles?.avatar_url || ''}">
-                    <div class="user-meta">
-                        <span class="name">${post.profiles?.username}</span>
-                        ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
-                    </div>
+                    <div class="user-meta"><span class="name">${post.profiles?.username}</span></div>
                 </div>
                 <div class="post-text">${post.caption || ""}</div>
                 ${post.video_url ? `<img class="post-img" src="${post.video_url}" loading="lazy">` : ''}
@@ -513,29 +512,20 @@
                         <span>${nFormatter(post.likes)}</span>
                     </div>
                     <div class="action-item"><i class="fa-regular fa-eye"></i> <span>${nFormatter(post.views)}</span></div>
-                    <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')">
-                        <i class="fa-solid fa-ellipsis"></i>
-                        <div id="reportPopup-${post.id}" class="report-popup">
-                            <div class="report-option" onclick="handleReport('${post.id}')">Report Post</div>
-                        </div>
-                    </div>
+                    <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')"><i class="fa-solid fa-ellipsis"></i></div>
                 </div>`;
         } else {
-            // --- TIKTOK STYLE (VIDEOS) ---
             div.className = "tiktok-post";  
             div.innerHTML = `  
                 <div class="video-wrapper"><video loop playsinline src="${post.video_url}"></video></div>  
                 <div class="video-shield"></div>  
                 <div class="ui-layer">  
-                    <div class="overlay">  
-                        <div class="user-info">  
-                            <img class="avatar" src="${post.profiles?.avatar_url || ''}">  
-                            <a class="username-link" href="profile.html?id=${post.user_id}">  
-                                ${post.profiles?.username} ${post.profiles?.verified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}  
-                            </a>  
-                            <button onclick="handleFollow('${post.user_id}', this)" style="background:#1DA1F2; border:none; color:white; border-radius:4px; padding:4px 8px; font-size:11px; font-weight:bold;">${isFollowed ? 'Following' : 'Follow'}</button>  
-                        </div>  
-                        <div class="caption">${post.caption || ""}</div>  
+                    <div class="overlay">
+                        <div class="user-info">
+                            <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                            <span class="username-link">${post.profiles?.username}</span>
+                        </div>
+                        <div class="caption">${post.caption || ""}</div>
                     </div>  
                     <div class="actions">  
                         <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
@@ -546,56 +536,53 @@
                         <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')"><i class="fa-solid fa-ellipsis"></i></div>
                     </div>
                 </div>`;  
-            
-            // Video Play/Pause Logic
-            const video = div.querySelector("video");
+        }
+
+        // 3. ATTACH VIDEO LOGIC (Shield & Observer)
+        const shield = div.querySelector(".video-shield");
+        const video = div.querySelector("video");
+        let lastTap = 0;
+
+        if (shield && video) {
+            shield.onclick = () => {
+                const now = Date.now();
+                if (now - lastTap < 300) {
+                    const h = document.createElement("i");
+                    h.className = "fa-solid fa-heart heart-pop";
+                    div.appendChild(h);
+                    setTimeout(() => h.remove(), 600);
+                    if (!localStorage.getItem("liked_" + post.id)) {
+                        const heartBtn = div.querySelector(".heart-icon")?.parentElement;
+                        if (heartBtn) likePostGlobal(post.id, heartBtn);
+                    }
+                } else {
+                    setTimeout(() => {
+                        if (Date.now() - now >= 300) {
+                            video.muted = !video.muted;
+                            showToast(video.muted ? "🔇 Muted" : "🔊 Sound On");
+                        }
+                    }, 300);
+                }
+                lastTap = now;
+            };
+
             new IntersectionObserver(entries => {
                 entries.forEach(e => {
-                    if (e.isIntersecting) { if(currentVideo) currentVideo.pause(); currentVideo = video; video.play().catch(()=>{}); }
-                    else { video.pause(); }
+                    if (e.isIntersecting) {
+                        if (currentVideo && currentVideo !== video) currentVideo.pause();
+                        currentVideo = video;
+                        video.play().catch(() => {});
+                    } else { video.pause(); }
                 });
             }, { threshold: 0.6 }).observe(div);
         }
+
+        // 4. THE ONLY APPEND CHILD YOU NEED
+        // This puts the finished 'div' (whether Twitter or TikTok style) into the feed.
         feed.appendChild(div);  
-    });  
-        }
-     
-            const shield = div.querySelector(".video-shield");  
-            const video = div.querySelector("video");  
-            let lastTap = 0;  
 
-            shield.onclick = () => {  
-                const now = Date.now();  
-                if (now - lastTap < 300) {  
-                    const h = document.createElement("i");  
-                    h.className = "fa-solid fa-heart heart-pop";  
-                    div.appendChild(h);  
-                    setTimeout(() => h.remove(), 600);  
-                    if (!localStorage.getItem("liked_" + post.id)) likePostGlobal(post.id, div.querySelector(".heart-icon").parentElement);  
-                } else {  
-                    setTimeout(() => {   
-                        if (Date.now() - now >= 300) {   
-                            video.muted = !video.muted;   
-                            showToast(video.muted ? "🔇 Muted" : "🔊 Sound On");   
-                        }   
-                    }, 300);  
-                }  
-                lastTap = now;  
-            };  
-
-            feed.appendChild(div);  
-
-            new IntersectionObserver(entries => {  
-                entries.forEach(e => {  
-                    if (e.isIntersecting) {   
-                        if(currentVideo) currentVideo.pause();   
-                        currentVideo = video;   
-                        video.play().catch(()=>{});   
-                    } else { video.pause(); }  
-                });  
-            }, { threshold: 0.6 }).observe(div);  
-        });  
-      }
+    }); // End forEach
+} // End renderFeed
        
     async function toggleFeed(type) {  
     const feed = document.getElementById("tiktok-feed");
