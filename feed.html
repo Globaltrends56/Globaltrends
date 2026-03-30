@@ -610,17 +610,17 @@
     posts.forEach((post) => {  
         const isLiked = localStorage.getItem("liked_" + post.id);  
         const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
-        const isVerified = post.profiles?.verified === true; // Check for verification
+        const isVerified = post.profiles?.verified === true; 
         
+        // 1. Check if the file is a video or a photo
+        const isVid = post.video_url && post.video_url.match(/\.(mp4|mov|webm|m4v)/i);
+        const mediaUrl = post.video_url || "";
+
         const div = document.createElement("div");  
         
         if (isTrending) {
-            // --- TRENDING (TWITTER STYLE) ---
+            // --- TRENDING / POSTS (TWITTER STYLE) ---
             div.className = "twitter-card";  
-            
-            // 1. Check if the file is a video or a photo
-            const isVid = post.video_url && post.video_url.match(/\.(mp4|mov|webm|m4v)/i);
-
             div.innerHTML = `  
                 <div class="twitter-user-row">
                     <a href="profile.html?id=${post.user_id}">
@@ -636,10 +636,11 @@
                 <div class="post-text">${post.caption || ""}</div>
                 
                 <div class="trending-media-box" style="margin: 0 15px;">
-                    ${isVid 
-                        ? `<video src="${post.video_url}" controls style="width:100%; border-radius:16px; border:1px solid #2f3336; background:#000;"></video>` 
-                        : `<img src="${post.video_url}" class="post-img" style="width:100%; border-radius:16px; border:1px solid #2f3336;" loading="lazy">`
-                    }
+                    ${mediaUrl ? (
+                        isVid 
+                        ? `<video src="${mediaUrl}" controls style="width:100%; border-radius:16px; border:1px solid #2f3336; background:#000;"></video>` 
+                        : `<img src="${mediaUrl}" onerror="this.style.display='none'" style="width:100%; border-radius:16px; border:1px solid #2f3336;" loading="lazy">`
+                    ) : ''}
                 </div>
 
                 <div class="twitter-actions">
@@ -658,13 +659,59 @@
                         </div>
                     </div>
                 </div>`;
-    }
+        } else {
+            // --- FOR YOU / FOLLOWING (TIKTOK STYLE) ---
+            div.className = "tiktok-post";  
+            div.innerHTML = `  
+                <div class="video-wrapper">
+                    ${isVid 
+                        ? `<video loop playsinline src="${mediaUrl}"></video>` 
+                        : `<img src="${mediaUrl}" style="width:100%; height:100%; object-fit:cover;">`
+                    }
+                </div>  
+                <div class="video-shield"></div>  
+                <div class="ui-layer">  
+                    <div class="overlay">
+                        <div class="user-info">
+                            <a href="profile.html?id=${post.user_id}" style="pointer-events: auto;">
+                                <img class="avatar" src="${post.profiles?.avatar_url || ''}">
+                            </a>
+                            <div style="display:flex; align-items:center; gap:5px; pointer-events: auto;">
+                                <a href="profile.html?id=${post.user_id}" class="username-link">
+                                    ${post.profiles?.username}
+                                </a>
+                                ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
+                                ${post.user_id !== myId ? `
+                                    <button class="follow-btn ${isFollowed ? 'following' : ''}" onclick="handleFollow('${post.user_id}', this)">
+                                        ${isFollowed ? 'Following' : 'Follow'}
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="caption">${post.caption || ""}</div>
+                    </div>  
+                    <div class="actions">  
+                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
+                            <i class="fa-solid fa-heart heart-icon ${isLiked ? 'liked' : ''}"></i>  
+                            <div class="action-count">${nFormatter(post.likes)}</div>  
+                        </div>  
+                        <div class="action-item">  
+                            <i class="fa-solid fa-eye"></i>  
+                            <div class="action-count">${nFormatter(post.views)}</div>  
+                        </div>
+                        <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
+                            <i class="fa-solid fa-ellipsis"></i>
+                            <div id="reportPopup-${post.id}" class="report-popup">
+                                <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;  
+        }
 
-        // Re-attach video logic
-        const shield = div.querySelector(".video-shield");
+        // --- Re-attach video intersection logic (keep this as is) ---
         const video = div.querySelector("video");
-        if (shield && video) {
-            shield.onclick = () => { /* ... existing tap logic ... */ };
+        if (video && !isTrending) {
             new IntersectionObserver(entries => {
                 entries.forEach(e => {
                     if (e.isIntersecting) {
@@ -678,7 +725,6 @@
 
         feed.appendChild(div);  
     });
-  }
         
     async function toggleFeed(type) {  
     const feed = document.getElementById("tiktok-feed");
