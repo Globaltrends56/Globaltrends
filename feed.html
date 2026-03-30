@@ -171,28 +171,74 @@
         .verify-badge { color: #1DA1F2; font-size: 14px; }
         .caption { font-size: 14px; text-shadow: 1px 1px 3px #000; pointer-events: auto; }
 
-        /* SIDE ACTIONS */
-        .actions { 
-            position: absolute; right: 12px; bottom: 90px; 
-            display: flex; flex-direction: column; gap: 40px; 
-            text-align: center; pointer-events: auto; z-index:10;
-        }
-        .action-item { cursor: pointer; }
-        .heart-icon.liked { color: #ff2d55; }
-        .action-count { font-size: 13px; font-weight: bold; margin-top: 4px; text-shadow: 1px 1px 2px #000; }
 
-        /* HEART POP */
-        .heart-pop {
-            position: absolute; color: white; font-size: 90px;
-            opacity: 0; pointer-events: none; z-index: 100;
-            left: 50%; top: 50%; transform: translate(-50%, -50%);
-            animation: popHeart 0.6s ease-out;
-        }
-        @keyframes popHeart {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
-        }
+/* SIDE ACTIONS */
+.actions { 
+    position: absolute; 
+    right: 12px; 
+    bottom: 120px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 25px; 
+    text-align: center; 
+    pointer-events: auto; 
+    z-index: 10;
+    width: 50px; 
+}
+
+.action-item { 
+    cursor: pointer; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* BIGGER ICONS FOR TIKTOK FEED */
+.actions .action-item i {
+    font-size: 35px !important; 
+    color: white;
+    filter: drop-shadow(0 0 4px rgba(0,0,0,0.6));
+}
+
+/* Specific size for the Eye and Ellipsis to match the Heart */
+.actions .fa-eye, 
+.actions .fa-ellipsis {
+    font-size: 30px !important; 
+}
+
+/* Forces the heart to turn red when liked */
+.liked, .heart-icon.liked { 
+    color: #ff2d55 !important; 
+}
+
+.action-count { 
+    font-size: 13px; 
+    font-weight: bold; 
+    margin-top: 5px; 
+    color: white;
+    text-shadow: 1px 1px 3px #000; 
+}
+
+/* HEART POP ANIMATION */
+@keyframes popHeart {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+.heart-pop {
+    position: absolute; 
+    color: #ff2d55; 
+    font-size: 90px;
+    opacity: 0; 
+    pointer-events: none; 
+    z-index: 100;
+    left: 50%; 
+    top: 50%; 
+    transform: translate(-50%, -50%);
+    animation: popHeart 0.6s ease-out;
+}
         
         /**NOTIFICATION BELL DROPDOWN**/ 
         .dropdown {
@@ -528,15 +574,24 @@
                         <div class="caption">${post.caption || ""}</div>
                     </div>  
                     <div class="actions">  
-                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
-                            <div class="heart-icon ${isLiked ? 'liked' : ''}"><i class="fa-solid fa-heart"></i></div>  
-                            <div class="action-count">${nFormatter(post.likes)}</div>  
-                        </div>  
-                        <div class="action-item"><i class="fa-solid fa-eye"></i><div class="action-count">${nFormatter(post.views)}</div></div>
-                        <div class="action-item" onclick="toggleReportMenu(event, '${post.id}')"><i class="fa-solid fa-ellipsis"></i></div>
-                    </div>
-                </div>`;  
-        }
+    <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
+        <i class="fa-solid fa-heart heart-icon ${isLiked ? 'liked' : ''}"></i>  
+        <div class="action-count">${nFormatter(post.likes)}</div>  
+    </div>  
+    
+    <div class="action-item">  
+        <i class="fa-solid fa-eye"></i>  
+        <div class="action-count">${nFormatter(post.views)}</div>  
+    </div>
+
+    <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
+        <i class="fa-solid fa-ellipsis"></i>
+        <div id="reportPopup-${post.id}" class="report-popup">
+            <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
+        </div>
+    </div>
+</div>
+        
 
         // 3. ATTACH VIDEO LOGIC (Shield & Observer)
         const shield = div.querySelector(".video-shield");
