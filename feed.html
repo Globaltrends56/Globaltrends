@@ -822,12 +822,34 @@
     }  
 
     function toggleDropdown() { document.getElementById('notifDropdown').classList.toggle('show'); }  
-    async function handleFollow(uid, btn) {  
-    // 1. Auth Check
-    if (!myId) { 
-        showToast("Please login"); 
-        return; 
+    window.handleFollow = async function(uid, btn) {  
+    if (!myId) { showToast("Please login"); return; }  
+    
+    let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
+    let isNowFollowing = false;
+
+    if (!cur.includes(uid)) { 
+        cur.push(uid); 
+        isNowFollowing = true;
+    } else { 
+        cur = cur.filter(i => i !== uid); 
+        isNowFollowing = false;
     }  
+
+    localStorage.setItem("my_interests", JSON.stringify(cur));   
+
+    // --- THE GLOBAL SYNC STEP ---
+    // This finds every follow button on the screen belonging to this specific creator
+    document.querySelectorAll(`button[onclick*="${uid}"]`).forEach(button => {
+        if (isNowFollowing) {
+            button.textContent = "Following";
+            button.classList.add('following');
+        } else {
+            button.textContent = "Follow";
+            button.classList.remove('following');
+        }
+    });
+};
 
     // 2. Get the list
     let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
