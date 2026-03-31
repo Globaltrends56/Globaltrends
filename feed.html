@@ -823,59 +823,42 @@
 
     function toggleDropdown() { document.getElementById('notifDropdown').classList.toggle('show'); }  
     window.handleFollow = async function(uid, btn) {  
-    if (!myId) { showToast("Please login"); return; }  
-    
-    let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
-    let isNowFollowing = false;
+        if (!myId) { showToast("Please login"); return; }  
+        
+        let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
+        let isNowFollowing = false;
 
-    if (!cur.includes(uid)) { 
-        cur.push(uid); 
-        isNowFollowing = true;
-    } else { 
-        cur = cur.filter(i => i !== uid); 
-        isNowFollowing = false;
+        if (!cur.includes(uid)) { 
+            cur.push(uid); 
+            isNowFollowing = true;
+        } else { 
+            cur = cur.filter(i => i !== uid); 
+            isNowFollowing = false;
+        }  
+
+        localStorage.setItem("my_interests", JSON.stringify(cur));   
+        
+        // --- THE GLOBAL SYNC STEP ---
+        // This finds every follow button on the screen belonging to this specific creator
+        document.querySelectorAll(`button[onclick*="${uid}"]`).forEach(button => {
+            if (isNowFollowing) {
+                button.textContent = "Following";
+                button.classList.add('following');
+            } else {
+                button.textContent = "Follow";
+                button.classList.remove('following');
+            }
+        });
+    };
+
+    function toggleDropdown() { 
+        document.getElementById('notifDropdown').classList.toggle('show'); 
     }  
 
-    localStorage.setItem("my_interests", JSON.stringify(cur));   
-     
-
-    // --- THE GLOBAL SYNC STEP ---
-    // This finds every follow button on the screen belonging to this specific creator
-    document.querySelectorAll(`button[onclick*="${uid}"]`).forEach(button => {
-        if (isNowFollowing) {
-            button.textContent = "Following";
-            button.classList.add('following');
-        } else {
-            button.textContent = "Follow";
-            button.classList.remove('following');
-        }
-    });
-};
-
-    // 2. Get the list
-    let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
-
-    // 3. Toggle Logic
-    if (!cur.includes(uid)) { 
-        // START FOLLOWING
-        btn.textContent = "Following"; 
-        btn.classList.add('following'); // <--- THIS ADDS THE GREY COLOR
-        cur.push(uid); 
-    } else { 
-        // STOP FOLLOWING
-        btn.textContent = "Follow"; 
-        btn.classList.remove('following'); // <--- THIS RETURNS IT TO BLUE
-        cur = cur.filter(i => i !== uid); 
-    }  
-
-    // 4. Save to Storage
-    localStorage.setItem("my_interests", JSON.stringify(cur));   
-    }
-     
-     /* ==========================================
-   BOTTOM MENU & DROPDOWN NAVIGATION
+  /* ==========================================
+       BOTTOM MENU & DROPDOWN NAVIGATION
    ========================================== */
-
+     
 // 1. DROPDOWN TOGGLES
 function toggleMenu(e) { 
     e.stopPropagation(); 
