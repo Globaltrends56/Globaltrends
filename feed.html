@@ -612,8 +612,8 @@
         const isFollowed = (JSON.parse(localStorage.getItem("my_interests")) || []).includes(post.user_id);  
         const isVerified = post.profiles?.verified === true; 
         
-        // 1. Check if the file is a video or a photo
-        const isVid = post.video_url && post.video_url.match(/\.(mp4|mov|webm|m4v)/i);
+        // This check is much stricter. If it sees .jpg or .png, it stays FALSE.
+        const isVid = post.video_url && post.video_url.toLowerCase().match(/\.(mp4|mov|webm|m4v|ogv)$/) && !post.video_url.toLowerCase().includes(".jpg");
         const mediaUrl = post.video_url || "";
 
         const div = document.createElement("div");  
@@ -740,31 +740,30 @@
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
     document.getElementById(`tab-${type}`).classList.add('active');  
 
-    // 3. Handle the Blue Notification Dot
     if (type === 'trending') {
         document.getElementById('tab-trending').style.setProperty('--show-dot', 'none');
     }
 
-    const isVideo = (url) => url && url.match(/\.(mp4|mov|m4v|webm)/i);
+    const isVideoFile = (url) => url && url.toLowerCase().match(/\.(mp4|mov|m4v|webm)/i);
     const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
     let filteredPosts = [];  
 
     // 4. Filtering Logic
     if (type === 'trending') {  
         feed.classList.add('trending-mode');
-        // SUCCESS: This now allows BOTH photos and videos to pass through
+        // IMPORTANT: We use allPosts directly here so NO photos are hidden
         filteredPosts = [...allPosts].sort((a,b) => (b.likes || 0) - (a.likes || 0));  
     } else if (type === 'following') {  
         feed.classList.remove('trending-mode');
-        // STRICT: Only videos from people you follow
-        filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && isVideo(p.video_url));  
+        // Hide photos, show only followed videos
+        filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && isVideoFile(p.video_url));  
     } else {  
-        // 'foryou' - STRICT: Only videos
+        // 'foryou' - Hide photos, show only videos
         feed.classList.remove('trending-mode');
-        filteredPosts = allPosts.filter(p => isVideo(p.video_url));  
-    }
+        filteredPosts = allPosts.filter(p => isVideoFile(p.video_url));  
+    }  
 
-    // 5. Render and Reset Scroll
+    // 5. Render
     renderFeed(filteredPosts, type === 'following');  
     feed.scrollTop = 0;  
     }
