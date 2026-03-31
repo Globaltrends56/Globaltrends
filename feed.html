@@ -752,17 +752,17 @@
     // 4. Filtering Logic
     if (type === 'trending') {  
         feed.classList.add('trending-mode');
-        // Show ALL posts (Photos + Videos) sorted by most likes
+        // SUCCESS: This now allows BOTH photos and videos to pass through
         filteredPosts = [...allPosts].sort((a,b) => (b.likes || 0) - (a.likes || 0));  
     } else if (type === 'following') {  
         feed.classList.remove('trending-mode');
-        // Show only VIDEOS from people you follow
+        // STRICT: Only videos from people you follow
         filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && isVideo(p.video_url));  
     } else {  
-        // 'foryou' - Show only VIDEOS
+        // 'foryou' - STRICT: Only videos
         feed.classList.remove('trending-mode');
         filteredPosts = allPosts.filter(p => isVideo(p.video_url));  
-    }  
+    }
 
     // 5. Render and Reset Scroll
     renderFeed(filteredPosts, type === 'following');  
