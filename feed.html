@@ -641,34 +641,33 @@
         const mediaUrl = post.video_url || "";
 
         const div = document.createElement("div");  
-        
         if (isTrending) {
             // --- TRENDING / POSTS (TWITTER STYLE) ---
             div.className = "twitter-card";  
             div.innerHTML = `  
-    <div class="twitter-user-row" style="display: flex; align-items: center; justify-content: space-between; padding: 0 15px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <a href="profile.html?id=${post.user_id}">
-                <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px; border-radius:50%;">
-            </a>
-            <div class="user-meta" style="display: flex; align-items: center; gap: 5px;">
-                <a href="profile.html?id=${post.user_id}" style="text-decoration:none;">
-                    <span class="name" style="color: #fff; font-weight: bold;">${post.profiles?.username}</span>
-                </a>
-                ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 14px;"></i>' : ''}
-            </div>
-        </div>
+                <div class="twitter-user-row" style="display: flex; align-items: center; justify-content: space-between; padding: 0 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <a href="profile.html?id=${post.user_id}">
+                            <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px; border-radius:50%;">
+                        </a>
+                        <div class="user-meta" style="display: flex; align-items: center; gap: 5px;">
+                            <a href="profile.html?id=${post.user_id}" style="text-decoration:none;">
+                                <span class="name" style="color: #fff; font-weight: bold;">${post.profiles?.username}</span>
+                            </a>
+                            ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 14px;"></i>' : ''}
+                        </div>
+                    </div>
 
-        ${post.user_id !== myId ? `
-            <button class="trending-follow-btn ${isFollowed ? 'following' : ''}" 
-                    onclick="handleFollow('${post.user_id}', this)">
-                ${isFollowed ? 'Following' : 'Follow'}
-            </button>
-        ` : ''}
-    </div>
-    <div class="post-text">${post.caption || ""}</div>
-    ...
-`;
+                    ${post.user_id !== myId ? `
+                        <button class="trending-follow-btn ${isFollowed ? 'following' : ''}" 
+                                onclick="handleFollow('${post.user_id}', this)">
+                            ${isFollowed ? 'Following' : 'Follow'}
+                        </button>
+                    ` : ''}
+                </div>
+
+                <div class="post-text" style="padding: 10px 15px; color: #eff3f4;">${post.caption || ""}</div>
+
                 <div class="trending-media-box" style="margin: 0 15px;">
                     ${mediaUrl ? (
                         isVid 
@@ -677,7 +676,7 @@
                     ) : ''}
                 </div>
 
-                <div class="twitter-actions">
+                <div class="twitter-actions" style="display: flex; justify-content: space-around; padding: 12px 15px;">
                     <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
                         <i class="heart-icon ${isLiked ? 'fa-solid liked' : 'fa-regular'} fa-heart"></i>
                         <span class="action-count">${nFormatter(post.likes)}</span>
@@ -693,6 +692,7 @@
                         </div>
                     </div>
                 </div>`;
+        
         } else {
             // --- FOR YOU / FOLLOWING (TIKTOK STYLE) ---
             div.className = "tiktok-post";  
