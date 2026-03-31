@@ -38,16 +38,15 @@
     100% { transform: scale(1); opacity: 1; }
 }
         
- .follow-btn {
+.follow-btn {
     background: transparent;
-    border: 1px solid #fff;
-    color: #fff;
+    color: white;
+    border: 1px solid white;
     border-radius: 4px;
-    padding: 2px 10px;
+    padding: 2px 8px;
     font-size: 12px;
     font-weight: bold;
     cursor: pointer;
-    transition: 0.2s;
 }
 
 .follow-btn.following {
@@ -735,7 +734,7 @@
                                 </a>
                                 ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
                                 ${post.user_id !== myId ? `
-    <button class="follow-btn ${isFollowed ? 'following' : ''}" 
+    <button class="follow-btn" 
             onclick="handleFollow('${post.user_id}', this)">
         ${isFollowed ? 'Following' : 'Follow'}
     </button>
@@ -842,37 +841,36 @@
 
     function toggleDropdown() { document.getElementById('notifDropdown').classList.toggle('show'); }  
     window.handleFollow = async function(uid, btn) {  
-        if (!myId) { showToast("Please login"); return; }  
-        
-        let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
-        let isNowFollowing = false;
+    if (!myId) { showToast("Please login"); return; }  
+    
+    let cur = JSON.parse(localStorage.getItem("my_interests")) || [];  
+    let isNowFollowing = false;
 
-        if (!cur.includes(uid)) { 
-            cur.push(uid); 
-            isNowFollowing = true;
-        } else { 
-            cur = cur.filter(i => i !== uid); 
-            isNowFollowing = false;
-        }  
-
-        localStorage.setItem("my_interests", JSON.stringify(cur));   
-        
-        // --- THE GLOBAL SYNC STEP ---
-        // This finds every follow button on the screen belonging to this specific creator
-        document.querySelectorAll(`button[onclick*="${uid}"]`).forEach(button => {
-            if (isNowFollowing) {
-                button.textContent = "Following";
-                button.classList.add('following');
-            } else {
-                button.textContent = "Follow";
-                button.classList.remove('following');
-            }
-        });
-    };
-
-    function toggleDropdown() { 
-        document.getElementById('notifDropdown').classList.toggle('show'); 
+    if (!cur.includes(uid)) { 
+        cur.push(uid); 
+        isNowFollowing = true;
+    } else { 
+        cur = cur.filter(i => i !== uid); 
+        isNowFollowing = false;
     }  
+
+    localStorage.setItem("my_interests", JSON.stringify(cur));   
+
+    // --- GLOBAL SYNC ---
+    document.querySelectorAll(`button[onclick*="${uid}"]`).forEach(button => {
+        // Change the text
+        button.textContent = isNowFollowing ? "Following" : "Follow";
+        
+        // Only turn grey if it's a TRENDING button
+        if (button.classList.contains('trending-follow-btn')) {
+            if (isNowFollowing) button.classList.add('following');
+            else button.classList.remove('following');
+        } else {
+            // For the TikTok style (For You/Following), ensure grey is ALWAYS removed
+            button.classList.remove('following');
+        }
+    });
+};
 
   /* ==========================================
        BOTTOM MENU & DROPDOWN NAVIGATION
