@@ -16,26 +16,20 @@
     position: relative;
 }
 
-/* Only show the dot if the tab is NOT active */
+/* Only show the dot if the tab is NOT active (No Glow/No Pulse) */
 #tab-trending:not(.active)::after {
     content: ''; 
     position: absolute;
-    top: 10px;          /* Vertical position above the 'g' */
-    right: 2px;       /* Horizontal position */
-    width: 5px;        
-    height: 5px;
+    top: 10px;          
+    right: 2px;       
+    width: 6px;        /* Slightly larger since it's not pulsing anymore */
+    height: 6px;
     background-color: #1DA1F2; 
     border-radius: 50%;
-    box-shadow: 0 0 6px rgba(29, 161, 242, 0.9);
     border: 1.5px solid #000;
     z-index: 10;
-    animation: pulseDot 1.5s infinite; /* Keeps it blinking until clicked */
-}
-
-@keyframes pulseDot {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.4); opacity: 0.6; }
-    100% { transform: scale(1); opacity: 1; }
+    /* Removed animation: pulseDot */
+    /* Removed box-shadow */
 }
         
 .follow-btn {
