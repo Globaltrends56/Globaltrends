@@ -603,15 +603,28 @@
     }  
 
     document.addEventListener("DOMContentLoaded", async () => {  
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
-        headers: { apikey: SUPABASE_KEY }   
-    });  
-    const data = await res.json();  
-    // We keep everything (photos + videos) in allPosts now
-    allPosts = Array.isArray(data) ? data : [];  
-    
-    // Start on For You
-    toggleFeed('foryou');  
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
+            headers: { apikey: SUPABASE_KEY }   
+        });  
+        
+        const data = await res.json();  
+
+        // 1. Check if data is valid and SHUFFLE it immediately
+        if (Array.isArray(data)) {
+            allPosts = shuffleArray(data); 
+        } else {
+            allPosts = [];
+            console.error("Data received is not an array:", data);
+        }
+        
+        // 2. Start the feed on 'foryou' (which will now use the shuffled allPosts)
+        toggleFeed('foryou');  
+
+    } catch (error) {
+        console.error("Failed to fetch posts:", error);
+        showToast("Error loading feed. Please refresh.");
+    }
 });
 
     function renderFeed(posts, isFollowingTab = false) {  
@@ -796,19 +809,28 @@
     let filteredPosts = [];  
 
     // 4. Filtering Logic
+    const isVideoFile = (url) => url && url.toLowerCase().match(/\.(mp4|mov|m4v|webm)/i);
+
     if (type === 'trending') {  
         feed.classList.add('trending-mode');
-        // IMPORTANT: We use allPosts directly here so NO photos are hidden
-        filteredPosts = [...allPosts].sort((a,b) => (b.likes || 0) - (a.likes || 0));  
+        // We show everything (photos + videos) and shuffle them for variety
+        filteredPosts = shuffleArray([...allPosts]); 
+        
+        // Optional: If you still want the MOST liked to be near the top but still shuffled:
+        // filteredPosts = shuffleArray([...allPosts]).sort((a,b) => (b.likes || 0) - (a.likes || 0)).slice(0, 50);
+        
     } else if (type === 'following') {  
         feed.classList.remove('trending-mode');
-        // Hide photos, show only followed videos
-        filteredPosts = allPosts.filter(p => interests.includes(p.user_id) && isVideoFile(p.video_url));  
+        // Filter: Must be someone I follow AND must be a video
+        let followingVideos = allPosts.filter(p => interests.includes(p.user_id) && isVideoFile(p.video_url));
+        filteredPosts = shuffleArray(followingVideos); 
+        
     } else {  
-        // 'foryou' - Hide photos, show only videos
+        // 'foryou' - Filter: Must be a video, then shuffle
         feed.classList.remove('trending-mode');
-        filteredPosts = allPosts.filter(p => isVideoFile(p.video_url));  
-    }  
+        let forYouVideos = allPosts.filter(p => isVideoFile(p.video_url));
+        filteredPosts = shuffleArray(forYouVideos); 
+    }
 
     // 5. Render
     renderFeed(filteredPosts, type === 'following');  
@@ -961,6 +983,14 @@ function handleReport(postId) {
 document.addEventListener("click", () => {
     document.querySelectorAll('.report-popup').forEach(p => p.style.display = 'none');
 });
+     
+function shuffleArray(array) {
+   for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
 </script>
     <div id="bottomMenu">
     <div class="menu-bar">
