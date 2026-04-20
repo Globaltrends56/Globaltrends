@@ -624,7 +624,7 @@
     } catch (error) {
         console.error("Failed to fetch posts:", error);
         showToast("Error loading feed. Please refresh.");
-    
+    } 
 });
 
     function renderFeed(posts, isFollowingTab = false) {  
@@ -804,38 +804,32 @@
         document.getElementById('tab-trending').style.setProperty('--show-dot', 'none');
     }
 
+    // Define these ONCE here
     const isVideoFile = (url) => url && url.toLowerCase().match(/\.(mp4|mov|m4v|webm)/i);
     const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
     let filteredPosts = [];  
 
-    // 4. Filtering Logic
-    const isVideoFile = (url) => url && url.toLowerCase().match(/\.(mp4|mov|m4v|webm)/i);
-
+    // 4. Filtering Logic (Duplicate const removed from here)
     if (type === 'trending') {  
         feed.classList.add('trending-mode');
-        // We show everything (photos + videos) and shuffle them for variety
         filteredPosts = shuffleArray([...allPosts]); 
-        
-        // Optional: If you still want the MOST liked to be near the top but still shuffled:
-        // filteredPosts = shuffleArray([...allPosts]).sort((a,b) => (b.likes || 0) - (a.likes || 0)).slice(0, 50);
         
     } else if (type === 'following') {  
         feed.classList.remove('trending-mode');
-        // Filter: Must be someone I follow AND must be a video
         let followingVideos = allPosts.filter(p => interests.includes(p.user_id) && isVideoFile(p.video_url));
         filteredPosts = shuffleArray(followingVideos); 
         
     } else {  
-        // 'foryou' - Filter: Must be a video, then shuffle
+        // 'foryou'
         feed.classList.remove('trending-mode');
         let forYouVideos = allPosts.filter(p => isVideoFile(p.video_url));
         filteredPosts = shuffleArray(forYouVideos); 
     }
 
-    // 5. Render
+    // 5. Final Step: Render the posts and scroll to top
     renderFeed(filteredPosts, type === 'following');  
     feed.scrollTop = 0;  
-    }
+    }                       
      
     async function likePostGlobal(id, el) {  
         if (!myId) { showToast("Please login"); return; }  
