@@ -230,6 +230,21 @@
 .story-avatar.active-story {
     border: 3px solid var(--gt-blue) !important;
 }
+/* The class that hides the stories */
+.stories-hidden {
+    display: none !important;
+}
+
+/* Rotate chevron when closed */
+.chevron-rotate {
+    transform: rotate(-90deg);
+}
+
+/* Ensure the layout shifts smoothly */
+#stories-collapsible {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
   </style>
 </head>
 <body>
@@ -252,19 +267,25 @@
         </div>
     </header>
 
-    <div class="section-title">Stories</div>
-<div class="stories-wrapper">
-    <div id="my-story-slot">
-        <div class="story-item" onclick="openAddStory()">
-            <div class="story-avatar add-story">
-                <img src="https://via.placeholder.com/70" class="user-pfp-source">
-                <div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div>
-            </div>
-            <span class="story-name">Your story</span>
-        </div>
-    </div>
+    <div class="section-title" onclick="toggleStories()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+    Stories
+    <i class="fa-solid fa-chevron-down" id="stories-chevron" style="transition: transform 0.3s ease; font-size: 14px; color: #888;"></i>
+</div>
 
-    <div id="stories-area" style="display: flex; gap: 15px;"></div>
+<div id="stories-collapsible">
+    <div class="stories-wrapper">
+        <div id="my-story-slot">
+            <div class="story-item" onclick="openAddStory()">
+                <div class="story-avatar add-story">
+                    <img src="https://via.placeholder.com/70" class="user-pfp-source">
+                    <div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div>
+                </div>
+                <span class="story-name">Your story</span>
+            </div>
+        </div>
+
+        <div id="stories-area" style="display: flex; gap: 15px;"></div>
+    </div>
 </div>
 
     <div class="tabs">
@@ -526,7 +547,21 @@ function filterFollowing(query) {
         user.username.toLowerCase().includes(query.toLowerCase())
     );
     renderNCList(filtered);
-        }
+    }
+
+    function toggleStories() {
+    const storiesDiv = document.getElementById('stories-collapsible');
+    const chevron = document.getElementById('stories-chevron');
+    
+    // Logic: If it's hidden, show it. If it's shown, hide it.
+    if (storiesDiv.style.display === "none") {
+        storiesDiv.style.display = "block";
+        chevron.style.transform = "rotate(0deg)"; // Points down
+    } else {
+        storiesDiv.style.display = "none";
+        chevron.style.transform = "rotate(-90deg)"; // Points right
+    }
+    }
     </script>
     <div class="fab-container">
     <button class="fab-btn" onclick="toggleNewChatMenu()">
