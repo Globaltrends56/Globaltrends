@@ -29,12 +29,54 @@
             white-space: nowrap; /* Forces "GT Messenger" to stay on one line */
         }
 
-        .header-right { display: flex; gap: 20px; }
-        .top-action { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; position: relative; }
-        .top-action .icon-bg { width: 45px; height: 45px; background: #f0f2f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .top-action span { font-size: 11px; font-weight: 500; }
-        .badge { position: absolute; top: -2px; right: -2px; background: #ff3b30; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; border: 2px solid #fff; }
+        /* HEADER RIGHT ACTIONS (Smaller & Compact) */
+        .header-right { 
+            display: flex; 
+            gap: 12px; /* Reduced gap between the two buttons */
+            align-items: center; 
+        }
 
+        .top-action { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 2px; /* Tighter space between icon and text */
+            cursor: pointer; 
+            position: relative;
+            min-width: 50px; /* Ensures consistent spacing */
+        }
+
+        .top-action .icon-bg { 
+            width: 36px; /* Reduced from 45px */
+            height: 36px; /* Reduced from 45px */
+            background: #f0f2f5; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 16px; /* Smaller icon size */
+            color: #000;
+        }
+
+        .top-action span { 
+            font-size: 10px; /* Smaller text label */
+            font-weight: 600; 
+            color: #000;
+        }
+
+        /* Adjust the badge size for the smaller icon */
+        .badge { 
+            position: absolute; 
+            top: -3px; 
+            right: 4px; 
+            background: #ff3b30; 
+            color: #fff; 
+            font-size: 9px; 
+            padding: 1px 4px; 
+            border-radius: 10px; 
+            border: 1.5px solid #fff; 
+            }
+        
         /* STORIES SECTION */
         .section-title { padding: 10px 20px; font-size: 15px; font-weight: 700; }
         .stories-wrapper { display: flex; gap: 15px; padding: 0 20px 15px; overflow-x: auto; scrollbar-width: none; min-height: 100px; align-items: center; }
