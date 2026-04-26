@@ -78,8 +78,8 @@
             }
         
         /* STORIES SECTION */
-        .section-title { padding: 10px 20px; font-size: 15px; font-weight: 700; }
-        .stories-wrapper { display: flex; gap: 15px; padding: 0 20px 15px; overflow-x: auto; scrollbar-width: none; min-height: 100px; align-items: center; }
+        .section-title { padding: 5px 20px 10px; font-size: 15px; font-weight: 700; }
+        .stories-wrapper { display: flex; gap: 15px; padding: 5 20px 10px; overflow-x: auto; scrollbar-width: none; min-height: 90px; align-items: center; }
         .stories-wrapper::-webkit-scrollbar { display: none; }
         .story-hint { font-size: 12px; color: var(--text-muted); font-style: italic; }
 
@@ -87,14 +87,45 @@
         .story-avatar { width: 70px; height: 70px; border-radius: 50%; padding: 3px; border: 3px solid var(--gt-blue); }
         .story-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
 
-        /* TABS */
-        .tabs { display: flex; justify-content: space-between; padding: 10px 25px; border-bottom: 1px solid var(--border-light); }
-        .tab { font-size: 22px; font-weight: 800; position: relative; cursor: pointer; }
-        .tab-indicator { width: 30px; height: 4px; background: var(--gt-blue); border-radius: 10px; position: absolute; bottom: -8px; left: 0; }
-        .tab.inactive { color: #888; font-size: 18px; margin-top: 3px; }
+    /* TABS */
+    .tabs { 
+    display: flex; 
+    justify-content: space-between; 
+    padding: 5px 25px 12px; /* Reduced top padding to move it UP */
+    border-bottom: 1px solid var(--border-light);
+    background: #fff;
+    position: sticky; /* Keeps it fixed when scrolling chats */
+    top: 72px; /* Adjust this based on your header height */
+    z-index: 900;
+}
 
+/* The tab the user is CURRENTLY looking at */
+.tab.active { 
+    color: #000; 
+    font-size: 20px; 
+    font-weight: 800; 
+}
+
+/* The tabs the user is NOT looking at */
+.tab.inactive { 
+    color: #888; 
+    font-size: 18px; 
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tab-indicator { 
+    width: 24px; 
+    height: 3px; 
+    background: var(--gt-blue); 
+    border-radius: 10px; 
+    position: absolute; 
+    bottom: -6px; 
+    left: 0; 
+}
+        
         /* CHAT LIST LAYOUT (The Vertical Illustration) */
-        .chat-list { padding: 10px 20px; }
+        .chat-list { padding: 5px 20px; }
         .chat-item { display: flex; align-items: center; gap: 15px; padding: 12px 0; border-bottom: 1px solid transparent; }
         .chat-pfp-wrapper { position: relative; }
         .chat-pfp { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
@@ -135,9 +166,13 @@
         </div>
 
     <div class="tabs">
-        <div class="tab">Chats<div class="tab-indicator"></div></div>
-        <div class="tab inactive">Groups</div>
-        <div class="tab inactive">Calls</div>
+    <div id="tab-chats" class="tab active" onclick="switchTab('chats')">
+        Chats
+        <div class="tab-indicator"></div>
+    </div>
+    
+    <div id="tab-groups" class="tab inactive" onclick="switchTab('groups')">Groups</div>
+    <div id="tab-calls" class="tab inactive" onclick="switchTab('calls')">Calls</div>
     </div>
 
     <div class="chat-list" id="chat-list-container">
@@ -221,6 +256,46 @@
                 </div>`;
             }).join('');
         }
+        
+
+     function switchTab(type) {
+    // 1. Reset all tabs to inactive state
+    document.querySelectorAll('.tab').forEach(t => {
+        t.classList.remove('active');
+        t.classList.add('inactive');
+        
+        // Remove the blue line from whichever tab had it
+        const oldIndicator = t.querySelector('.tab-indicator');
+        if (oldIndicator) oldIndicator.remove();
+    });
+
+    // 2. Activate the clicked tab
+    const selectedTab = document.getElementById(`tab-${type}`);
+    selectedTab.classList.add('active');
+    selectedTab.classList.remove('inactive');
+
+    // 3. Add the blue line (indicator) to the active tab
+    selectedTab.innerHTML += `<div class="tab-indicator"></div>`;
+
+    // 4. Change what the user sees below the tabs
+    const chatContainer = document.getElementById("chat-list-container");
+    
+    if (type === 'chats') {
+        initMessenger(); // Reloads your actual messages
+    } else if (type === 'groups') {
+        chatContainer.innerHTML = `
+            <div class="empty-welcome">
+                <i class="fa-solid fa-users" style="font-size: 50px; color: #f0f2f5;"></i>
+                <h2 style="margin-top:15px;">Groups coming soon</h2>
+            </div>`;
+    } else if (type === 'calls') {
+        chatContainer.innerHTML = `
+            <div class="empty-welcome">
+                <i class="fa-solid fa-video" style="font-size: 50px; color: #f0f2f5;"></i>
+                <h2 style="margin-top:15px;">Video calls coming soon</h2>
+            </div>`;
+    }
+  }
     </script>
 </body>
 </html>
