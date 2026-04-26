@@ -141,12 +141,12 @@
         <div class="header-right">
             <div class="top-action">
                 <div class="icon-bg"><i class="fa-solid fa-plus"></i></div>
-                <span>Add story</span>
+                <span>STORY</span>
             </div>
             <div class="top-action">
                 <div class="icon-bg"><i class="fa-solid fa-gear"></i></div>
                 <span class="badge">1</span>
-                <span>Menu</span>
+                <span>MENU</span>
             </div>
         </div>
     </header>
@@ -196,24 +196,36 @@
                 renderStories(followedStories);
             }
 
-            // 2. CHAT LOGIC
-            const msgRes = await fetch(`${SUPABASE_URL}/rest/v1/messages?or=(sender_id.eq.${myId},receiver_id.eq.${myId})&limit=1`, {
-                headers: { apikey: SUPABASE_KEY }
-            });
-            const messages = await msgRes.json();
+// 2. CHAT LOGIC (Updated to fix the Tab Switching error)
+async function initMessenger() {
+    const chatBox = document.getElementById("chat-list-container");
+    
+    // STEP 1: Wipe the container clean (Fixes the "Groups" text getting stuck)
+    chatBox.innerHTML = ""; 
 
-            const chatBox = document.getElementById("chat-list-container");
-            if (messages.length === 0) {
-                chatBox.innerHTML = `
-                    <div class="empty-welcome">
-                        <i class="fa-solid fa-comment-dots"></i>
-                        <h2>Start new chat</h2>
-                    </div>`;
-            } else {
-                // When you have real data, this function runs
-                renderChats(messages); 
-            }
+    try {
+        const msgRes = await fetch(`${SUPABASE_URL}/rest/v1/messages?or=(sender_id.eq.${myId},receiver_id.eq.${myId})&limit=1`, {
+            headers: { apikey: SUPABASE_KEY }
+        });
+        const messages = await msgRes.json();
+
+        // STEP 2: Check if there are messages
+        if (!messages || messages.length === 0) {
+            // Show professional Welcome Message if empty
+            chatBox.innerHTML = `
+                <div class="empty-welcome">
+                    <i class="fa-solid fa-comment-dots" style="font-size: 50px; color: #f0f2f5;"></i>
+                    <h2 style="margin-top:15px; color:#65676b;">Start new chat</h2>
+                </div>`;
+        } else {
+            // Render your "Portable Jp" style list if data exists
+            renderChats(messages); 
         }
+    } catch (error) {
+        console.error("Fetch error:", error);
+        chatBox.innerHTML = `<div style="text-align:center; padding:20px; color:red;">Connection error.</div>`;
+    }
+   }
 
         function renderStories(data) {
             const users = [...new Map(data.map(s => [s.user_id, s])).values()];
@@ -248,41 +260,39 @@
         }
         
 
-     function switchTab(type) {
-    // 1. Reset all tabs to inactive state
+     async function switchTab(type) {
+    // 1. Visual Update: Move the blue line and change colors
     document.querySelectorAll('.tab').forEach(t => {
         t.classList.remove('active');
         t.classList.add('inactive');
-        
-        // Remove the blue line from whichever tab had it
         const oldIndicator = t.querySelector('.tab-indicator');
         if (oldIndicator) oldIndicator.remove();
     });
 
-    // 2. Activate the clicked tab
     const selectedTab = document.getElementById(`tab-${type}`);
     selectedTab.classList.add('active');
     selectedTab.classList.remove('inactive');
-
-    // 3. Add the blue line (indicator) to the active tab
     selectedTab.innerHTML += `<div class="tab-indicator"></div>`;
 
-    // 4. Change what the user sees below the tabs
+    // 2. Logic Update: Clear the screen first so old messages don't stay
     const chatContainer = document.getElementById("chat-list-container");
-    
+    chatContainer.innerHTML = `<div style="text-align:center; padding:50px;">Loading...</div>`;
+
+    // 3. Re-fill the container based on the tab
     if (type === 'chats') {
-        initMessenger(); // Reloads your actual messages
+        // This MUST call your main function to check for messages again
+        await initMessenger(); 
     } else if (type === 'groups') {
         chatContainer.innerHTML = `
             <div class="empty-welcome">
                 <i class="fa-solid fa-users" style="font-size: 50px; color: #f0f2f5;"></i>
-                <h2 style="margin-top:15px;">Groups coming soon</h2>
+                <h2 style="margin-top:15px; color:#65676b;">Groups coming soon</h2>
             </div>`;
     } else if (type === 'calls') {
         chatContainer.innerHTML = `
             <div class="empty-welcome">
                 <i class="fa-solid fa-video" style="font-size: 50px; color: #f0f2f5;"></i>
-                <h2 style="margin-top:15px;">Video calls coming soon</h2>
+                <h2 style="margin-top:15px; color:#65676b;">Video calls coming soon</h2>
             </div>`;
     }
   }
