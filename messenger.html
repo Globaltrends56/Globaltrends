@@ -30,80 +30,52 @@
         }
 
        /* 1. The Main Container - Pushes Left and Right apart */
-.header {
-    display: flex;
-    justify-content: space-between; /* This creates the center breathing space */
-    align-items: center;
-    padding: 10px 18px; 
-    background: #fff;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    height: 70px; /* Slightly taller for more 'air' */
-    border-bottom: 1px solid var(--border-light);
-    box-sizing: border-box;
-}
+       .header-right { 
+            display: flex; 
+            gap: 12px; /* Reduced gap between the two buttons */
+            align-items: center; 
+        }
 
-/* 2. The Right Side Actions - Spreads STORY and MENU */
-.header-right { 
-    display: flex; 
-    gap: 20px; /* Increased from 12px for better breathing space */
-    align-items: center; 
-}
+        .top-action { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 2px; /* Tighter space between icon and text */
+            cursor: pointer; 
+            position: relative;
+            min-width: 50px; /* Ensures consistent spacing */
+        }
 
-.top-action { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 4px; /* Slightly more space between icon and text for clarity */
-    cursor: pointer; 
-    position: relative;
-}
+        .top-action .icon-bg { 
+            width: 36px; /* Reduced from 45px */
+            height: 36px; /* Reduced from 45px */
+            background: #f0f2f5; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 16px; /* Smaller icon size */
+            color: #000;
+        }
 
-.top-action .icon-bg { 
-    width: 38px; 
-    height: 38px; 
-    background: #f0f2f5; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-size: 17px; 
-    color: #000;
-    transition: background 0.2s;
-}
+        .top-action span { 
+            font-size: 10px; /* Smaller text label */
+            font-weight: 600; 
+            color: #000;
+        }
 
-.top-action:hover .icon-bg {
-    background: #e4e6eb; /* Subtle hover effect */
-}
-
-.top-action span { 
-    font-size: 10px; 
-    font-weight: 700; /* Made slightly bolder for readability */
-    color: #555; /* Refined grey for a cleaner look */
-    text-transform: uppercase; /* Keeps it looking like a professional UI label */
-    letter-spacing: 0.3px;
-}
-
-/* 3. The Notification Badge - Expert Positioning */
-.badge { 
-    position: absolute; 
-    top: -2px; 
-    right: -2px; /* Moved to the edge of the circle */
-    background: #ff3b30; 
-    color: #fff; 
-    font-size: 9px; 
-    font-weight: 800;
-    min-width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%; 
-    border: 2px solid #fff; 
-    box-sizing: border-box;
-    z-index: 2;
-   }
+        /* Adjust the badge size for the smaller icon */
+        .badge { 
+            position: absolute; 
+            top: -3px; 
+            right: 4px; 
+            background: #ff3b30; 
+            color: #fff; 
+            font-size: 9px; 
+            padding: 1px 4px; 
+            border-radius: 10px; 
+            border: 1.5px solid #fff; 
+        }
         
         /* STORIES SECTION */
         .section-title { padding: 0px 20px 5px; font-size: 15px; font-weight: 700; }
