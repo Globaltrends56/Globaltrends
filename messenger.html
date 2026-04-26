@@ -88,30 +88,38 @@
         .story-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
 
     /* TABS */
-    .tabs { 
-    display: flex; 
-    justify-content: space-between; 
-    padding: 0px 25px 10px; /* Reduced top padding to move it UP */
+    .tabs {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* 15px left/right padding keeps it away from the glass edges */
+    padding: 5px 15px 10px; 
     border-bottom: 1px solid var(--border-light);
     background: #fff;
-    position: sticky; /* Keeps it fixed when scrolling chats */
-    top: 60px; /* Adjust this based on your header height */
+    position: sticky;
+    top: 60px;
     z-index: 900;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-/* The tab the user is CURRENTLY looking at */
-.tab.active { 
-    color: #000; 
-    font-size: 20px; 
-    font-weight: 800; 
-}
-
-/* The tabs the user is NOT looking at */
-.tab.inactive { 
-    color: #888; 
-    font-size: 18px; 
-    font-weight: 700;
+.tab {
+    flex: 1; /* This forces the tabs to fill the width equally */
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    /* Default state for inactive tabs */
+    color: #8e8e8e; 
+    font-weight: 500;
+}
+
+/* This is the state when the tab is clicked */
+.tab.active {
+    color: var(--gt-blue); /* Or #000 if you prefer black bold */
+    font-weight: 800; /* Extra bold to replace the indicator */
+    font-size: 14.5px; /* Tiny increase to make it pop */
 }
         
         /* CHAT LIST LAYOUT (The Vertical Illustration) */
