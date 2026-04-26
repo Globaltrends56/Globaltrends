@@ -178,29 +178,26 @@
             initMessenger();
         });
 
-        async function initMessenger() {
-            const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
-            const yesterday = new Date(Date.now() - 24*60*60*1000).toISOString();
+    async function initMessenger() {
+    const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
+    const yesterday = new Date(Date.now() - 24*60*60*1000).toISOString();
 
-            // 1. STORIES LOGIC
-            const storyRes = await fetch(`${SUPABASE_URL}/rest/v1/stories?select=*,profiles(username,avatar_url)&created_at=gt.${yesterday}`, {
-                headers: { apikey: SUPABASE_KEY }
-            });
-            const allStories = await storyRes.json();
-            const followedStories = allStories.filter(s => interests.includes(s.user_id));
+    // 1. STORIES LOGIC
+    const storyRes = await fetch(`${SUPABASE_URL}/rest/v1/stories?select=*,profiles(username,avatar_url)&created_at=gt.${yesterday}`, {
+        headers: { apikey: SUPABASE_KEY }
+    });
+    const allStories = await storyRes.json();
+    const followedStories = allStories.filter(s => interests.includes(s.user_id));
 
-            const storyBox = document.getElementById("stories-area");
-            if (followedStories.length === 0) {
-                storyBox.innerHTML = `<span class="story-hint">Stories appears here</span>`;
-            } else {
-                renderStories(followedStories);
-            }
+    const storyBox = document.getElementById("stories-area");
+    if (followedStories.length === 0) {
+        storyBox.innerHTML = `<span class="story-hint">Stories appears here</span>`;
+    } else {
+        renderStories(followedStories);
+    }
 
-// 2. CHAT LOGIC (Updated to fix the Tab Switching error)
-async function initMessenger() {
+    // 2. CHAT LOGIC
     const chatBox = document.getElementById("chat-list-container");
-    
-    // STEP 1: Wipe the container clean (Fixes the "Groups" text getting stuck)
     chatBox.innerHTML = ""; 
 
     try {
@@ -209,23 +206,16 @@ async function initMessenger() {
         });
         const messages = await msgRes.json();
 
-        // STEP 2: Check if there are messages
         if (!messages || messages.length === 0) {
-            // Show professional Welcome Message if empty
-            chatBox.innerHTML = `
-                <div class="empty-welcome">
-                    <i class="fa-solid fa-comment-dots" style="font-size: 50px; color: #f0f2f5;"></i>
-                    <h2 style="margin-top:15px; color:#65676b;">Start new chat</h2>
-                </div>`;
+            chatBox.innerHTML = `<div class="empty-welcome"><i class="fa-solid fa-comment-dots"></i><h2>Start new chat</h2></div>`;
         } else {
-            // Render your "Portable Jp" style list if data exists
             renderChats(messages); 
         }
     } catch (error) {
-        console.error("Fetch error:", error);
-        chatBox.innerHTML = `<div style="text-align:center; padding:20px; color:red;">Connection error.</div>`;
+        console.error("Error:", error);
     }
-   }
+} // <--- Make sure this brace closes the WHOLE function
+        
 
         function renderStories(data) {
             const users = [...new Map(data.map(s => [s.user_id, s])).values()];
