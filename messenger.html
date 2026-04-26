@@ -92,34 +92,31 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* 15px left/right padding keeps it away from the glass edges */
-    padding: 5px 15px 10px; 
+    /* We use very small horizontal padding (8px) to keep it just off the glass */
+    padding: 0 8px 10px; 
     border-bottom: 1px solid var(--border-light);
     background: #fff;
     position: sticky;
-    top: 60px;
+    top: 70px; /* Adjusted to match your new header height */
     z-index: 900;
     width: 100%;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Critical: keeps padding from adding to width */
 }
 
 .tab {
-    flex: 1; /* This forces the tabs to fill the width equally */
+    flex: 1; /* This forces each tab to take up exactly 33.3% of the width */
     text-align: center;
-    padding: 8px 0;
-    font-size: 14px;
+    padding: 12px 0; /* Slightly more vertical padding for a better hit area */
     cursor: pointer;
+    color: #8e8e8e;
+    font-size: 15px; /* Slightly larger for readability */
+    font-weight: 600;
     transition: all 0.2s ease;
-    /* Default state for inactive tabs */
-    color: #8e8e8e; 
-    font-weight: 500;
 }
 
-/* This is the state when the tab is clicked */
 .tab.active {
-    color: var(--gt-blue); /* Or #000 if you prefer black bold */
-    font-weight: 800; /* Extra bold to replace the indicator */
-    font-size: 14.5px; /* Tiny increase to make it pop */
+    color: var(--gt-blue);
+    font-weight: 800; /* Bold for the active state */
 }
         
         /* CHAT LIST LAYOUT (The Vertical Illustration) */
