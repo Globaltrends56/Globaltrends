@@ -87,9 +87,9 @@
         .story-item { display: flex; flex-direction: column; align-items: center; min-width: 75px; gap: 8px; }
         .story-avatar { width: 70px; height: 70px; border-radius: 50%; padding: 3px; border: 3px solid var(--gt-blue); }
         .story-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
-        #stories-collapsible {
-         margin-top: 15px; /* Pushes it down away from the header line */
-         padding: 0 5px;   /* Optional: adds a tiny bit of side-room if needed */
+        .section-title {
+         margin-top: 18px !important; /* Forces the text itself to move away from the header */
+         margin-bottom: 10px;        /* Adds a little space between the text and the bubbles */
         }
 
 /* TABS */
@@ -99,9 +99,9 @@
     align-items: center;
     
     /* 1. The Break-Out Logic */
-    width: calc(100% + 60px); /* Adds back the space lost to container padding */
-    margin-left: -30px;       /* Pulls it to the far left edge */
-    margin-right: -30px;      /* Pulls it to the far right edge */
+    width: calc(100% + 64px); /* Adds back the space lost to container padding */
+    margin-left: -32px;       /* Pulls it to the far left edge */
+    margin-right: -32px;      /* Pulls it to the far right edge */
     
     /* 2. Internal Spacing */
     /* 15px here acts as a new 'safe zone' so text doesn't touch the glass */
