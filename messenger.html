@@ -18,15 +18,26 @@
         body { background: var(--bg-white); color: var(--text-main); overflow-x: hidden; }
 
         /* HEADER (Matched to Image) */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: sticky; top: 0; background: #fff; z-index: 1000; }
+        .header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 8px 18px; /* Reduced from 15px to 8px to make it slimmer */
+    position: sticky; 
+    top: 0; 
+    background: #fff; 
+    z-index: 1000; 
+    border-bottom: 1px solid #f0f2f5; /* Optional: adds a clean separator */
+   }
         .header-left { display: flex; align-items: center; gap: 12px; }
-        .logo-img { width: 35px; height: 35px; }
-        .header-left h1 { 
-            font-size: 22px; /* Slightly smaller to fit mobile screens */
-            font-weight: 800; 
-            color: var(--gt-blue); 
-            letter-spacing: -0.5px;
-            white-space: nowrap; /* Forces "GT Messenger" to stay on one line */
+        .logo-img {
+         width: 28px;  /* Try 28px instead of 35px */
+         height: 28px;
+         }
+        .header-left h1 {
+         font-size: 17px; /* Reduced from 19px or 20px */
+         font-weight: 700;
+         letter-spacing: -0.3px;
         }
 
        /* 1. The Main Container - Pushes Left and Right apart */
@@ -47,34 +58,21 @@
         }
 
         .top-action .icon-bg { 
-            width: 36px; /* Reduced from 45px */
-            height: 36px; /* Reduced from 45px */
+            width: 30px; /* Reduced from 45px */
+            height: 30px; /* Reduced from 45px */
             background: #f0f2f5; 
             border-radius: 50%; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 16px; /* Smaller icon size */
+            font-size: 14px; /* Smaller icon size */
             color: #000;
         }
 
         .top-action span { 
-            font-size: 10px; /* Smaller text label */
+            font-size: 9px; /* Smaller text label */
             font-weight: 600; 
             color: #000;
-        }
-
-        /* Adjust the badge size for the smaller icon */
-        .badge { 
-            position: absolute; 
-            top: -3px; 
-            right: 4px; 
-            background: #ff3b30; 
-            color: #fff; 
-            font-size: 9px; 
-            padding: 1px 4px; 
-            border-radius: 10px; 
-            border: 1.5px solid #fff; 
         }
         
         /* STORIES SECTION */
@@ -94,13 +92,13 @@
     align-items: center;
     
     /* 1. The Break-Out Logic */
-    width: calc(100% + 40px); /* Adds back the space lost to container padding */
-    margin-left: -20px;       /* Pulls it to the far left edge */
-    margin-right: -20px;      /* Pulls it to the far right edge */
+    width: calc(100% + 60px); /* Adds back the space lost to container padding */
+    margin-left: -30px;       /* Pulls it to the far left edge */
+    margin-right: -30px;      /* Pulls it to the far right edge */
     
     /* 2. Internal Spacing */
     /* 15px here acts as a new 'safe zone' so text doesn't touch the glass */
-    padding: 0 15px 10px; 
+    padding: 0 5px 10px; 
     
     /* 3. Positioning & Visuals */
     border-bottom: 1px solid var(--border-light);
