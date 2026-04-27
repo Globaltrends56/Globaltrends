@@ -87,20 +87,28 @@
         .story-avatar { width: 70px; height: 70px; border-radius: 50%; padding: 3px; border: 3px solid var(--gt-blue); }
         .story-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
 
-    /* TABS */
-    .tabs {
+/* TABS */
+.tabs {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* We use very small horizontal padding (8px) to keep it just off the glass */
-    padding: 0 8px 10px; 
+    
+    /* 1. The Break-Out Logic */
+    width: calc(100% + 40px); /* Adds back the space lost to container padding */
+    margin-left: -20px;       /* Pulls it to the far left edge */
+    margin-right: -20px;      /* Pulls it to the far right edge */
+    
+    /* 2. Internal Spacing */
+    /* 15px here acts as a new 'safe zone' so text doesn't touch the glass */
+    padding: 0 15px 10px; 
+    
+    /* 3. Positioning & Visuals */
     border-bottom: 1px solid var(--border-light);
     background: #fff;
     position: sticky;
-    top: 70px; /* Adjusted to match your new header height */
+    top: 70px; 
     z-index: 900;
-    width: 100%;
-    box-sizing: border-box; /* Critical: keeps padding from adding to width */
+    box-sizing: border-box; 
 }
 
 .tab {
