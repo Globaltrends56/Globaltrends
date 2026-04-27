@@ -29,15 +29,18 @@
     z-index: 1000; 
     border-bottom: 1px solid #f0f2f5; /* Optional: adds a clean separator */
    }
-        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-left { display: flex; align-items: center; gap: 0px; }
         .logo-img {
          width: 28px;  /* Try 28px instead of 35px */
          height: 28px;
          }
         .header-left h1 {
-         font-size: 17px; /* Reduced from 19px or 20px */
+         font-size: 18px; /* Reduced from 19px or 20px */
          font-weight: 700;
+         color: var(--gt-blue);
          letter-spacing: -0.3px;
+         margin: 0;
+         padding-left: 5px;
         }
 
        /* 1. The Main Container - Pushes Left and Right apart */
@@ -262,8 +265,7 @@
 
     <header class="header">
         <div class="header-left">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Facebook_Messenger_logo_2020.svg" class="logo-img">
-            <h1>GT Messenger</h1>
+              <h1>GT Messenger</h1>
         </div>
         <div class="header-right">
             <div class="top-action">
@@ -272,7 +274,6 @@
             </div>
             <div class="top-action">
                 <div class="icon-bg"><i class="fa-solid fa-gear"></i></div>
-                <span class="badge">1</span>
                 <span>MENU</span>
             </div>
         </div>
