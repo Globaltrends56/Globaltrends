@@ -264,6 +264,31 @@
     transition: all 0.3s ease;
     overflow: hidden;
 }
+
+  /* Container for the text below the bubble */
+.story-item span {
+    font-size: 12px;
+    font-weight: 500;
+    color: #000;
+    max-width: 75px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* When NO story is active, make the ring grey/subtle */
+.story-avatar.no-story {
+    border: 3px solid #f0f2f5 !important;
+}
+
+/* Ensure the image stays perfectly round inside the ring */
+.story-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #eee;
+ }
   </style>
 </head>
 <body>
@@ -413,6 +438,79 @@ document.getElementById('story-upload-input').addEventListener('change', async (
     }
 });
 
+// --- STORY LOADING & RENDERING ---
+
+async function initMessenger() {
+    // This function will now run when the page loads
+    await loadStories();
+}
+
+async function loadStories() {
+    try {
+        // Fetch stories from the last 24 hours
+        const { data: stories, error } = await _supabase
+            .from('stories')
+            .select('*')
+            .gt('expires_at', new Date().toISOString());
+
+        if (error) throw error;
+        renderStoryBar(stories || []);
+    } catch (err) {
+        console.error("Error loading stories:", err.message);
+    }
+}
+
+function renderStoryBar(activeStories) {
+    const wrapper = document.querySelector('.stories-wrapper');
+    if (!wrapper) return;
+
+    wrapper.innerHTML = ''; // Clear existing content
+
+    // 1. Check if YOU have a story
+    const myActiveStory = activeStories.find(s => s.user_id === myId);
+
+    // 2. Create YOUR story item
+    const yourStoryItem = document.createElement('div');
+    yourStoryItem.className = 'story-item';
+    
+    // Switch between your PFP (active) or the Plus icon (no story)
+    const displayImg = myActiveStory ? myActiveStory.image_url : 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+    const ringClass = myActiveStory ? 'active-story' : 'no-story';
+
+    yourStoryItem.innerHTML = `
+        <div class="story-avatar ${ringClass}">
+            <img src="${displayImg}" id="your-story-btn" style="cursor:pointer;">
+        </div>
+        <span>Your story</span>
+    `;
+    wrapper.appendChild(yourStoryItem);
+
+    // Click Logic for your story
+    document.getElementById('your-story-btn').onclick = () => {
+        if (myActiveStory) {
+            openStory(myActiveStory);
+        } else {
+            document.getElementById('story-upload-input').click();
+        }
+    };
+
+    // 3. Add Followers' stories
+    activeStories.forEach(story => {
+        if (story.user_id !== myId) {
+            const storyItem = document.createElement('div');
+            storyItem.className = 'story-item';
+            storyItem.innerHTML = `
+                <div class="story-avatar active-story">
+                    <img src="${story.image_url}" style="cursor:pointer;">
+                </div>
+                <span>User</span> 
+            `;
+            storyItem.onclick = () => openStory(story);
+            wrapper.appendChild(storyItem);
+        }
+    });
+  }
+        
 // --- FOLLOWER/DISPLAY LOGIC ---
 async function loadStories() {
     // 1. Fetch IDs of people you follow from your followingData
