@@ -501,33 +501,55 @@ function renderStoryBar(activeStories) {
 
     wrapper.innerHTML = ''; // Clear existing content
 
-    // 1. Check if YOU have a story
+    // 1. Check if YOU have an active story
     const myActiveStory = activeStories.find(s => s.user_id === myId);
 
     // 2. Create YOUR story item
     const yourStoryItem = document.createElement('div');
     yourStoryItem.className = 'story-item';
     
-    // Switch between your PFP (active) or the Plus icon (no story)
-    const displayImg = myActiveStory ? myActiveStory.image_url : 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+    // Logic: If you have a story, show the story image. 
+    // If not, show your profile picture (or placeholder).
+    const displayImg = myActiveStory ? myActiveStory.image_url : (typeof userPfpUrl !== 'undefined' ? userPfpUrl : 'https://cdn-icons-png.flaticon.com/512/149/149071.png');
     const ringClass = myActiveStory ? 'active-story' : 'no-story';
 
     yourStoryItem.innerHTML = `
         <div class="story-avatar ${ringClass}">
-            <img src="${displayImg}" id="your-story-btn" style="cursor:pointer;">
+            <img src="${displayImg}" id="your-story-btn" style="cursor:pointer; object-fit: cover;">
+            ${!myActiveStory ? '<div class="add-icon-badge" style="position:absolute; bottom:0; right:0; background:#007bff; color:white; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:12px; border:2px solid white;"><i class="fa-solid fa-plus"></i></div>' : ''}
         </div>
-        <span>Your story</span>
+        <span style="font-size: 12px; margin-top: 5px; display: block; text-align: center;">Your story</span>
     `;
     wrapper.appendChild(yourStoryItem);
 
-    // Click Logic for your story
-    document.getElementById('your-story-btn').onclick = () => {
+    // --- THE UPDATED CLICK LOGIC ---
+    const btn = document.getElementById('your-story-btn');
+    btn.onclick = () => {
         if (myActiveStory) {
+            // Open the viewer if a story exists
             openStory(myActiveStory);
         } else {
-            document.getElementById('story-upload-input').click();
+            // Show the Toast instead of opening upload or showing alert
+            showToast("Your story will appear here");
         }
     };
+
+    // 3. Render other people's stories
+    activeStories.forEach(story => {
+        if (story.user_id !== myId) {
+            const storyItem = document.createElement('div');
+            storyItem.className = 'story-item';
+            storyItem.innerHTML = `
+                <div class="story-avatar active-story">
+                    <img src="${story.image_url}" style="cursor:pointer; object-fit: cover;">
+                </div>
+                <span style="font-size: 12px; margin-top: 5px; display: block; text-align: center;">${story.username || 'User'}</span>
+            `;
+            storyItem.onclick = () => openStory(story);
+            wrapper.appendChild(storyItem);
+        }
+    });
+}
 
     // 3. Add Followers' stories
     activeStories.forEach(story => {
@@ -620,7 +642,7 @@ async function loadStories() {
     } else {
         // Keep Slot in "Add Story" mode (Standard placeholder)
         mySlot.innerHTML = `
-            <div class="story-item" onclick="openAddStory()">
+            <div class="story-item" onclick="viewMyStory()">
                 <div class="story-avatar add-story">
                     <img src="https://via.placeholder.com/70" class="user-pfp-source">
                     <div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div>
@@ -641,10 +663,22 @@ async function loadStories() {
     `).join('');
 }
 
-// Functions for the different states
-function viewMyStory() { alert("Viewing your story..."); }
-function openAddStory() { alert("Opening upload section..."); }
 
+// This function handles the "Your Story" circle click
+function viewMyStory() {
+    // 1. Check if the user actually has a story loaded in the UI
+    const myStoryElement = document.querySelector('.story-item.has-story');
+
+    if (myStoryElement) {
+        // If the blue ring is there, the 'openStory' logic we wrote earlier 
+        // will handle showing the image.
+        // (If you aren't using the 'has-story' class yet, we can adjust this)
+    } else {
+        // If no story is uploaded, show the toast
+        showToast("Your story will appear here");
+    }
+}
+        
         // THIS IS THE ILLUSTRATION LAYOUT (Applied to real data)
         function renderChats(chatData) {
             document.getElementById("chat-list-container").innerHTML = chatData.map(chat => {
@@ -836,15 +870,15 @@ function showToast(message) {
     toast.style.display = 'block';
     toast.style.opacity = '1';
 
-    // Hide after 3 seconds
+    // Hide after 3 seconds total
     setTimeout(() => {
         toast.style.opacity = '0';
-        // Wait for fade out then hide
+        // Give it a split second to fade out before removing display
         setTimeout(() => {
             toast.style.display = 'none';
-        }, 3000);
+        }, 300); 
     }, 3000);
-}
+  }
         
     </script>
 </body>
