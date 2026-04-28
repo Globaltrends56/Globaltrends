@@ -290,35 +290,30 @@
     background: #eee;
  }
 
-        /* TOAST NOTIFICATION */
+ /* MOBILE-OPTIMIZED TOAST */
 #toast-container {
     position: fixed;
-    top: 20px;
+    bottom: 100px; /* Sits above the navigation/FAB area */
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: white;
-    padding: 12px 25px;
-    border-radius: 30px;
+    background: #333333; /* Solid dark grey for better visibility */
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 50px; /* Pill shape */
     font-size: 14px;
     font-weight: 500;
-    z-index: 20000; /* Higher than everything else */
-    display: none;
-    animation: fadeInOut 3s forwards;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-@keyframes fadeInOut {
-    0% { opacity: 0; transform: translate(-50%, -20px); }
-    15% { opacity: 1; transform: translate(-50%, 0); }
-    85% { opacity: 1; transform: translate(-50%, 0); }
-    100% { opacity: 0; transform: translate(-50%, -20px); }
-   
-}
+    z-index: 100000; /* Max priority */
+    display: none; /* Controlled by JavaScript */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.1);
+    font-family: sans-serif;
+    transition: opacity 0.3s ease;
+    } 
+        
   </style>
 </head>
 <body>
-    <div id="toast-container"></div>
     <header class="header">
         <div class="header-left">
               <h1>GT Messenger</h1>
@@ -405,6 +400,25 @@
     </div>
 </div>
 
+    <div id="story-viewer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; flex-direction:column; align-items:center; justify-content:center;">
+    
+    <div id="close-story" style="position:absolute; top:20px; right:25px; font-size:40px; color:white; cursor:pointer; font-family:sans-serif; line-height:1;">&times;</div>
+
+    <img id="story-img-display" src="" style="max-width:100%; max-height:90vh; object-fit:contain; border-radius:8px;">
+
+    <div id="view-tracker" style="display:none; position:absolute; bottom:30px; background:rgba(255,255,255,0.15); backdrop-filter:blur(10px); padding:8px 15px; border-radius:20px; color:white; align-items:center; gap:8px; font-family:sans-serif; font-size:14px;">
+        <i class="fa-solid fa-eye"></i>
+        <span><span id="view-count">0</span> views</span>
+    </div>
+    </div>
+    
+    <div class="fab-container">
+    <button class="fab-btn" onclick="toggleNewChatMenu()">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+    </div>
+    <div id="toast-container"></div>
+    
     <script>
         const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzU";
@@ -814,35 +828,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
  // --- UTILITY FUNCTIONS (Place these outside of any other brackets) ---
-
 function showToast(message) {
     const toast = document.getElementById('toast-container');
     if (!toast) return;
+
     toast.innerText = message;
     toast.style.display = 'block';
+    toast.style.opacity = '1';
 
+    // Hide after 3 seconds
     setTimeout(() => {
-        toast.style.display = 'none';
+        toast.style.opacity = '0';
+        // Wait for fade out then hide
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
     }, 3000);
-}   
+}
+        
     </script>
-
-    <div id="story-viewer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10000; flex-direction:column; align-items:center; justify-content:center;">
-    
-    <div id="close-story" style="position:absolute; top:20px; right:25px; font-size:40px; color:white; cursor:pointer; font-family:sans-serif; line-height:1;">&times;</div>
-
-    <img id="story-img-display" src="" style="max-width:100%; max-height:90vh; object-fit:contain; border-radius:8px;">
-
-    <div id="view-tracker" style="display:none; position:absolute; bottom:30px; background:rgba(255,255,255,0.15); backdrop-filter:blur(10px); padding:8px 15px; border-radius:20px; color:white; align-items:center; gap:8px; font-family:sans-serif; font-size:14px;">
-        <i class="fa-solid fa-eye"></i>
-        <span><span id="view-count">0</span> views</span>
-    </div>
-    </div>
-    
-    <div class="fab-container">
-    <button class="fab-btn" onclick="toggleNewChatMenu()">
-        <i class="fa-solid fa-plus"></i>
-    </button>
-    </div>
 </body>
 </html>
