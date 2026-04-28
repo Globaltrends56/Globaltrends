@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GT Messenger </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --gt-blue: #0078FF;
@@ -352,14 +353,22 @@
 
     <script>
         const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
-        const SUPABASE_KEY = "YOUR_KEY_HERE";
-        const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
-        let followingData = [];
+        const SUPABASE_KEY = "PASTE_YOUR_ACTUAL_ANON_KEY_HERE";
 
-        document.addEventListener("DOMContentLoaded", () => {
-            if (!myId) return;
-            initMessenger();
-        });
+// This is the "bridge" that connects your code to Supabase
+const { createClient } = supabase;
+const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
+let followingData = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (!myId) {
+        console.warn("No user ID found in localStorage.");
+        return;
+    }
+    initMessenger();
+});
 
     async function initMessenger() {
     const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
