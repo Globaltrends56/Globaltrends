@@ -499,51 +499,53 @@ function renderStoryBar(activeStories) {
     const wrapper = document.querySelector('.stories-wrapper');
     if (!wrapper) return;
 
-    wrapper.innerHTML = ''; // Clear existing content
+    wrapper.innerHTML = ''; 
 
     // 1. Check if YOU have an active story
-    const myActiveStory = activeStories.find(s => s.user_id === myId);
+    // We use a fallback for myId just in case it's not loaded yet
+    const currentUserId = typeof myId !== 'undefined' ? myId : localStorage.getItem("user_id");
+    const myActiveStory = activeStories.find(s => s.user_id === currentUserId);
 
     // 2. Create YOUR story item
     const yourStoryItem = document.createElement('div');
     yourStoryItem.className = 'story-item';
     
-    // Logic: If you have a story, show the story image. 
-    // If not, show your profile picture (or placeholder).
-    const displayImg = myActiveStory ? myActiveStory.image_url : (typeof userPfpUrl !== 'undefined' ? userPfpUrl : 'https://cdn-icons-png.flaticon.com/512/149/149071.png');
+    const displayImg = myActiveStory ? myActiveStory.image_url : (typeof userPfpUrl !== 'undefined' ? userPfpUrl : 'https://via.placeholder.com/70');
     const ringClass = myActiveStory ? 'active-story' : 'no-story';
 
+    // We removed the ID and used a class instead to avoid conflicts
     yourStoryItem.innerHTML = `
         <div class="story-avatar ${ringClass}">
-            <img src="${displayImg}" id="your-story-btn" style="cursor:pointer; object-fit: cover;">
+            <img src="${displayImg}" class="my-story-img-click" style="cursor:pointer; object-fit: cover;">
             ${!myActiveStory ? '<div class="add-icon-badge" style="position:absolute; bottom:0; right:0; background:#007bff; color:white; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:12px; border:2px solid white;"><i class="fa-solid fa-plus"></i></div>' : ''}
         </div>
-        <span style="font-size: 12px; margin-top: 5px; display: block; text-align: center;">Your story</span>
+        <span style="font-size: 11px; margin-top: 5px; display: block; text-align: center;">Your story</span>
     `;
-    wrapper.appendChild(yourStoryItem);
 
-    // --- THE UPDATED CLICK LOGIC ---
-    const btn = document.getElementById('your-story-btn');
-    btn.onclick = () => {
+    // ADD THE CLICK DIRECTLY TO THE ELEMENT
+    const clickableImg = yourStoryItem.querySelector('.my-story-img-click');
+    clickableImg.onclick = (e) => {
+        e.preventDefault();
         if (myActiveStory) {
-            // Open the viewer if a story exists
             openStory(myActiveStory);
         } else {
-            // Show the Toast instead of opening upload or showing alert
+            // This is the line that should trigger the toast
             showToast("Your story will appear here");
         }
     };
 
-    // 3. Render other people's stories
+    wrapper.appendChild(yourStoryItem);
+
+    // 3. Render other stories
     activeStories.forEach(story => {
-        if (story.user_id !== myId) {
+        if (story.user_id !== currentUserId) {
             const storyItem = document.createElement('div');
             storyItem.className = 'story-item';
             storyItem.innerHTML = `
                 <div class="story-avatar active-story">
                     <img src="${story.image_url}" style="cursor:pointer; object-fit: cover;">
                 </div>
-                <span style="font-size: 12px; margin-top: 5px; display: block; text-align: center;">${story.username || 'User'}</span>
+                <span style="font-size: 11px; margin-top: 5px; display: block; text-align: center;">${story.username || 'User'}</span>
             `;
             storyItem.onclick = () => openStory(story);
             wrapper.appendChild(storyItem);
