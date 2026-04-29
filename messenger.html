@@ -314,8 +314,53 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
+
+    /* Dropdown Styling */
+.story-dropdown-content {
+    display: none;
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    border-radius: 10px;
+    width: 150px;
+    z-index: 2001;
+}
+.dropdown-item {
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Full Screen Overlays */
+.story-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: white; z-index: 3000;
+    display: none; flex-direction: column;
+}
+.editor-bg { background: #000; }
+
+.editor-top {
+    display: flex; justify-content: space-between; padding: 20px;
+    position: absolute; top: 0; width: 100%; z-index: 10;
+}
+.share-btn {
+    background: var(--gt-blue); color: white; border: none;
+    padding: 8px 20px; border-radius: 5px; font-weight: bold;
+}
+.editor-action { color: white; font-weight: bold; }
+
+#editing-preview-img {
+    width: 100%; height: 100%; object-fit: cover;
+  
+}    
         
-  </style>
+ </style>
 </head>
 <body>
     <header class="header">
@@ -325,10 +370,17 @@
         <div class="header-right">
     <input type="file" id="story-upload-input" accept="image/*" style="display: none;">
 
-    <div class="top-action" id="story-upload-trigger" style="cursor: pointer;">
-        <div class="icon-bg"><i class="fa-solid fa-plus"></i></div>
-        <span>STORY</span>
+    <div class="top-action" id="story-menu-trigger" style="position: relative;">
+    <div class="icon-bg"><i class="fa-solid fa-plus"></i></div>
+    <span>STORY</span>
+    
+    <div id="story-dropdown" class="story-dropdown-content">
+        <div class="dropdown-item" onclick="triggerFilePicker()">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Add to story</span>
+        </div>
     </div>
+   </div>
 
     <div class="top-action">
         <div class="icon-bg"><i class="fa-solid fa-gear"></i></div>
@@ -421,7 +473,35 @@
         <i class="fa-solid fa-plus"></i>
     </button>
     </div>
+    
     <div id="toast-container"></div>
+    
+    <div id="overlay-photo-a" class="story-overlay">
+    <div class="overlay-header">
+        <button onclick="closeStoryFlow()">&times;</button>
+        <h3>Create story</h3>
+    </div>
+    <div class="create-options">
+        <div class="opt"><i class="fa-solid fa-font"></i><span>Text</span></div>
+        <div class="opt"><i class="fa-solid fa-headphones"></i><span>Sound</span></div>
+        <div class="opt"><i class="fa-solid fa-gear"></i><span>Settings</span></div>
+    </div>
+    <div class="gallery-preview-area">
+        <p>Your selected file is ready...</p>
+        <button class="continue-btn" onclick="goToPhotoB()">Continue to Edit</button>
+    </div>
+</div>
+
+<div id="overlay-photo-b" class="story-overlay editor-bg">
+    <div class="editor-top">
+        <span class="editor-action" onclick="closeStoryFlow()">Remove</span>
+        <button class="share-btn" onclick="finalUpload()">Share</button>
+    </div>
+    <div class="editor-content">
+        <img id="editing-preview-img" src="">
+        <div class="add-text-btn"><i class="fa-solid fa-t"></i> Add text</div>
+    </div>
+</div>
     
  <script>
 // 1. CONFIGURATION & DATABASE CONNECTION
@@ -663,16 +743,48 @@ async function switchTab(type) {
     }
 }
 
-// 8. UPLOAD LOGIC
-document.getElementById('story-upload-trigger').onclick = () => document.getElementById('story-upload-input').click();
+//*UPLOAD LOGIC*//
+let selectedFileBlob = null;
 
-document.getElementById('story-upload-input').onchange = async (e) => {
+// 1. Toggle the dropdown
+document.getElementById('story-menu-trigger').onclick = (e) => {
+    const dropdown = document.getElementById('story-dropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+};
+
+// 2. Open file picker
+function triggerFilePicker() {
+    document.getElementById('story-upload-input').click();
+    document.getElementById('story-dropdown').style.display = 'none';
+}
+
+// 3. Handle file selection -> Show Photo A
+document.getElementById('story-upload-input').onchange = (e) => {
     const file = e.target.files[0];
-    if (!file || !myId) return;
+    if (!file) return;
+    
+    selectedFileBlob = file;
+    document.getElementById('overlay-photo-a').style.display = 'flex';
+};
 
-    showToast("Uploading story...");
-    const filePath = `${myId}/${Date.now()}_${file.name}`;
-    const { error: uploadError } = await _supabase.storage.from('story-images').upload(filePath, file);
+// 4. Move to Photo B (Editor)
+function goToPhotoB() {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        document.getElementById('editing-preview-img').src = event.target.result;
+        document.getElementById('overlay-photo-a').style.display = 'none';
+        document.getElementById('overlay-photo-b').style.display = 'flex';
+    };
+    reader.readAsDataURL(selectedFileBlob);
+}
+
+// 5. Final Upload (Share)
+async function finalUpload() {
+    if (!selectedFileBlob) return;
+    showToast("Sharing to story...");
+    
+    const filePath = `${myId}/${Date.now()}_story.jpg`;
+    const { error: uploadError } = await _supabase.storage.from('story-images').upload(filePath, selectedFileBlob);
 
     if (uploadError) return showToast("Upload failed!");
 
@@ -683,9 +795,16 @@ document.getElementById('story-upload-input').onchange = async (e) => {
         expires_at: new Date(Date.now() + 24*60*60*1000).toISOString() 
     }]);
 
-    showToast("Story live!");
-    setTimeout(() => location.reload(), 1500);
-};
+    closeStoryFlow();
+    showToast("Shared successfully!");
+    setTimeout(() => location.reload(), 1000);
+}
+
+function closeStoryFlow() {
+    document.querySelectorAll('.story-overlay').forEach(el => el.style.display = 'none');
+    selectedFileBlob = null;
+        
+}
 
 function toggleStories() {
     const storiesDiv = document.getElementById('stories-collapsible');
