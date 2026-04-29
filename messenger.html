@@ -423,449 +423,43 @@
     </div>
     <div id="toast-container"></div>
     
-    <script>
-        const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzU";
-
-// This is the "bridge" that connects your code to Supabase
+ <script>
+// 1. CONFIGURATION & DATABASE CONNECTION
+const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzU";
 const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
-let followingData = [];
-        
+let followingData = []; // Stores your friends list for searching
 let toastTimer;
 
+// 2. UTILITY: THE TOAST SYSTEM
 function showToast(message) {
     const toast = document.getElementById('toast-container');
     if (!toast) return;
 
     toast.innerText = message;
-
-    // Reset state
-    toast.classList.remove("show");
+    toast.classList.remove("show"); // Reset animation
     clearTimeout(toastTimer);
 
-    // Force reflow (IMPORTANT)
-    void toast.offsetWidth;
-
-    // Show again
+    void toast.offsetWidth; // Force a "re-draw" for the animation to work
     toast.classList.add("show");
 
     toastTimer = setTimeout(() => {
         toast.classList.remove("show");
     }, 3000);
 }
- 
 
+// 3. INITIALIZATION (Runs when page loads)
 document.addEventListener("DOMContentLoaded", () => {
     if (!myId) {
-        console.warn("No user ID found in localStorage.");
+        console.error("No User ID found. Please log in.");
         return;
     }
     initMessenger();
-});
 
-        // --- UPLOAD LOGIC ---
-document.getElementById('story-upload-trigger').addEventListener('click', () => {
-    document.getElementById('story-upload-input').click();
-});
-
-document.getElementById('story-upload-input').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file || !myId) return;
-
-    const filePath = `${myId}/${Date.now()}_${file.name}`;
-
-    // Upload image to Storage
-    const { data, error: uploadError } = await _supabase.storage
-        .from('story-images')
-        .upload(filePath, file);
-
-    if (uploadError) return alert("Upload failed: " + uploadError.message);
-
-    // Get URL
-    const { data: urlData } = _supabase.storage.from('story-images').getPublicUrl(filePath);
-
-    // Save record to Database
-    const { error: dbError } = await _supabase
-        .from('stories')
-        .insert([{ user_id: myId, image_url: urlData.publicUrl }]);
-
-    if (!dbError) {
-        showToast("Story uploaded successfully!");
-        setTimeout(() => {
-            location.reload();
-        }, 2000);
-    }
-}); // This closes the 'change' event listener
-
-
-// --- STORY LOADING & RENDERING ---
-
-async function initMessenger() {
-    // This function will now run when the page loads
-    await loadStories();
-}
-
-async function loadStories() {
-    try {
-        // Fetch stories from the last 24 hours
-        const { data: stories, error } = await _supabase
-            .from('stories')
-            .select('*')
-            .gt('expires_at', new Date().toISOString());
-
-        if (error) throw error;
-        renderStoryBar(stories || []);
-    } catch (err) {
-        console.error("Error loading stories:", err.message);
-    }
-}
-
-function renderStoryBar(activeStories) {
-    const wrapper = document.querySelector('.stories-wrapper');
-    if (!wrapper) return;
-
-    wrapper.innerHTML = ''; 
-
-    // 1. Check if YOU have an active story
-    // We use a fallback for myId just in case it's not loaded yet
-    const currentUserId = typeof myId !== 'undefined' ? myId : localStorage.getItem("user_id");
-    const myActiveStory = activeStories.find(s => s.user_id === currentUserId);
-
-    // 2. Create YOUR story item
-    const yourStoryItem = document.createElement('div');
-    yourStoryItem.className = 'story-item';
-    
-    const displayImg = myActiveStory ? myActiveStory.image_url : (typeof userPfpUrl !== 'undefined' ? userPfpUrl : 'https://via.placeholder.com/70');
-    const ringClass = myActiveStory ? 'active-story' : 'no-story';
-
-    // We removed the ID and used a class instead to avoid conflicts
-    yourStoryItem.innerHTML = `
-        <div class="story-avatar ${ringClass}">
-            <img src="${displayImg}" class="my-story-img-click" style="cursor:pointer; object-fit: cover;">
-            ${!myActiveStory ? '<div class="add-icon-badge" style="position:absolute; bottom:0; right:0; background:#007bff; color:white; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:12px; border:2px solid white;"><i class="fa-solid fa-plus"></i></div>' : ''}
-        </div>
-        <span style="font-size: 11px; margin-top: 5px; display: block; text-align: center;">Your story</span>
-    `;
-
-    // ADD THE CLICK DIRECTLY TO THE ELEMENT
-    const clickableImg = yourStoryItem.querySelector('.my-story-img-click');
-    clickableImg.onclick = (e) => {
-        e.preventDefault();
-        if (myActiveStory) {
-            openStory(myActiveStory);
-        } else {
-            // This is the line that should trigger the toast
-            showToast("Your story will appear here");
-        }
-    };
-
-    wrapper.appendChild(yourStoryItem);
-
-    // 3. Render other stories
-    activeStories.forEach(story => {
-        if (story.user_id !== currentUserId) {
-            const storyItem = document.createElement('div');
-            storyItem.className = 'story-item';
-            storyItem.innerHTML = `
-                <div class="story-avatar active-story">
-                    <img src="${story.image_url}" style="cursor:pointer; object-fit: cover;">
-                </div>
-                <span style="font-size: 11px; margin-top: 5px; display: block; text-align: center;">${story.username || 'User'}</span>
-            `;
-            storyItem.onclick = () => openStory(story);
-            wrapper.appendChild(storyItem);
-        }
-    });
-}
-        
-// --- FOLLOWER/DISPLAY LOGIC ---
-async function loadStories() {
-    // 1. Fetch IDs of people you follow from your followingData
-    const followingIds = followingData.map(f => f.following_id);
-    
-    // Add your own ID so you can see your own story too
-    const idsToFetch = [...followingIds, myId];
-
-    const { data: stories, error } = await _supabase
-        .from('stories')
-        .select(`*, user_id`)
-        .in('user_id', idsToFetch)
-        .gt('expires_at', new Date().toISOString());
-
-    if (stories) renderStoryBar(stories);
-    
-}
-
-    async function initMessenger() {
-    const interests = JSON.parse(localStorage.getItem("my_interests")) || [];
-    const yesterday = new Date(Date.now() - 24*60*60*1000).toISOString();
-
-    // 1. STORIES LOGIC
-    const storyRes = await fetch(`${SUPABASE_URL}/rest/v1/stories?select=*,profiles(username,avatar_url)&created_at=gt.${yesterday}`, {
-        headers: { apikey: SUPABASE_KEY }
-    });
-    const allStories = await storyRes.json();
-    const followedStories = allStories.filter(s => interests.includes(s.user_id));
-
-    const storyBox = document.getElementById("stories-area");
-    if (followedStories.length === 0) {
-        storyBox.innerHTML = `<span class="story-hint">Stories appears here</span>`;
-    } else {
-        renderStories(followedStories);
-    }
-
-    // 2. CHAT LOGIC
-    const chatBox = document.getElementById("chat-list-container");
-    chatBox.innerHTML = ""; 
-
-    try {
-        const msgRes = await fetch(`${SUPABASE_URL}/rest/v1/messages?or=(sender_id.eq.${myId},receiver_id.eq.${myId})&limit=1`, {
-            headers: { apikey: SUPABASE_KEY }
-        });
-        const messages = await msgRes.json();
-
-        if (!messages || messages.length === 0) {
-            chatBox.innerHTML = `<div class="empty-welcome"><i class="fa-solid fa-comment-dots"></i><h2>Start new chat</h2></div>`;
-        } else {
-            renderChats(messages); 
-        }
-    } catch (error) {
-        console.error("Error:", error);
-    }
-} // <--- Make sure this brace closes the WHOLE function
-        
-
-        function renderStories(data) {
-    // 1. Check if the logged-in user (myId) has a story in the data
-    const myActiveStory = data.find(s => s.user_id === myId);
-    const mySlot = document.getElementById("my-story-slot");
-
-    if (myActiveStory) {
-        // Change Slot to "View My Story" mode
-        mySlot.innerHTML = `
-            <div class="story-item" onclick="viewMyStory()">
-                <div class="story-avatar active-story">
-                    <img src="${myActiveStory.profiles.avatar_url}">
-                </div>
-                <span class="story-name">Your story</span>
-            </div>`;
-    } else {
-        // Keep Slot in "Add Story" mode (Standard placeholder)
-        mySlot.innerHTML = `
-            <div class="story-item" onclick="viewMyStory()">
-                <div class="story-avatar add-story">
-                    <img src="https://via.placeholder.com/70" class="user-pfp-source">
-                    <div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div>
-                </div>
-                <span class="story-name">Your story</span>
-            </div>`;
-    }
-
-    // 2. Filter out your own story from the "Others" list so it doesn't show twice
-    const others = data.filter(s => s.user_id !== myId);
-    const users = [...new Map(others.map(s => [s.user_id, s])).values()];
-    
-    document.getElementById("stories-area").innerHTML = users.map(u => `
-        <div class="story-item">
-            <div class="story-avatar"><img src="${u.profiles.avatar_url}"></div>
-            <span class="story-name">${u.profiles.username}</span>
-        </div>
-    `).join('');
-}
-
-
-// This function handles the "Your Story" circle click
-function viewMyStory() {
-    // 1. Check if the user actually has a story loaded in the UI
-    const myStoryElement = document.querySelector('.story-item.has-story');
-
-    if (myStoryElement) {
-        // If the blue ring is there, the 'openStory' logic we wrote earlier 
-        // will handle showing the image.
-        // (If you aren't using the 'has-story' class yet, we can adjust this)
-    } else {
-        // If no story is uploaded, show the toast
-        showToast("Your story will appear here");
-    }
-}
-        
-        // THIS IS THE ILLUSTRATION LAYOUT (Applied to real data)
-        function renderChats(chatData) {
-            document.getElementById("chat-list-container").innerHTML = chatData.map(chat => {
-                const isUnread = false; // Add logic based on your message status
-                return `
-                <div class="chat-item">
-                    <div class="chat-pfp-wrapper">
-                        <img src="${chat.profiles.avatar_url}" class="chat-pfp">
-                        <span class="online-status">Now</span> 
-                    </div>
-                    <div class="chat-info">
-                        <h3>${chat.profiles.username}</h3>
-                        <div class="chat-msg">
-                            ${isUnread ? '<span class="unread-indicator">1</span>' : ''}
-                            ${chat.last_message || 'No message yet'}
-                        </div>
-                    </div>
-                    <i class="fa-regular fa-circle-check" style="color:var(--gt-blue)"></i>
-                </div>`;
-            }).join('');
-        }
-        
-
-     async function switchTab(type) {
-    // 1. Visual Update: Move the blue line and change colors
-    document.querySelectorAll('.tab').forEach(t => {
-        t.classList.remove('active');
-        t.classList.add('inactive');
-        const oldIndicator = t.querySelector('.tab-indicator');
-        if (oldIndicator) oldIndicator.remove();
-    });
-
-    const selectedTab = document.getElementById(`tab-${type}`);
-    selectedTab.classList.add('active');
-    selectedTab.classList.remove('inactive');
-    selectedTab.innerHTML += `<div class="tab-indicator"></div>`;
-
-    // 2. Logic Update: Clear the screen first so old messages don't stay
-    const chatContainer = document.getElementById("chat-list-container");
-    chatContainer.innerHTML = `<div style="text-align:center; padding:50px;">Loading...</div>`;
-
-    // 3. Re-fill the container based on the tab
-    if (type === 'chats') {
-        // This MUST call your main function to check for messages again
-        await initMessenger(); 
-    } else if (type === 'groups') {
-        chatContainer.innerHTML = `
-            <div class="empty-welcome">
-                <i class="fa-solid fa-users" style="font-size: 50px; color: #f0f2f5;"></i>
-                <h2 style="margin-top:15px; color:#65676b;">Groups coming soon</h2>
-            </div>`;
-    } else if (type === 'calls') {
-        chatContainer.innerHTML = `
-            <div class="empty-welcome">
-                <i class="fa-solid fa-video" style="font-size: 50px; color: #f0f2f5;"></i>
-                <h2 style="margin-top:15px; color:#65676b;">Video calls coming soon</h2>
-            </div>`;
-    }
-  }
-        
-function toggleNewChatMenu() {
-    const menu = document.getElementById('newChatMenu');
-    const isOpen = menu.style.display === 'flex';
-    menu.style.display = isOpen ? 'none' : 'flex';
-    if (!isOpen) switchNC('following'); 
-}
-
-async function switchNC(type) {
-    const searchWrapper = document.getElementById('nc-search-wrapper');
-    const listArea = document.getElementById('nc-list-content');
-    
-    // UI Update
-    document.getElementById('nc-tab-following').classList.toggle('active', type === 'following');
-    document.getElementById('nc-tab-recommended').classList.toggle('active', type === 'recommended');
-    
-    // Only show search box for Following
-    searchWrapper.style.visibility = (type === 'following') ? 'visible' : 'hidden';
-    listArea.innerHTML = '<p style="text-align:center; padding:20px;">Loading...</p>';
-
-    try {
-        if (type === 'following') {
-            const res = await fetch(`${SUPABASE_URL}/rest/v1/follows?follower_id=eq.${myId}&select=profiles(*)`, {
-                headers: { apikey: SUPABASE_KEY }
-            });
-            const data = await res.json();
-            followingData = data.map(f => f.profiles); // Save to state
-            document.getElementById('following-count').innerText = followingData.length;
-            renderNCList(followingData);
-        } else {
-            const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=neq.${myId}&limit=15`, {
-                headers: { apikey: SUPABASE_KEY }
-            });
-            const recData = await res.json();
-            renderNCList(recData);
-        }
-    } catch (e) {
-        listArea.innerHTML = '<p>Error loading users.</p>';
-    }
-}
-
-// Function to render the scrollable list
-function renderNCList(users) {
-    const listArea = document.getElementById('nc-list-content');
-    if (users.length === 0) {
-        listArea.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">No one found.</p>';
-        return;
-    }
-    listArea.innerHTML = users.map(user => `
-        <div class="nc-user-item" onclick="startNewChat('${user.id}')">
-            <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
-            <span class="nc-user-name">${user.username}</span>
-        </div>
-    `).join('');
-}
-
-// Search Filtering Logic (Following only)
-function filterFollowing(query) {
-    const filtered = followingData.filter(user => 
-        user.username.toLowerCase().includes(query.toLowerCase())
-    );
-    renderNCList(filtered);
-    }
-
-    function toggleStories() {
-    const storiesDiv = document.getElementById('stories-collapsible');
-    const chevron = document.getElementById('stories-chevron');
-    
-    // Logic: If it's hidden, show it. If it's shown, hide it.
-    if (storiesDiv.style.display === "none") {
-        storiesDiv.style.display = "block";
-        chevron.style.transform = "rotate(0deg)"; // Points down
-    } else {
-        storiesDiv.style.display = "none";
-        chevron.style.transform = "rotate(-90deg)"; // Points right
-    }
-    }
-       
-    async function openStory(story) {
-    const viewer = document.getElementById('story-viewer');
-    const img = document.getElementById('story-img-display');
-    const tracker = document.getElementById('view-tracker');
-    const viewCountSpan = document.getElementById('view-count');
-    
-    if (!viewer || !img) return;
-
-    // 1. Show the image and the viewer
-    img.src = story.image_url;
-    viewer.style.display = 'flex'; // Flex helps center the image perfectly
-
-    // 2. Logic check: Is this MY story or someone else's?
-    if (story.user_id === myId) {
-        // Show the view counter for your own story
-        if (tracker) tracker.style.display = 'flex';
-        
-        // Fetch the count from your 'story_views' table
-        const { count, error } = await _supabase
-            .from('story_views')
-            .select('*', { count: 'exact', head: true })
-            .eq('story_id', story.id);
-            
-        if (viewCountSpan) viewCountSpan.innerText = count || 0;
-    } else {
-        // Hide the tracker if viewing someone else's story
-        if (tracker) tracker.style.display = 'none';
-        
-        // Record that you viewed it (Insert into story_views table)
-        await _supabase.from('story_views').insert([
-            { story_id: story.id, viewer_id: myId }
-        ]);
-    }
-}
-
-// Add this right below the function to handle closing the viewer
-document.addEventListener('DOMContentLoaded', () => {
+    // Setup close button for Story Viewer
     const closeBtn = document.getElementById('close-story');
     if (closeBtn) {
         closeBtn.onclick = () => {
@@ -873,7 +467,233 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
+async function initMessenger() {
+    await loadStories();
+    await loadChats();
+}
+
+// 4. STORY LOGIC (Horizontal Swiping Bar)
+async function loadStories() {
+    try {
+        const { data: stories, error } = await _supabase
+            .from('stories')
+            .select('*, profiles(username, avatar_url)')
+            .gt('expires_at', new Date().toISOString());
+
+        if (error) throw error;
+        renderStoryBar(stories || []);
+    } catch (err) {
+        console.error("Story Error:", err);
+    }
+}
+
+function renderStoryBar(activeStories) {
+    const storyArea = document.getElementById('stories-area');
+    const mySlot = document.getElementById('my-story-slot');
+    if (!storyArea || !mySlot) return;
+
+    const myActiveStory = activeStories.find(s => s.user_id === myId);
+
+    // YOUR STORY SLOT
+    if (myActiveStory) {
+        mySlot.innerHTML = `
+            <div class="story-item" onclick='openStory(${JSON.stringify(myActiveStory).replace(/'/g, "&apos;")})'>
+                <div class="story-avatar active-story">
+                    <img src="${myActiveStory.image_url}">
+                </div>
+                <span class="story-name">Your story</span>
+            </div>`;
+    } else {
+        mySlot.innerHTML = `
+            <div class="story-item" onclick="showToast('Your story will appear here')">
+                <div class="story-avatar add-story">
+                    <img src="https://via.placeholder.com/70">
+                    <div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div>
+                </div>
+                <span class="story-name">Your story</span>
+            </div>`;
+    }
+
+    // OTHER PEOPLE'S STORIES
+    const otherStories = activeStories.filter(s => s.user_id !== myId);
+    storyArea.innerHTML = otherStories.map(s => `
+        <div class="story-item" onclick='openStory(${JSON.stringify(s).replace(/'/g, "&apos;")})'>
+            <div class="story-avatar active-story">
+                <img src="${s.image_url}">
+            </div>
+            <span class="story-name">${s.profiles?.username || 'User'}</span>
+        </div>
+    `).join('');
+}
+
+async function openStory(story) {
+    const viewer = document.getElementById('story-viewer');
+    const img = document.getElementById('story-img-display');
+    const viewCountSpan = document.getElementById('view-count');
+    const tracker = document.getElementById('view-tracker');
+
+    img.src = story.image_url;
+    viewer.style.display = 'flex';
+
+    if (story.user_id === myId) {
+        tracker.style.display = 'flex';
+        const { count } = await _supabase.from('story_views').select('*', { count: 'exact', head: true }).eq('story_id', story.id);
+        viewCountSpan.innerText = count || 0;
+    } else {
+        tracker.style.display = 'none';
+        await _supabase.from('story_views').insert([{ story_id: story.id, viewer_id: myId }]);
+    }
+}
+
+// 5. CHAT LOGIC (Vertical List)
+async function loadChats() {
+    const chatBox = document.getElementById("chat-list-container");
+    try {
+        const { data: messages, error } = await _supabase
+            .from('messages')
+            .select('*, profiles:sender_id(username, avatar_url)')
+            .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
+            .order('created_at', { ascending: false });
+
+        if (!messages || messages.length === 0) {
+            chatBox.innerHTML = `<div class="empty-welcome"><i class="fa-solid fa-comment-dots"></i><h2>Start new chat</h2></div>`;
+        } else {
+            renderChats(messages);
+        }
+    } catch (error) {
+        chatBox.innerHTML = `<p style="text-align:center; padding:20px;">Error loading chats.</p>`;
+    }
+}
+
+function renderChats(chatData) {
+    document.getElementById("chat-list-container").innerHTML = chatData.map(chat => `
+        <div class="chat-item">
+            <div class="chat-pfp-wrapper">
+                <img src="${chat.profiles?.avatar_url || 'https://via.placeholder.com/60'}" class="chat-pfp">
+                <span class="online-status">Now</span> 
+            </div>
+            <div class="chat-info">
+                <h3>${chat.profiles?.username || 'User'}</h3>
+                <div class="chat-msg">${chat.content || 'No message yet'}</div>
+            </div>
+            <i class="fa-regular fa-circle-check" style="color:var(--gt-blue)"></i>
+        </div>`).join('');
+}
+
+// 6. NEW CHAT MENU & FOLLOWING LOGIC (The Fixed Section)
+function toggleNewChatMenu() {
+    const menu = document.getElementById('newChatMenu');
+    const isOpening = menu.style.display !== 'flex';
+    menu.style.display = isOpening ? 'flex' : 'none';
+    if (isOpening) switchNC('following'); 
+}
+
+async function switchNC(type) {
+    const searchWrapper = document.getElementById('nc-search-wrapper');
+    const listArea = document.getElementById('nc-list-content');
+    const followCount = document.getElementById('following-count');
+    
+    // UI Update
+    document.getElementById('nc-tab-following').classList.toggle('active', type === 'following');
+    document.getElementById('nc-tab-recommended').classList.toggle('active', type === 'recommended');
+    
+    if (searchWrapper) searchWrapper.style.visibility = (type === 'following') ? 'visible' : 'hidden';
+    listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
+
+    try {
+        let url = type === 'following' 
+            ? `${SUPABASE_URL}/rest/v1/follows?follower_id=eq.${myId}&select=profiles(*)`
+            : `${SUPABASE_URL}/rest/v1/profiles?id=neq.${myId}&limit=15`;
+
+        const res = await fetch(url, { headers: { apikey: SUPABASE_KEY } });
+        const data = await res.json();
         
-    </script>
+        const users = type === 'following' ? data.map(f => f.profiles) : data;
+        if (type === 'following' && followCount) followCount.innerText = users.length;
+
+        renderNCList(users);
+        if (type === 'following') followingData = users;
+    } catch (e) {
+        listArea.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Connection error.</p>';
+    }
+}
+
+function renderNCList(users) {
+    const listArea = document.getElementById('nc-list-content');
+    if (users.length === 0) {
+        listArea.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">No users found.</p>';
+        return;
+    }
+    listArea.innerHTML = users.map(user => `
+        <div class="nc-user-item">
+            <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
+            <span class="nc-user-name">${user.username}</span>
+        </div>
+    `).join('');
+}
+
+function filterFollowing(query) {
+    const filtered = followingData.filter(u => u.username.toLowerCase().includes(query.toLowerCase()));
+    renderNCList(filtered);
+}
+
+// 7. TAB NAVIGATION (Groups, Calls, etc.)
+async function switchTab(type) {
+    document.querySelectorAll('.tab').forEach(t => {
+        t.classList.remove('active');
+        const indicator = t.querySelector('.tab-indicator');
+        if(indicator) indicator.remove();
+    });
+
+    const selected = document.getElementById(`tab-${type}`);
+    selected.classList.add('active');
+    selected.innerHTML += `<div class="tab-indicator"></div>`;
+
+    const chatContainer = document.getElementById("chat-list-container");
+    
+    if (type === 'chats') {
+        await loadChats();
+    } else {
+        chatContainer.innerHTML = `
+            <div class="empty-welcome">
+                <i class="fa-solid ${type === 'groups' ? 'fa-users' : 'fa-video'}" style="font-size: 50px; color: #f0f2f5;"></i>
+                <h2 style="margin-top:15px; color:#65676b;">${type.charAt(0).toUpperCase() + type.slice(1)} coming soon</h2>
+            </div>`;
+    }
+}
+
+// 8. UPLOAD LOGIC
+document.getElementById('story-upload-trigger').onclick = () => document.getElementById('story-upload-input').click();
+
+document.getElementById('story-upload-input').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !myId) return;
+
+    showToast("Uploading story...");
+    const filePath = `${myId}/${Date.now()}_${file.name}`;
+    const { error: uploadError } = await _supabase.storage.from('story-images').upload(filePath, file);
+
+    if (uploadError) return showToast("Upload failed!");
+
+    const { data: urlData } = _supabase.storage.from('story-images').getPublicUrl(filePath);
+    await _supabase.from('stories').insert([{ 
+        user_id: myId, 
+        image_url: urlData.publicUrl,
+        expires_at: new Date(Date.now() + 24*60*60*1000).toISOString() 
+    }]);
+
+    showToast("Story live!");
+    setTimeout(() => location.reload(), 1500);
+};
+
+function toggleStories() {
+    const storiesDiv = document.getElementById('stories-collapsible');
+    const chevron = document.getElementById('stories-chevron');
+    const isHidden = storiesDiv.style.display === "none";
+    storiesDiv.style.display = isHidden ? "block" : "none";
+    chevron.style.transform = isHidden ? "rotate(0deg)" : "rotate(-90deg)";
+}
+</script>           
 </body>
 </html>
