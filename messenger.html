@@ -429,6 +429,22 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
 let followingData = [];
+        
+function showToast(message) {
+        alert("Toast function triggered for: " + message);
+        const toast = document.getElementById('toast-container');
+        if (!toast) return;
+
+        toast.innerText = message;
+        toast.style.display = 'block';
+        toast.style.opacity = '1';
+    setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 300); 
+        }, 3000);
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     if (!myId) {
@@ -845,25 +861,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
-
- // --- UTILITY FUNCTIONS (Place these outside of any other brackets) ---
-function showToast(message) {
-    const toast = document.getElementById('toast-container');
-    if (!toast) return;
-
-    toast.innerText = message;
-    toast.style.display = 'block';
-    toast.style.opacity = '1';
-
-    // Hide after 3 seconds total
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        // Give it a split second to fade out before removing display
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 300); 
-    }, 3000);
-  }
         
     </script>
 </body>
