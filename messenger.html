@@ -293,23 +293,27 @@
  /* MOBILE-OPTIMIZED TOAST */
 #toast-container {
     position: fixed;
-    bottom: 100px; /* Sits above the navigation/FAB area */
+    top: 20px;
     left: 50%;
-    transform: translateX(-50%);
-    background: #333333; /* Solid dark grey for better visibility */
-    color: #ffffff;
-    padding: 12px 24px;
-    border-radius: 50px; /* Pill shape */
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px 22px;
+    border-radius: 30px;
     font-size: 14px;
     font-weight: 500;
-    z-index: 100000; /* Max priority */
-    display: none; /* Controlled by JavaScript */
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    white-space: nowrap;
-    border: 1px solid rgba(255,255,255,0.1);
-    font-family: sans-serif;
-    transition: opacity 0.3s ease;
-    } 
+    z-index: 999999; /* ALWAYS on top */
+    
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+/* Visible state */
+#toast-container.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
         
   </style>
 </head>
@@ -430,21 +434,29 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
 let followingData = [];
         
-function showToast(message) {
-        alert("Toast function triggered for: " + message);
-        const toast = document.getElementById('toast-container');
-        if (!toast) return;
+let toastTimer;
 
-        toast.innerText = message;
-        toast.style.display = 'block';
-        toast.style.opacity = '1';
-    setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 300); 
-        }, 3000);
+function showToast(message) {
+    const toast = document.getElementById('toast-container');
+    if (!toast) return;
+
+    toast.innerText = message;
+
+    // Reset state
+    toast.classList.remove("show");
+    clearTimeout(toastTimer);
+
+    // Force reflow (IMPORTANT)
+    void toast.offsetWidth;
+
+    // Show again
+    toast.classList.add("show");
+
+    toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
 }
+ 
 
 document.addEventListener("DOMContentLoaded", () => {
     if (!myId) {
