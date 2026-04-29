@@ -550,23 +550,6 @@ function renderStoryBar(activeStories) {
         }
     });
 }
-
-    // 3. Add Followers' stories
-    activeStories.forEach(story => {
-        if (story.user_id !== myId) {
-            const storyItem = document.createElement('div');
-            storyItem.className = 'story-item';
-            storyItem.innerHTML = `
-                <div class="story-avatar active-story">
-                    <img src="${story.image_url}" style="cursor:pointer;">
-                </div>
-                <span>User</span> 
-            `;
-            storyItem.onclick = () => openStory(story);
-            wrapper.appendChild(storyItem);
-        }
-    });
-  }
         
 // --- FOLLOWER/DISPLAY LOGIC ---
 async function loadStories() {
