@@ -510,8 +510,20 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// --- SECURITY GATEKEEPER ---
 const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
-let followingData = []; // Stores your friends list for searching
+
+// If no user is logged in, redirect them or show an error
+if (!myId || myId === 'null') {
+    // Option A: Redirect to your login page
+    // window.location.href = "login.html"; 
+    
+    // Option B: Hard stop (the app won't load for hackers)
+    console.error("Access Denied: Please log in.");
+}
+
+let followingData = []; 
+let myProfileData = null; // We will store your name and PFP here
 let toastTimer;
 
 // 2. UTILITY: THE TOAST SYSTEM
@@ -538,6 +550,25 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
     initMessenger();
+
+    async function fetchMyProfile() {
+    try {
+        const { data, error } = await _supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', myId)
+            .single();
+
+        if (data) {
+            myProfileData = data;
+            // This updates your "Your Story" bubble with your real PFP
+            const myAvatar = document.querySelector('.user-pfp-source');
+            if (myAvatar) myAvatar.src = data.avatar_url || 'https://via.placeholder.com/70';
+        }
+    } catch (err) {
+        console.warn("Could not load user profile:", err);
+    }
+    }
 
     // Setup close button for Story Viewer
     const closeBtn = document.getElementById('close-story');
@@ -630,35 +661,67 @@ async function openStory(story) {
 async function loadChats() {
     const chatBox = document.getElementById("chat-list-container");
     try {
+        // We fetch the message AND the profiles for both sides of the conversation
         const { data: messages, error } = await _supabase
             .from('messages')
-            .select('*, profiles:sender_id(username, avatar_url)')
+            .select(`
+                *,
+                sender_profile:sender_id(id, username, avatar_url),
+                receiver_profile:receiver_id(id, username, avatar_url)
+            `)
             .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
             .order('created_at', { ascending: false });
 
+        if (error) throw error;
+
         if (!messages || messages.length === 0) {
-            chatBox.innerHTML = `<div class="empty-welcome"><i class="fa-solid fa-comment-dots"></i><h2>Start new chat</h2></div>`;
+            chatBox.innerHTML = `<div class="empty-welcome"><i class="fa-solid fa-comment-dots"></i><h2>No messages yet</h2></div>`;
         } else {
-            renderChats(messages);
+            // Group messages so you only see ONE entry per person (the latest one)
+            const groupedChats = filterUniqueChats(messages);
+            renderChats(groupedChats);
         }
     } catch (error) {
-        chatBox.innerHTML = `<p style="text-align:center; padding:20px;">Error loading chats.</p>`;
+        console.error("Fetch Error:", error);
+        chatBox.innerHTML = `<p style="text-align:center; padding:20px;">Error loading conversations.</p>`;
     }
 }
 
+// Helper to ensure you don't see the same person twice in the list
+function filterUniqueChats(messages) {
+    const unique = new Map();
+    messages.forEach(m => {
+        const otherId = m.sender_id === myId ? m.receiver_id : m.sender_id;
+        if (!unique.has(otherId)) {
+            unique.set(otherId, m);
+        }
+    });
+    return Array.from(unique.values());
+  }
+
 function renderChats(chatData) {
-    document.getElementById("chat-list-container").innerHTML = chatData.map(chat => `
-        <div class="chat-item">
+    document.getElementById("chat-list-container").innerHTML = chatData.map(chat => {
+        // If I sent it, show the person I sent it TO. 
+        // If they sent it, show the person who sent it (THEM).
+        const isMe = chat.sender_id === myId;
+        const displayUser = isMe ? chat.receiver_profile : chat.sender_profile;
+
+        return `
+        <div class="chat-item" onclick="openDirectChat('${displayUser.id}')">
             <div class="chat-pfp-wrapper">
-                <img src="${chat.profiles?.avatar_url || 'https://via.placeholder.com/60'}" class="chat-pfp">
+                <img src="${displayUser?.avatar_url || 'https://via.placeholder.com/60'}" class="chat-pfp">
                 <span class="online-status">Now</span> 
             </div>
             <div class="chat-info">
-                <h3>${chat.profiles?.username || 'User'}</h3>
-                <div class="chat-msg">${chat.content || 'No message yet'}</div>
+                <h3>${displayUser?.username || 'User'}</h3>
+                <div class="chat-msg">
+                    ${isMe ? '<span style="color:var(--gt-blue);">You: </span>' : ''}
+                    ${chat.content}
+                </div>
             </div>
             <i class="fa-regular fa-circle-check" style="color:var(--gt-blue)"></i>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 
 // 6. NEW CHAT MENU & FOLLOWING LOGIC (The Fixed Section)
