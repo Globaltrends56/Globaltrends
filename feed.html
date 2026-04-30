@@ -655,13 +655,18 @@
         // Optional: send them to your login page automatically
         // window.location.href = "login.html";
         return; 
-    }  
+    }
 
-    // 2. Redirect to the Vercel hosted messenger
+    // 2. Clear the badge immediately when they click (UX Polish)
+    const badge = document.getElementById('messenger-badge');
+    if (badge) {
+        badge.style.display = 'none';
+    }
+
+    // 3. Handle the navigation
     if (type === 'messenger') {
-        // Using _self ensures it opens in the same window for a native feel
-        window.location.href = "https://globaltrends.vercel.app/messenger.html";  
-    }  
+        window.location.href = "messenger.html";
+    }
    }
 
     document.addEventListener("DOMContentLoaded", async () => {  
@@ -997,8 +1002,8 @@ function toggleMessengerBadge(show) {
      
 }
 
-// 2. REAL-TIME LISTENERS (The "Lookouts")
-const messageListener = _supabase
+// This listener runs in the background while users browse the feed
+const globalMessageListener = _supabase
   .channel('public:messages_global')
   .on('postgres_changes', { 
       event: 'INSERT', 
@@ -1006,15 +1011,18 @@ const messageListener = _supabase
       table: 'messages',
       filter: `receiver_id=eq.${myId}` 
   }, (payload) => {
-      // 1. Show the Red Dot on the icon bar
-      toggleMessengerBadge(true); 
-      
-      // 2. Play the Ping Sound
+      console.log("Global alert: New message received.");
+
+      // 1. Show the Red Dot
+      const badge = document.getElementById('messenger-badge');
+      if (badge) {
+          badge.style.display = 'block';
+      }
+
+      // 2. Play the notification sound
       if (typeof playNotificationSound === "function") {
           playNotificationSound();
       }
-      
-      // Note: We DON'T call loadChats() here because we are on the feed page
   })
   .subscribe();
 
