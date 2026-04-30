@@ -535,6 +535,9 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- SECURITY GATEKEEPER ---
 const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
+// Pre-load the notification sound in messenger.html
+const pingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'); 
+pingSound.volume = 0.5;
 
 // If no user is logged in, redirect them or show an error
 if (!myId || myId === 'null') {
@@ -680,6 +683,14 @@ async function openStory(story) {
     }
 }
 
+function playNotificationSound() {
+    if (!pingSound) return;
+    pingSound.currentTime = 0; // Reset to start
+    pingSound.play().catch(error => {
+        console.log("Audio playback waiting for user interaction.");
+    });
+}
+     
 // 5. CHAT LOGIC (Vertical List)
 async function loadChats() {
     const chatBox = document.getElementById("chat-list-container");
@@ -709,6 +720,31 @@ async function loadChats() {
         chatBox.innerHTML = `<p style="text-align:center; padding:20px;">Error loading conversations.</p>`;
     }
 }
+
+ // --- MESSENGER-SPECIFIC LISTENER ---
+// This lookout doesn't just show a dot; it updates the chat list live!
+const messageListener = _supabase
+  .channel('public:messages_live')
+  .on('postgres_changes', { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'messages',
+      filter: `receiver_id=eq.${myId}` 
+  }, (payload) => {
+      console.log("New message in messenger!");
+      
+      // 1. Play the sound (Feedback)
+      if (typeof playNotificationSound === "function") playNotificationSound();
+      
+      // 2. Clear the badge (Since the user is already IN the messenger)
+      if (typeof toggleMessengerBadge === "function") toggleMessengerBadge(false);
+      
+      // 3. Refresh the UI (Expert Step: This makes the new message appear instantly)
+      if (typeof loadChats === "function") {
+          loadChats(); 
+      }
+  })
+  .subscribe();   
 
 // Helper to ensure you don't see the same person twice in the list
 function filterUniqueChats(messages) {
