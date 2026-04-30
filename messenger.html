@@ -450,7 +450,16 @@
     border-radius: 50%;
     cursor: pointer;
     
-}   
+}
+
+  .header-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #333;
+      
+  }
  </style>
 </head>
 <body>
@@ -622,10 +631,13 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- SECURITY GATEKEEPER ---
 const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
+ 
 // Pre-load the notification sound in messenger.html
 const pingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'); 
 pingSound.volume = 0.5;
-
+     
+let currentChatId = null; // This allows the listener to check who you are talking to
+     
 // If no user is logged in, redirect them or show an error
 if (!myId || myId === 'null') {
     // Option A: Redirect to your login page
@@ -817,21 +829,82 @@ const messageListener = _supabase
       schema: 'public', 
       table: 'messages',
       filter: `receiver_id=eq.${myId}` 
-  }, (payload) => {
-      console.log("New message in messenger!");
-      
-      // 1. Play the sound (Feedback)
-      if (typeof playNotificationSound === "function") playNotificationSound();
-      
-      // 2. Clear the badge (Since the user is already IN the messenger)
-      if (typeof toggleMessengerBadge === "function") toggleMessengerBadge(false);
-      
-      // 3. Refresh the UI (Expert Step: This makes the new message appear instantly)
-      if (typeof loadChats === "function") {
-          loadChats(); 
-      }
-  })
+    }, (payload) => {
+        const newMessage = payload.new;
+        
+        // 1. Play sound
+        playNotificationSound();
+
+        // 2. If the user is currently TALKING to the person who sent the message
+        if (currentChatId === newMessage.sender_id) {
+            loadMessages(currentChatId); // Refresh the bubble area instantly
+        } else {
+            // Otherwise, just show the red dot and refresh the main list
+            toggleMessengerBadge(true);
+            if (typeof loadChats === "function") loadChats();
+        }
+    })
+    
   .subscribe();   
+
+ async function loadMessages(otherUserId) {
+    const container = document.getElementById('message-container');
+    container.innerHTML = '<div style="text-align:center;color:#888;">Loading history...</div>';
+
+    // Fetch messages where (sender is me AND receiver is them) OR (sender is them AND receiver is me)
+    const { data, error } = await _supabase
+        .from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${myId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${myId})`)
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error("Error loading messages:", error);
+        return;
+    }
+
+    container.innerHTML = ''; // Clear loading text
+    data.forEach(msg => {
+        const isMe = msg.sender_id === myId;
+        const div = document.createElement('div');
+        div.className = `message ${isMe ? 'sent' : 'received'}`;
+        div.innerText = msg.content;
+        container.appendChild(div);
+    });
+
+    // Small delay ensures the browser has rendered the bubbles before scrolling
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
+
+     
+    async function sendMessage() {
+    const input = document.getElementById('message-input');
+    const content = input.value.trim();
+
+    if (!content || !currentChatId) return;
+
+    // Clear input immediately for a "fast" feel
+    input.value = '';
+
+    const { error } = await _supabase
+        .from('messages')
+        .insert([
+            { 
+                sender_id: myId, 
+                receiver_id: currentChatId, 
+                content: content 
+            }
+        ]);
+
+    if (error) {
+        showToast("Failed to send message");
+        console.error(error);
+    } else {
+        // Refresh the chat view locally
+        loadMessages(currentChatId);
+    }
+  }
 
 // Helper to ensure you don't see the same person twice in the list
 function filterUniqueChats(messages) {
@@ -853,7 +926,7 @@ function renderChats(chatData) {
         const displayUser = isMe ? chat.receiver_profile : chat.sender_profile;
 
         return `
-        <div class="chat-item" onclick="openDirectChat('${displayUser.id}')">
+        <div class="chat-item" onclick="openChat('${displayUser.id}', '${displayUser.username}', '${displayUser.avatar_url || 'https://via.placeholder.com/60'}')">
             <div class="chat-pfp-wrapper">
                 <img src="${displayUser?.avatar_url || 'https://via.placeholder.com/60'}" class="chat-pfp">
                 <span class="online-status">Now</span> 
@@ -1024,17 +1097,17 @@ function toggleStories() {
 }
      
 
-let currentChatId = null; // To keep track of who you are talking to
-function openChat(userId, userName) {
+function openChat(userId, userName, userAvatar) {
     currentChatId = userId;
+    
+    // Update the Name and the Avatar
     document.getElementById('chat-user-name').innerText = userName;
+    document.getElementById('chat-user-avatar').src = userAvatar || 'https://via.placeholder.com/40';
+    
     document.getElementById('chat-overlay').style.display = 'flex';
     
-    // Load the actual messages for this user
     loadMessages(userId);
-    
-    // Clear the badge since we are now active
-    toggleMessengerBadge(false);
+    toggleMessengerBadge(false); 
 }
 
 function closeChat() {
@@ -1053,12 +1126,14 @@ function handleKeyPress(e) {
 <div id="chat-overlay" class="chat-overlay">
     <!-- Header -->
     <div class="chat-header">
-        <i class="fa-solid fa-arrow-left" onclick="closeChat()"></i>
-        <div class="chat-user-info">
-            <span id="chat-user-name">Loading...</span>
-            <span class="status-dot">Online</span>
-        </div>
+    <i class="fa-solid fa-arrow-left" onclick="closeChat()"></i>
+    <!-- Added the Avatar Image here -->
+    <img id="chat-user-avatar" src="https://via.placeholder.com/40" class="header-avatar">
+    <div class="chat-user-info">
+        <span id="chat-user-name">Loading...</span>
+        <span class="status-dot">Online</span>
     </div>
+ </div>
 
     <!-- Messages Area -->
     <div id="message-container" class="message-container">
