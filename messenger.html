@@ -460,6 +460,88 @@
     border: 1px solid #333;
       
   }
+
+/* --- MESSENGER UI COMPONENTS --- */
+
+/* 1. The List/Sidebar Components */
+.unread-dot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background: #007bff; /* Blue dot for unread */
+    border-radius: 50%;
+    border: 2px solid #000;
+    z-index: 5;
+}
+
+.chat-time {
+    font-size: 11px;
+    color: #666;
+}
+
+/* 2. The Chat Bubble (Essential Structure) */
+.message {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    max-width: 80%;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.4;
+    position: relative;
+}
+
+/* Specific alignment for Sent vs Received */
+.message.sent {
+    align-self: flex-end;
+    background-color: var(--gt-blue); /* Or your preferred blue */
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.message.received {
+    align-self: flex-start;
+    background-color: #333;
+    color: white;
+    border-bottom-left-radius: 4px;
+}
+
+/* 3. Inside the Bubble (Content & Footer) */
+.msg-content {
+    word-wrap: break-word;
+    margin-bottom: 2px;
+}
+
+.msg-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+.msg-time {
+    color: #eee;
+}
+
+/* 4. Status Indicators (Seen/Sent/Ticks) */
+.status-text, .status-tick {
+    color: #4ade80; /* Nice green for Seen */
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* If you are using the blue checkmark icon from earlier */
+.fa-circle-check {
+    font-size: 12px;
+    margin-left: 5px;
+  }
  </style>
 </head>
 <body>
@@ -851,7 +933,6 @@ const messageListener = _supabase
     const container = document.getElementById('message-container');
     container.innerHTML = '<div style="text-align:center;color:#888;">Loading history...</div>';
 
-    // Fetch messages where (sender is me AND receiver is them) OR (sender is them AND receiver is me)
     const { data, error } = await _supabase
         .from('messages')
         .select('*')
@@ -863,19 +944,39 @@ const messageListener = _supabase
         return;
     }
 
-    container.innerHTML = ''; // Clear loading text
+    container.innerHTML = ''; 
     data.forEach(msg => {
         const isMe = msg.sender_id === myId;
         const div = document.createElement('div');
         div.className = `message ${isMe ? 'sent' : 'received'}`;
-        div.innerText = msg.content;
+        
+        // 1. Format the time for the bubble
+        const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // 2. "Seen" logic: Only show status on messages I sent
+        let statusHtml = '';
+        if (isMe) {
+            statusHtml = msg.is_read 
+                ? '<span class="status-text" style="color:#4ade80;">Seen</span>' 
+                : '<span class="status-text">Sent</span>';
+        }
+
+        // 3. Inject Content + Footer
+        div.innerHTML = `
+            <div class="msg-content">${msg.content}</div>
+            <div class="msg-footer" style="display:flex; justify-content:flex-end; gap:5px; font-size:10px; margin-top:4px; opacity:0.6;">
+                <span class="msg-time">${time}</span>
+                ${statusHtml}
+            </div>
+        `;
+        
         container.appendChild(div);
     });
 
-    // Small delay ensures the browser has rendered the bubbles before scrolling
     setTimeout(() => {
         container.scrollTop = container.scrollHeight;
     }, 100);
+   }
 
      
     async function sendMessage() {
@@ -920,28 +1021,39 @@ function filterUniqueChats(messages) {
 
 function renderChats(chatData) {
     document.getElementById("chat-list-container").innerHTML = chatData.map(chat => {
-        // If I sent it, show the person I sent it TO. 
-        // If they sent it, show the person who sent it (THEM).
         const isMe = chat.sender_id === myId;
         const displayUser = isMe ? chat.receiver_profile : chat.sender_profile;
+        
+        // 1. Logic for Bold text & Blue Dot (If I am receiver and is_read is false)
+        const isUnread = !isMe && chat.is_read === false;
+        const textStyle = isUnread ? 'font-weight: 800; color: white;' : 'font-weight: 400; color: #bbb;';
+        
+        // 2. Format the Timestamp
+        const time = new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         return `
         <div class="chat-item" onclick="openChat('${displayUser.id}', '${displayUser.username}', '${displayUser.avatar_url || 'https://via.placeholder.com/60'}')">
             <div class="chat-pfp-wrapper">
                 <img src="${displayUser?.avatar_url || 'https://via.placeholder.com/60'}" class="chat-pfp">
-                <span class="online-status">Now</span> 
+                <!-- Blue dot appears only if unread -->
+                ${isUnread ? '<span class="unread-dot"></span>' : '<span class="online-status">Now</span>'} 
             </div>
             <div class="chat-info">
-                <h3>${displayUser?.username || 'User'}</h3>
-                <div class="chat-msg">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>${displayUser?.username || 'User'}</h3>
+                    <span class="chat-time">${time}</span>
+                </div>
+                <div class="chat-msg" style="${textStyle}">
                     ${isMe ? '<span style="color:var(--gt-blue);">You: </span>' : ''}
                     ${chat.content}
                 </div>
             </div>
-            <i class="fa-regular fa-circle-check" style="color:var(--gt-blue)"></i>
+            <!-- Blue checkmark logic: Show if message is seen or successfully sent -->
+            <i class="${chat.is_read ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}" 
+               style="color:var(--gt-blue); font-size: 12px; margin-left: 5px;"></i>
         </div>`;
     }).join('');
-}
+  }
 
 // 6. NEW CHAT MENU & FOLLOWING LOGIC (The Fixed Section)
 function toggleNewChatMenu() {
@@ -1097,17 +1209,44 @@ function toggleStories() {
 }
      
 
+// 1. The function that updates the database
+async function markAsRead(otherUserId) {
+    try {
+        const { error } = await _supabase
+            .from('messages')
+            .update({ is_read: true })
+            .eq('receiver_id', myId) // I am the receiver
+            .eq('sender_id', otherUserId) // They are the sender
+            .eq('is_read', false); // Only update what isn't read yet
+
+        if (error) throw error;
+
+        // Refresh the sidebar list to clear bold text and blue dots
+        if (typeof loadChats === "function") loadChats();
+        
+    } catch (error) {
+        console.error("Error marking messages as read:", error);
+    }
+}
+
+// 2. Updated openChat with the Handshake logic
 function openChat(userId, userName, userAvatar) {
     currentChatId = userId;
     
-    // Update the Name and the Avatar
+    // Update the Name and the Avatar in the header
     document.getElementById('chat-user-name').innerText = userName;
     document.getElementById('chat-user-avatar').src = userAvatar || 'https://via.placeholder.com/40';
     
     document.getElementById('chat-overlay').style.display = 'flex';
     
+    // Load the messages for this user
     loadMessages(userId);
+    
+    // Clear the main messenger notification badge
     toggleMessengerBadge(false); 
+
+    // THE HANDSHAKE: Tell the DB we have seen these messages
+    markAsRead(userId);
 }
 
 function closeChat() {
@@ -1117,7 +1256,7 @@ function closeChat() {
 
 function handleKeyPress(e) {
     if (e.key === 'Enter') sendMessage();
-   
+  
 }
      
 </script> 
