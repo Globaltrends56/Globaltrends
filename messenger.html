@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Makes the browser UI disappear on mobile -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>GT Messenger </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -504,6 +508,25 @@
 </div>
     
  <script>
+/**
+ * THE GATEKEEPER: AUTH GUARD
+ * This script runs instantly to ensure only logged-in users 
+ * from Globaltrends can see the messenger.
+ */
+(function() {
+    // We check for the exact same key used by your main site
+    const sessionUser = localStorage.getItem("user_id");
+    
+    // If the user isn't logged in to Globaltrends, redirect them back to login
+    if (!sessionUser || sessionUser === 'null' || sessionUser === 'undefined') {
+        // 'replace' is used so they can't click 'back' to peek at the messenger
+        window.location.replace("login.html"); 
+        return; 
+    }
+    
+    console.log("User recognized. Welcome to GT Messenger.");
+})();
+
 // 1. CONFIGURATION & DATABASE CONNECTION
 const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzU";
