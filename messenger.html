@@ -364,6 +364,7 @@
   
 } 
      
+/* --- 1. OVERLAY & LAYOUT STRUCTURE --- */
 .chat-overlay {
     position: fixed;
     top: 0;
@@ -372,7 +373,7 @@
     height: 100%;
     background: #000;
     z-index: 1000;
-    display: none; /* Hidden until a chat is clicked */
+    display: none; /* Controlled by JS */
     flex-direction: column;
 }
 
@@ -387,6 +388,14 @@
 
 .chat-header i { cursor: pointer; font-size: 20px; }
 
+.header-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #333;
+}
+
 .chat-user-info { display: flex; flex-direction: column; }
 #chat-user-name { font-weight: bold; color: white; }
 .status-dot { font-size: 11px; color: #4ade80; }
@@ -400,29 +409,58 @@
     gap: 10px;
 }
 
-/* Chat Bubbles */
+/* --- 2. CHAT BUBBLES (SENT & RECEIVED) --- */
 .message {
+    display: flex;
+    flex-direction: column;
     max-width: 75%;
     padding: 10px 15px;
     border-radius: 18px;
     font-size: 15px;
     line-height: 1.4;
+    position: relative;
 }
 
-.sent {
+.message.sent {
     align-self: flex-end;
     background: #007bff; /* Blue for you */
     color: white;
-    border-bottom-right-radius: 2px;
+    border-bottom-right-radius: 4px;
 }
 
-.received {
+.message.received {
     align-self: flex-start;
     background: #333; /* Dark grey for them */
     color: white;
-    border-bottom-left-radius: 2px;
+    border-bottom-left-radius: 4px;
 }
 
+/* --- 3. BUBBLE INNER COMPONENTS (TIME & SEEN) --- */
+.msg-content {
+    word-wrap: break-word;
+    margin-bottom: 2px;
+}
+
+.msg-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+.msg-time { color: #eee; }
+
+.status-text {
+    color: #4ade80; /* Green for "Seen" */
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- 4. INPUT BAR --- */
 .chat-input-bar {
     padding: 15px;
     background: #111;
@@ -449,28 +487,19 @@
     height: 40px;
     border-radius: 50%;
     cursor: pointer;
-    
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-  .header-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid #333;
-      
-  }
-
-/* --- MESSENGER UI COMPONENTS --- */
-
-/* 1. The List/Sidebar Components */
+/* --- 5. SIDEBAR / LIST COMPONENTS --- */
 .unread-dot {
     position: absolute;
     top: 0;
     right: 0;
     width: 12px;
     height: 12px;
-    background: #007bff; /* Blue dot for unread */
+    background: #007bff;
     border-radius: 50%;
     border: 2px solid #000;
     z-index: 5;
@@ -481,67 +510,13 @@
     color: #666;
 }
 
-/* 2. The Chat Bubble (Essential Structure) */
-.message {
-    display: flex;
-    flex-direction: column;
-    padding: 10px 14px;
-    margin-bottom: 8px;
-    max-width: 80%;
-    border-radius: 18px;
-    font-size: 15px;
-    line-height: 1.4;
-    position: relative;
-}
-
-/* Specific alignment for Sent vs Received */
-.message.sent {
-    align-self: flex-end;
-    background-color: var(--gt-blue); /* Or your preferred blue */
-    color: white;
-    border-bottom-right-radius: 4px;
-}
-
-.message.received {
-    align-self: flex-start;
-    background-color: #333;
-    color: white;
-    border-bottom-left-radius: 4px;
-}
-
-/* 3. Inside the Bubble (Content & Footer) */
-.msg-content {
-    word-wrap: break-word;
-    margin-bottom: 2px;
-}
-
-.msg-footer {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 5px;
-    font-size: 10px;
-    opacity: 0.7;
-    margin-top: 4px;
-}
-
-.msg-time {
-    color: #eee;
-}
-
-/* 4. Status Indicators (Seen/Sent/Ticks) */
-.status-text, .status-tick {
-    color: #4ade80; /* Nice green for Seen */
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* If you are using the blue checkmark icon from earlier */
+//* The Checkmark Icon (The one you just asked about) */
 .fa-circle-check {
     font-size: 12px;
     margin-left: 5px;
-  }
+    transition: all 0.3s ease; /* Smooth transition when it changes to solid */
+    
+}
  </style>
 </head>
 <body>
