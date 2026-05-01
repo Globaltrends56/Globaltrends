@@ -675,58 +675,178 @@
         <img id="editing-preview-img" src="">
         <div class="add-text-btn"><i class="fa-solid fa-t"></i> Add text</div>
     </div>
-</div>
-    
- <script>
-/**
- * THE GATEKEEPER: AUTH GUARD
- * This script runs instantly to ensure only logged-in users 
- * from Globaltrends can see the messenger.
- */
-(function() {
-    // We check for the exact same key used by your main site
-    const sessionUser = localStorage.getItem("user_id");
-    
-    // If the user isn't logged in to Globaltrends, redirect them back to login
-    if (!sessionUser || sessionUser === 'null' || sessionUser === 'undefined') {
-        // 'replace' is used so they can't click 'back' to peek at the messenger
-        window.location.replace("login.html"); 
-        return; 
-    }
-    
-    console.log("User recognized. Welcome to GT Messenger.");
-})();
+</div> 
 
+<script>
 // 1. CONFIGURATION & DATABASE CONNECTION
 const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzU";
+const SUPABASE_KEY = "YOUR_EXISTING_FULL_KEY_HERE"; 
 const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- SECURITY GATEKEEPER ---
-const myId = localStorage.getItem("user_id")?.replace(/['"]+/g, '');
- 
-// Pre-load the notification sound in messenger.html
-const pingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'); 
-pingSound.volume = 0.5;
-     
-// --- GLOBAL PRESENCE SETUP ---
-const userStatusChannel = _supabase.channel('online-users');
+// Global State
+let myId = null;
+let currentChatId = null;
+let followingData = [];
+let typingTimeout;
+const pingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
-userStatusChannel
-  .on('presence', { event: 'sync' }, () => {
-    const newState = userStatusChannel.presenceState();
-    // This logs who is online in the console for debugging
-    console.log('Online users synced:', newState);
-  })
-  .subscribe(async (status) => {
-    if (status === 'SUBSCRIBED') {
-      await userStatusChannel.track({
-        user_id: myId,
-        online_at: new Date().toISOString(),
-      });
+// 3. INITIALIZATION (The "Expert" Way)
+document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Verify the official session first
+    const { data: { session } } = await _supabase.auth.getSession();
+    
+    if (!session) {
+        window.location.replace("login.html");
+        return;
     }
-  });
+
+    // 2. Set the global ID used by your SQL RLS policies
+    myId = session.user.id; 
+
+    // 3. Fire off the messenger setup
+    initMessenger();
+    startMessageListener(); 
+
+    // 4. Update your PFP in the "Your Story" bubble
+    const { data: profile } = await _supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', myId)
+        .single();
+
+    if (profile?.avatar_url) {
+        const myAvatar = document.querySelector('.user-pfp-source');
+        if (myAvatar) myAvatar.src = profile.avatar_url;
+    }
+
+    // 5. GLOBAL PRESENCE SETUP (Moved inside for security)
+    const userStatusChannel = _supabase.channel('online-users');
+
+    userStatusChannel
+      .on('presence', { event: 'sync' }, () => {
+        const newState = userStatusChannel.presenceState();
+        console.log('Online users synced:', newState);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Tracks your official UUID in the 'online-users' channel
+          await userStatusChannel.track({
+            user_id: myId,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    // 6. Setup Story Viewer close button
+    const closeBtn = document.getElementById('close-story');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            document.getElementById('story-viewer').style.display = 'none';
+        };
+    }
+});
+
+// This is the "Engine" that actually triggers the data loading
+async function initMessenger() {
+    try {
+        // 1. Load the horizontal stories bar
+        await loadStories();
+        
+        // 2. Load the vertical chat history list
+        await loadChats();
+        
+        console.log("Messenger data initialized successfully.");
+    } catch (err) {
+        console.error("Failed to initialize messenger data:", err);
+    }
+  }
+
+// 3. TAB SWITCHING (FIXES THE "GHOST" MESSAGES)
+async function switchTab(type) {
+    // Clear the active styles
+    document.querySelectorAll('.tab').forEach(t => {
+        t.classList.remove('active');
+        t.classList.add('inactive');
+        const indicator = t.querySelector('.tab-indicator');
+        if(indicator) indicator.remove();
+    });
+
+    const selected = document.getElementById(`tab-${type}`);
+    selected.classList.add('active');
+    selected.classList.remove('inactive');
+    selected.innerHTML += `<div class="tab-indicator"></div>`;
+
+    const chatContainer = document.getElementById("chat-list-container");
+    
+    // CRITICAL: Hard clear the container to stop "Ghost" messages
+    chatContainer.innerHTML = ''; 
+
+    if (type === 'chats') {
+        await loadChats();
+    } else {
+        chatContainer.innerHTML = `
+            <div class="empty-welcome">
+                <i class="fa-solid ${type === 'groups' ? 'fa-users' : 'fa-video'}" style="font-size: 50px; color: #333;"></i>
+                <h2 style="margin-top:15px;">${type.charAt(0).toUpperCase() + type.slice(1)} coming soon</h2>
+            </div>`;
+    }
+}
+
+// 4. NEW CHAT & FOLLOWING (FIXES "CONNECTION FAILED")
+async function switchNC(type) {
+    const listArea = document.getElementById('nc-list-content');
+    const searchWrapper = document.getElementById('nc-search-wrapper');
+    
+    document.getElementById('nc-tab-following').classList.toggle('active', type === 'following');
+    document.getElementById('nc-tab-recommended').classList.toggle('active', type === 'recommended');
+    
+    if (searchWrapper) searchWrapper.style.visibility = (type === 'following') ? 'visible' : 'hidden';
+    listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
+
+    try {
+        if (type === 'following') {
+            // Use the client to pass the Auth Token automatically for SQL RLS
+            const { data, error } = await _supabase
+                .from('follows')
+                .select('profiles(*)')
+                .eq('follower_id', myId);
+
+            if (error) throw error;
+            const users = data.map(f => f.profiles);
+            document.getElementById('following-count').innerText = users.length;
+            followingData = users;
+            renderNCList(users);
+        } else {
+            // Force random recommended profiles instantly
+            const { data, error } = await _supabase
+                .from('profiles')
+                .select('*')
+                .neq('id', myId)
+                .limit(10);
+
+            if (error) throw error;
+            renderNCList(data);
+        }
+    } catch (e) {
+        listArea.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Connection failed.</p>';
+    }
+}
+
+function renderNCList(users) {
+    const listArea = document.getElementById('nc-list-content');
+    if (!users || users.length === 0) {
+        listArea.innerHTML = '<p style="text-align:center; padding:20px;">No one found.</p>';
+        return;
+    }
+    listArea.innerHTML = users.map(user => `
+        <div class="nc-user-item" onclick="openChat('${user.id}', '${user.username}', '${user.avatar_url}')">
+            <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
+            <span class="nc-user-name">${user.username}</span>
+        </div>
+    `).join('');
+}
+
 
 // --- TYPING SIGNAL LISTENER ---
 const typingChannel = _supabase.channel(`chat:${myId}`);
@@ -749,21 +869,6 @@ typingChannel
   })
   .subscribe();     
 
-let currentChatId = null; // This allows the listener to check who you are talking to
-let typingTimeout;
-     
-// If no user is logged in, redirect them or show an error
-if (!myId || myId === 'null') {
-    // Option A: Redirect to your login page
-    // window.location.href = "login.html"; 
-    
-    // Option B: Hard stop (the app won't load for hackers)
-    console.error("Access Denied: Please log in.");
-}
-
-let followingData = []; 
-let myProfileData = null; // We will store your name and PFP here
-let toastTimer;
 
 // 2. UTILITY: THE TOAST SYSTEM
 function showToast(message) {
@@ -782,46 +887,6 @@ function showToast(message) {
     }, 3000);
 }
 
-// 3. INITIALIZATION (Runs when page loads)
-document.addEventListener("DOMContentLoaded", () => {
-    if (!myId) {
-        console.error("No User ID found. Please log in.");
-        return;
-    }
-    initMessenger();
-
-    async function fetchMyProfile() {
-    try {
-        const { data, error } = await _supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', myId)
-            .single();
-
-        if (data) {
-            myProfileData = data;
-            // This updates your "Your Story" bubble with your real PFP
-            const myAvatar = document.querySelector('.user-pfp-source');
-            if (myAvatar) myAvatar.src = data.avatar_url || 'https://via.placeholder.com/70';
-        }
-    } catch (err) {
-        console.warn("Could not load user profile:", err);
-    }
-    }
-
-    // Setup close button for Story Viewer
-    const closeBtn = document.getElementById('close-story');
-    if (closeBtn) {
-        closeBtn.onclick = () => {
-            document.getElementById('story-viewer').style.display = 'none';
-        };
-    }
-});
-
-async function initMessenger() {
-    await loadStories();
-    await loadChats();
-}
 
 // 4. STORY LOGIC (Horizontal Swiping Bar)
 async function loadStories() {
@@ -1143,79 +1208,11 @@ function toggleNewChatMenu() {
     if (isOpening) switchNC('following'); 
 }
 
-async function switchNC(type) {
-    const searchWrapper = document.getElementById('nc-search-wrapper');
-    const listArea = document.getElementById('nc-list-content');
-    const followCount = document.getElementById('following-count');
-    
-    // UI Update
-    document.getElementById('nc-tab-following').classList.toggle('active', type === 'following');
-    document.getElementById('nc-tab-recommended').classList.toggle('active', type === 'recommended');
-    
-    if (searchWrapper) searchWrapper.style.visibility = (type === 'following') ? 'visible' : 'hidden';
-    listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
-
-    try {
-        let url = type === 'following' 
-            ? `${SUPABASE_URL}/rest/v1/follows?follower_id=eq.${myId}&select=profiles(*)`
-            : `${SUPABASE_URL}/rest/v1/profiles?id=neq.${myId}&limit=15`;
-
-        const res = await fetch(url, { headers: { apikey: SUPABASE_KEY } });
-        const data = await res.json();
-        
-        const users = type === 'following' ? data.map(f => f.profiles) : data;
-        if (type === 'following' && followCount) followCount.innerText = users.length;
-
-        renderNCList(users);
-        if (type === 'following') followingData = users;
-    } catch (e) {
-        listArea.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Connection error.</p>';
-    }
-}
-
-function renderNCList(users) {
-    const listArea = document.getElementById('nc-list-content');
-    if (users.length === 0) {
-        listArea.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">No users found.</p>';
-        return;
-    }
-    listArea.innerHTML = users.map(user => `
-        <div class="nc-user-item">
-            <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
-            <span class="nc-user-name">${user.username}</span>
-        </div>
-    `).join('');
-}
-
 function filterFollowing(query) {
     const filtered = followingData.filter(u => u.username.toLowerCase().includes(query.toLowerCase()));
     renderNCList(filtered);
 }
 
-// 7. TAB NAVIGATION (Groups, Calls, etc.)
-async function switchTab(type) {
-    document.querySelectorAll('.tab').forEach(t => {
-        t.classList.remove('active');
-        const indicator = t.querySelector('.tab-indicator');
-        if(indicator) indicator.remove();
-    });
-
-    const selected = document.getElementById(`tab-${type}`);
-    selected.classList.add('active');
-    selected.innerHTML += `<div class="tab-indicator"></div>`;
-
-    const chatContainer = document.getElementById("chat-list-container");
-    
-    if (type === 'chats') {
-        await loadChats();
-    } else {
-        chatContainer.innerHTML = `
-            <div class="empty-welcome">
-                <i class="fa-solid ${type === 'groups' ? 'fa-users' : 'fa-video'}" style="font-size: 50px; color: #f0f2f5;"></i>
-                <h2 style="margin-top:15px; color:#65676b;">${type.charAt(0).toUpperCase() + type.slice(1)} coming soon</h2>
-            </div>`;
-    }
-}
 
 //*UPLOAD LOGIC*//
 let selectedFileBlob = null;
