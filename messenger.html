@@ -936,30 +936,36 @@ async function loadChats() {
 
  // --- MESSENGER-SPECIFIC LISTENER ---
 // This lookout doesn't just show a dot; it updates the chat list live!
-const messageListener = _supabase
-  .channel('public:messages_live')
-  .on('postgres_changes', { 
-      event: 'INSERT', 
-      schema: 'public', 
-      table: 'messages',
-      filter: `receiver_id=eq.${myId}` 
-    }, (payload) => {
-        const newMessage = payload.new;
-        
-        // 1. Play sound
-        playNotificationSound();
+// Wrap your listener in a function so we can start it with the correct ID
+async function startMessageListener() {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) return;
 
-        // 2. If the user is currently TALKING to the person who sent the message
-        if (currentChatId === newMessage.sender_id) {
-            loadMessages(currentChatId); // Refresh the bubble area instantly
-        } else {
-            // Otherwise, just show the red dot and refresh the main list
-            toggleMessengerBadge(true);
-            if (typeof loadChats === "function") loadChats();
-        }
-    })
-    
-  .subscribe();   
+    const myUserId = user.id;
+
+    _supabase
+      .channel('public:messages_live')
+      .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'messages',
+          filter: `receiver_id=eq.${myUserId}` // Use the verified ID from Supabase
+        }, (payload) => {
+            const newMessage = payload.new;
+            playNotificationSound();
+
+            if (currentChatId === newMessage.sender_id) {
+                loadMessages(currentChatId); 
+            } else {
+                toggleMessengerBadge(true);
+                if (typeof loadChats === "function") loadChats();
+            }
+        })
+      .subscribe();
+}
+
+// Call this when the page loads
+startMessageListener();   
 
  async function loadMessages(otherUserId) {
     const container = document.getElementById('message-container');
@@ -1015,16 +1021,29 @@ const messageListener = _supabase
     const input = document.getElementById('message-input');
     const content = input.value.trim();
 
+    // 1. Safety Check: Ensure there is content and a person to send it to
     if (!content || !currentChatId) return;
+
+    // 2. Get the actual logged-in User ID from Supabase
+    // This replaces your manual 'myId' to ensure RLS doesn't block the send
+    const { data: { user } } = await _supabase.auth.getUser();
+    
+    if (!user) {
+        showToast("Please login to send messages");
+        return;
+    }
+
+    const myUserId = user.id;
 
     // Clear input immediately for a "fast" feel
     input.value = '';
 
+    // 3. Send to Supabase
     const { error } = await _supabase
         .from('messages')
         .insert([
             { 
-                sender_id: myId, 
+                sender_id: myUserId, // Use the ID from the session
                 receiver_id: currentChatId, 
                 content: content 
             }
@@ -1033,8 +1052,12 @@ const messageListener = _supabase
     if (error) {
         showToast("Failed to send message");
         console.error(error);
+        // Optional: Put the text back in the input if it fails
+        input.value = content;
     } else {
-        // Refresh the chat view locally
+        // Since you have Realtime enabled in the SQL, 
+        // loadMessages(currentChatId) will eventually be handled by your 
+        // .on('postgres_changes') listener!
         loadMessages(currentChatId);
     }
   }
