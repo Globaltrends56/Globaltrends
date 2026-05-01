@@ -675,7 +675,7 @@
 <script>
 // 1. CONFIGURATION & DATABASE CONNECTION
 const SUPABASE_URL = "https://spnvgymmrlyqtfrbjjsg.supabase.co";
-const SUPABASE_KEY = "YOUR_EXISTING_FULL_KEY_HERE"; 
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzU"; 
 const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -684,8 +684,11 @@ let myId = null;
 let currentChatId = null;
 let followingData = [];
 let typingTimeout;
-const pingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
+// 2. THE NEW PING SOUND (Included here)
+const pingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+pingSound.volume = 0.5;
+    
 // 3. INITIALIZATION (The "Expert" Way)
 document.addEventListener("DOMContentLoaded", async () => {
     // 1. Verify the official session first
@@ -696,14 +699,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // 2. Set the global ID used by your SQL RLS policies
     myId = session.user.id; 
 
-    // 3. Fire off the messenger setup
+    // 2. Fire off the messenger setup
     initMessenger();
     startMessageListener(); 
 
-    // 4. Update your PFP in the "Your Story" bubble
+    // 3. Update your PFP
     const { data: profile } = await _supabase
         .from('profiles')
         .select('avatar_url')
@@ -715,23 +717,30 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (myAvatar) myAvatar.src = profile.avatar_url;
     }
 
-    // 5. GLOBAL PRESENCE SETUP (Moved inside for security)
+    // 4. GLOBAL PRESENCE SETUP
     const userStatusChannel = _supabase.channel('online-users');
-
     userStatusChannel
       .on('presence', { event: 'sync' }, () => {
-        const newState = userStatusChannel.presenceState();
-        console.log('Online users synced:', newState);
+        console.log('Online users synced:', userStatusChannel.presenceState());
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // Tracks your official UUID in the 'online-users' channel
-          await userStatusChannel.track({
-            user_id: myId,
-            online_at: new Date().toISOString(),
-          });
+          await userStatusChannel.track({ user_id: myId, online_at: new Date().toISOString() });
         }
       });
+
+    // 5. TYPING SIGNAL LISTENER (Moved here for safety)
+    _supabase.channel(`chat:${myId}`)
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        if (payload.sender_id === currentChatId) {
+          const statusText = document.querySelector('.status-dot'); 
+          if (statusText) {
+            statusText.innerText = payload.isTyping ? 'typing...' : 'Online';
+            statusText.style.color = payload.isTyping ? '#007bff' : '#4ade80';
+          }
+        }
+      })
+      .subscribe();
 
     // 6. Setup Story Viewer close button
     const closeBtn = document.getElementById('close-story');
@@ -841,28 +850,6 @@ function renderNCList(users) {
         </div>
     `).join('');
 }
-
-
-// --- TYPING SIGNAL LISTENER ---
-const typingChannel = _supabase.channel(`chat:${myId}`);
-
-typingChannel
-  .on('broadcast', { event: 'typing' }, (payload) => {
-    // Only show "typing..." if the person typing is the one I currently have open
-    if (payload.sender_id === currentChatId) {
-      const statusText = document.querySelector('.status-dot'); 
-      if (statusText) {
-        if (payload.isTyping) {
-          statusText.innerText = 'typing...';
-          statusText.style.color = '#007bff'; // Blue for typing
-        } else {
-          statusText.innerText = 'Online';
-          statusText.style.color = '#4ade80'; // Green for online
-        }
-      }
-    }
-  })
-  .subscribe();     
 
 
 // 2. UTILITY: THE TOAST SYSTEM
@@ -994,38 +981,6 @@ async function loadChats() {
     }
 }
 
- // --- MESSENGER-SPECIFIC LISTENER ---
-// This lookout doesn't just show a dot; it updates the chat list live!
-// Wrap your listener in a function so we can start it with the correct ID
-async function startMessageListener() {
-    const { data: { user } } = await _supabase.auth.getUser();
-    if (!user) return;
-
-    const myUserId = user.id;
-
-    _supabase
-      .channel('public:messages_live')
-      .on('postgres_changes', { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'messages',
-          filter: `receiver_id=eq.${myUserId}` // Use the verified ID from Supabase
-        }, (payload) => {
-            const newMessage = payload.new;
-            playNotificationSound();
-
-            if (currentChatId === newMessage.sender_id) {
-                loadMessages(currentChatId); 
-            } else {
-                toggleMessengerBadge(true);
-                if (typeof loadChats === "function") loadChats();
-            }
-        })
-      .subscribe();
-}
-
-// Call this when the page loads
-startMessageListener();   
 
  async function loadMessages(otherUserId) {
     const container = document.getElementById('message-container');
