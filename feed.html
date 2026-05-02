@@ -884,8 +884,9 @@ video {
         feed.appendChild(div);  
     });
    } 
+     
         
-    async function toggleFeed(type) {  
+  async function toggleFeed(type) {  
     const feed = document.getElementById("tiktok-feed");
     
     // 1. Auth Check
@@ -898,36 +899,45 @@ video {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));  
     document.getElementById(`tab-${type}`).classList.add('active');  
 
-    if (type === 'trending') {
-        document.getElementById('tab-trending').style.setProperty('--show-dot', 'none');
-    }
+    // 3. Get User's Home Country from LocalStorage (or fetch it)
+    // Tip: When the user logs in or saves their profile, save their country_code to localStorage too!
+    const myHome = localStorage.getItem("user_country") || 'Global';
 
-    // Define these ONCE here
     const isVideoFile = (url) => url && url.toLowerCase().match(/\.(mp4|mov|m4v|webm)/i);
     const interests = JSON.parse(localStorage.getItem("my_interests")) || [];  
     let filteredPosts = [];  
 
-    // 4. Filtering Logic (Duplicate const removed from here)
+    // 4. UPGRADED Filtering Logic
     if (type === 'trending') {  
         feed.classList.add('trending-mode');
-        filteredPosts = shuffleArray([...allPosts]); 
+        // Trending shows Global content + Content from their Home Country
+        filteredPosts = allPosts.filter(p => 
+            p.country_code === 'Global' || p.country_code === myHome
+        );
+        filteredPosts = shuffleArray(filteredPosts); 
         
     } else if (type === 'following') {  
         feed.classList.remove('trending-mode');
-        let followingVideos = allPosts.filter(p => interests.includes(p.user_id) && isVideoFile(p.video_url));
+        // Following strictly shows people you follow
+        let followingVideos = allPosts.filter(p => interests.includes(p.user_id));
         filteredPosts = shuffleArray(followingVideos); 
         
     } else {  
-        // 'foryou'
+        // 'For You' - The Professional Blend
         feed.classList.remove('trending-mode');
-        let forYouVideos = allPosts.filter(p => isVideoFile(p.video_url));
-        filteredPosts = shuffleArray(forYouVideos); 
+        // Show everything but prioritize Global and Home Country
+        filteredPosts = allPosts.filter(p => {
+            const isRegional = (p.country_code === 'Global' || p.country_code === myHome);
+            return isVideoFile(p.video_url) && isRegional;
+        });
+        filteredPosts = shuffleArray(filteredPosts); 
     }
 
-    // 5. Final Step: Render the posts and scroll to top
+    // 5. Final Step: Render
     renderFeed(filteredPosts, type === 'following');  
     feed.scrollTop = 0;  
-    }                       
+     
+  }  
      
     async function likePostGlobal(id, el) {  
         if (!myId) { showToast("Please login"); return; }  
