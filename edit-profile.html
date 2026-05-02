@@ -81,21 +81,26 @@
         t.classList.add("show");
         setTimeout(() => t.classList.remove("show"), 2200);
     }
+    
 
     async function load() {
-        const { data } = await supabase.from('profiles').select('*').eq('id', myId).single();
-        if (data) {
-            document.getElementById('user').value = data.username || '';
-            document.getElementById('bio').value = data.bio || '';
-            
-            // PRO UPDATE: Set the dropdown to the user's saved country
-            if (data.country_code) {
-                document.getElementById('country').value = data.country_code;
-            }
+    const { data } = await supabase.from('profiles').select('*').eq('id', myId).single();
+    if (data) {
+        document.getElementById('user').value = data.username || '';
+        document.getElementById('bio').value = data.bio || '';
+        
+        // 1. SET LOCALSTORAGE HERE
+        // This ensures the feed knows the user's country even before they hit "Save"
+        localStorage.setItem("user_country", data.country_code || 'Global');
 
-            if (data.avatar_url) document.getElementById('preview').src = data.avatar_url;
+        // 2. Set the dropdown UI
+        if (data.country_code) {
+            document.getElementById('country').value = data.country_code;
         }
+
+        if (data.avatar_url) document.getElementById('preview').src = data.avatar_url;
     }
+  }
 
     document.getElementById('fIn').onchange = e => {
         if (e.target.files[0]) {
@@ -128,6 +133,11 @@
             bio: document.getElementById('bio').value,
             avatar_url: avatarUrl,
             country_code: selectedCountry // <--- SAVE TO DATABASE
+
+            if (!error) {
+                // --- ADD THIS LINE BELOW ---
+                localStorage.setItem("user_country", selectedCountry); 
+                // ---------------------------
         });
 
         if (!error) {
