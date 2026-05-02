@@ -183,16 +183,22 @@ Caption: "${caption}"`},
     return;
   }
 
+  // 1. Get the user's home country from localStorage (set in edit-profile.html)
+  const myHome = localStorage.getItem("user_country") || 'Global';
+
+  // 2. Insert into the database with the country_code
   await supabase.from("posts").insert({
-    user_id:myId,
-    media_type:"photo",
-    media_urls:urls,
+    user_id: myId,
+    media_type: "photo",
+    media_urls: urls,
     caption,
-    likes:0
+    likes: 0,
+    country_code: myHome // <--- THIS TAGS THE PHOTO POST BY REGION
   });
 
-  location.href="profile.html";
+  location.href = "profile.html";
 };
+  
 </script>
-</body>
-    </html>
+ </body>
+</html>
