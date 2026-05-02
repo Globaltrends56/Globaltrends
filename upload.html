@@ -63,7 +63,19 @@ window.upload = async () => {
         }
     } catch (e) { console.warn("error"); }
 
-    await supabase.from("posts").insert({ user_id: myId, video_url: videoUrl, caption: caption, likes: 0, views: 0 });
+    // 1. Get the user's home country from localStorage
+    const myHome = localStorage.getItem("user_country") || 'Global';
+
+    // 2. Insert into the database with the country_code
+    await supabase.from("posts").insert({ 
+        user_id: myId, 
+        video_url: videoUrl, 
+        caption: caption, 
+        likes: 0, 
+        views: 0,
+        country_code: myHome // <--- THIS IS THE MAGIC LINE
+    });
+
     location.href = "profile.html";
 };
 </script>
