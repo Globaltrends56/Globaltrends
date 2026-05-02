@@ -796,60 +796,82 @@ async function switchTab(type) {
             </div>`;
     }
 }
+    
 
-// 4. NEW CHAT & FOLLOWING (FIXES "CONNECTION FAILED")
+// 4. NEW CHAT & FOLLOWING (UPGRADED PRO VERSION)
 async function switchNC(type) {
     const listArea = document.getElementById('nc-list-content');
     const searchWrapper = document.getElementById('nc-search-wrapper');
+    const followingCountLabel = document.getElementById('following-count');
     
+    // UI: Toggle Active Tab Classes
     document.getElementById('nc-tab-following').classList.toggle('active', type === 'following');
     document.getElementById('nc-tab-recommended').classList.toggle('active', type === 'recommended');
     
+    // UI: Only show search bar for the Following list
     if (searchWrapper) searchWrapper.style.visibility = (type === 'following') ? 'visible' : 'hidden';
     listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
 
     try {
         if (type === 'following') {
-            // Use the client to pass the Auth Token automatically for SQL RLS
+            // PRO UPGRADE: Explicit Join via following_id to pull friend profiles
             const { data, error } = await _supabase
                 .from('follows')
-                .select('profiles(*)')
+                .select('profiles!following_id(*)') 
                 .eq('follower_id', myId);
 
             if (error) throw error;
-            const users = data.map(f => f.profiles);
-            document.getElementById('following-count').innerText = users.length;
+
+            // Map results and filter out any null profiles
+            const users = data.map(f => f.profiles).filter(u => u !== null);
+            
+            // Update the Following counter label
+            if (followingCountLabel) {
+                followingCountLabel.innerText = users.length;
+            }
+            
             followingData = users;
             renderNCList(users);
         } else {
-            // Force random recommended profiles instantly
+            // PRO UPGRADE: Pull from the shuffled 'pro_recommendations' view
+            // This prioritizes verified accounts like BBC News or Taylor Swift
             const { data, error } = await _supabase
-                .from('profiles')
+                .from('pro_recommendations')
                 .select('*')
-                .neq('id', myId)
-                .limit(10);
+                .neq('id', myId) // Exclude the current user
+                .limit(15);
 
             if (error) throw error;
             renderNCList(data);
         }
     } catch (e) {
+        console.error("NC Switch Error:", e);
         listArea.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Connection failed.</p>';
     }
 }
+    
 
 function renderNCList(users) {
     const listArea = document.getElementById('nc-list-content');
     if (!users || users.length === 0) {
-        listArea.innerHTML = '<p style="text-align:center; padding:20px;">No one found.</p>';
+        listArea.innerHTML = '<p style="text-align:center; padding:20px;">No accounts found.</p>';
         return;
     }
+
     listArea.innerHTML = users.map(user => `
         <div class="nc-user-item" onclick="openChat('${user.id}', '${user.username}', '${user.avatar_url}')">
-            <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
-            <span class="nc-user-name">${user.username}</span>
+            <div class="nc-pfp-wrapper" style="position:relative;">
+                <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
+                <!-- PRO CHECKMARK: Only shows if is_verified is true -->
+                ${user.is_verified ? '<i class="fa-solid fa-circle-check" style="color:#007bff; position:absolute; bottom:0; right:0; background:white; border-radius:50%; font-size:14px;"></i>' : ''}
+            </div>
+            <div class="nc-user-details" style="margin-left:10px;">
+                <span class="nc-user-name" style="font-weight:600; display:block;">${user.username}</span>
+                <span class="nc-user-category" style="font-size:11px; color:#888;">${user.category || 'Member'}</span>
+            </div>
         </div>
     `).join('');
-}
+    }
 
 
 // 2. UTILITY: THE TOAST SYSTEM
