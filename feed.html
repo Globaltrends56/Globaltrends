@@ -673,6 +673,18 @@ video {
       
     let allPosts = [];  
     let currentVideo = null;
+    let currentCountry = "Global";
+
+async function detectLocation() {
+    try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        currentCountry = data.country_code || "Global";
+        console.log("Feed detected location:", currentCountry);
+    } catch (err) {
+        console.warn("Location detection failed for feed.");
+    }
+}
 
     function showToast(msg) {  
         const t = document.getElementById("toast");  
@@ -710,26 +722,40 @@ video {
 
     document.addEventListener("DOMContentLoaded", async () => {  
     try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,country_code,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active`, {   
-    headers: { apikey: SUPABASE_KEY }   
-});
-        
+        // 1. Detect where the user is physically located right now
+        await detectLocation();
+
+        // 2. Define the Home identity from their profile settings
+        const myHome = localStorage.getItem("user_country") || "Global";
+
+        // 3. Fetch posts using the Triple-Layer logic (Home + Local + Global)
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?select=id,user_id,video_url,caption,likes,views,country_code,profiles!inner(username,avatar_url,verified,status)&profiles.status=eq.active&or=(country_code.eq.${myHome},country_code.eq.${currentCountry},country_code.eq.Global)`, {   
+            headers: { apikey: SUPABASE_KEY }   
+        });
+
         const data = await res.json();  
 
-        // 1. Check if data is valid and SHUFFLE it immediately
+        // 4. Check if data is valid and SHUFFLE it immediately
         if (Array.isArray(data)) {
+            // Using the shuffle logic to keep the feed fresh
             allPosts = shuffleArray(data); 
         } else {
             allPosts = [];
             console.error("Data received is not an array:", data);
         }
         
-        // 2. Start the feed on 'foryou' (which will now use the shuffled allPosts)
-        toggleFeed('foryou');  
+        // 5. Start the feed on 'foryou' (Using the shuffled geographically aware posts)
+        if (typeof toggleFeed === "function") {
+            toggleFeed('foryou');  
+        } else if (typeof renderFeed === "function") {
+            renderFeed(allPosts);
+        }
 
     } catch (error) {
-        console.error("Failed to fetch posts:", error);
-        showToast("Error loading feed. Please refresh.");
+        console.error("Failed to fetch geographically aware posts:", error);
+        if (typeof showToast === "function") {
+            showToast("Error loading feed. Please refresh.");
+        }
     } 
 });
 
@@ -771,6 +797,25 @@ video {
         const isVid = post.video_url && post.video_url.toLowerCase().match(/\.(mp4|mov|webm|m4v|ogv)$/) && !post.video_url.toLowerCase().includes(".jpg");
         const mediaUrl = post.video_url || "";
 
+        // NEW GEOGRAPHIC LABEL LOGIC
+        const myHome = localStorage.getItem("user_country") || "Global";
+        const postRegion = post.country_code;
+        let regionIcon = "";
+
+        if (postRegion === myHome) {
+        regionIcon = `<i class="fa-solid fa-house"></i>`; // Home Icon
+      } else if (postRegion === currentCountry) {
+        regionIcon = `<i class="fa-solid fa-location-dot"></i>`; // Location Dot
+      } else {
+        regionIcon = `<i class="fa-solid fa-globe"></i>`; // Globe Icon
+            
+      }
+
+        // --- CAPTION LOGIC ---
+        const rawCaption = post.caption || "";
+        const isLong = rawCaption.length > 80; 
+        const displayCaption = isLong ? rawCaption.substring(0, 80) + "..." : rawCaption;
+
         const div = document.createElement("div");  
         if (isTrending) {
             // --- TRENDING / POSTS (TWITTER STYLE) ---
@@ -781,13 +826,20 @@ video {
                         <a href="profile.html?id=${post.user_id}">
                             <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px; border-radius:50%;">
                         </a>
-                        <div class="user-meta" style="display: flex; align-items: center; gap: 5px;">
-                            <a href="profile.html?id=${post.user_id}" style="text-decoration:none;">
-                                <span class="name" style="color: #fff; font-weight: bold;">${post.profiles?.username}</span>
-                            </a>
-                            ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 14px;"></i>' : ''}
-                        </div>
-                    </div>
+                        <div class="user-meta" style="display: flex; align-items: center; gap: 6px; overflow: hidden; max-width: 100%;">
+                         <!-- Username with Truncation -->
+                        <a href="profile.html?id=${post.user_id}" style="text-decoration:none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;">
+                        <span class="name" style="color: #fff; font-weight: bold;">${post.profiles?.username}</span>
+                         </a>
+
+                         <!-- Badges stay fixed -->
+                         <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                         ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 13px;"></i>' : ''}
+                        <span style="color: #1DA1F2; font-size: 11px; opacity: 0.8; display: flex; align-items: center;">
+                     ${regionIcon}
+                    </span>
+                  </div>
+                </div>
 
                     ${post.user_id !== myId ? `
                         <button class="trending-follow-btn ${isFollowed ? 'following' : ''}" 
@@ -797,7 +849,10 @@ video {
                     ` : ''}
                 </div>
 
-                <div class="post-text" style="padding: 10px 15px; color: #eff3f4;">${post.caption || ""}</div>
+                <div class="post-text" style="padding: 10px 15px; color: #eff3f4; font-size: 15px;">
+                <span id="caption-tw-${post.id}">${displayCaption}</span>
+               ${isLong ? `<span id="toggle-tw-${post.id}" style="color: #1DA1F2; cursor: pointer; font-weight: bold;" onclick="toggleCaption('${post.id}', '${rawCaption.replace(/'/g, "\\'")}', 'tw')"> More</span>` : ''}
+                </div> 
 
                 <div class="trending-media-box" style="margin: 0 15px;">
                     ${mediaUrl ? (
@@ -836,26 +891,48 @@ video {
                 </div>  
                 <div class="video-shield"></div>  
                 <div class="ui-layer">  
-                    <div class="overlay">
-                        <div class="user-info">
-                            <a href="profile.html?id=${post.user_id}" style="pointer-events: auto;">
-                                <img class="avatar" src="${post.profiles?.avatar_url || ''}">
-                            </a>
-                            <div style="display:flex; align-items:center; gap:5px; pointer-events: auto;">
-                                <a href="profile.html?id=${post.user_id}" class="username-link">
-                                    ${post.profiles?.username}
-                                </a>
-                                ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge"></i>' : ''}
-                                ${post.user_id !== myId ? `
-    <button class="follow-btn" 
-            onclick="handleFollow('${post.user_id}', this)">
-        ${isFollowed ? 'Following' : 'Follow'}
-    </button>
-` : ''}
-                            </div>
-                        </div>
-                        <div class="caption">${post.caption || ""}</div>
-                    </div>  
+                <div class="overlay">
+                        
+    <div class="user-info" style="display: flex; align-items: center;">
+   
+    <!-- Profile Picture Container -->
+    <div style="position: relative; display: inline-block;">
+        <a href="profile.html?id=${post.user_id}" style="pointer-events: auto;">
+            <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff;">
+        </a>
+        
+        <!-- FLOATING ICON BADGE: Now correctly anchored to the avatar -->
+        <div style="position: absolute; bottom: 0; right: -2px; background: #1DA1F2; border: 2px solid #000; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; z-index: 2;">
+            ${regionIcon}
+        </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 6px; pointer-events: auto; margin-left: 10px; overflow: hidden; width: 100%;">
+    <!-- Truncated Username -->
+    <a href="profile.html?id=${post.user_id}" class="username-link" 
+       style="text-decoration: none; color: #fff; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px; flex-shrink: 1;">
+        ${post.profiles?.username}
+    </a>
+    
+    <!-- Status Badges -->
+    <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+        ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 13px;"></i>' : ''}
+    </div>
+
+    <!-- Follow Button (Stays visible) -->
+    ${post.user_id !== myId ? `
+        <button class="follow-btn" onclick="handleFollow('${post.user_id}', this)" style="flex-shrink: 0; margin-left: 2px;">
+            ${isFollowed ? 'Following' : 'Follow'}
+        </button>
+    ` : ''}
+</div>
+                       
+
+                     <div class="caption" style="pointer-events: auto;">
+                      <span id="caption-tk-${post.id}">${displayCaption}</span>
+                        ${isLong ? `<span id="toggle-tk-${post.id}" style="color: #1DA1F2; cursor: pointer; font-weight: bold;" onclick="toggleCaption('${post.id}', '${rawCaption.replace(/'/g, "\\'")}', 'tk')"> More</span>` : ''}
+                     </div> 
+                        
                     <div class="actions">  
                         <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
                             <i class="fa-solid fa-heart heart-icon ${isLiked ? 'liked' : ''}"></i>  
@@ -997,6 +1074,21 @@ video {
         }
     });
 };
+
+    
+    function toggleCaption(postId, fullText, type) {
+    const captionEl = document.getElementById(`caption-${type}-${postId}`);
+    const toggleEl = document.getElementById(`toggle-${type}-${postId}`);
+    
+    if (toggleEl.innerText.includes("More")) {
+        captionEl.innerText = fullText;
+        toggleEl.innerText = " Hide";
+    } else {
+        captionEl.innerText = fullText.substring(0, 80) + "...";
+        toggleEl.innerText = " More";
+    }
+   }
+        
 
   /* ==========================================
        BOTTOM MENU & DROPDOWN NAVIGATION
