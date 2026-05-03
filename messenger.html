@@ -680,10 +680,29 @@ const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Global State
-let myId = null;
+let myId = rawId ? rawId.replace(/['"]+/g, '') : null; // Fixed in Step 1
 let currentChatId = null;
 let followingData = [];
-let typingTimeout;
+let typingTimeout; // <--- KEEP THIS HERE
+let myHome = localStorage.getItem("user_country") || "Global";
+let currentCity = "Global";
+let currentCountry = "Global";
+
+async function detectLocation() {
+    try {
+        // We use a free, no-key-needed service for IP detection
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        
+        currentCity = data.city || "Global";
+        currentCountry = data.country_code || "Global";
+        
+        console.log(`Detected Location: ${currentCity}, ${currentCountry}`);
+    } catch (err) {
+        console.warn("Location detection failed, defaulting to Global.");
+    }
+}
+    
 
 // 2. THE NEW PING SOUND (Included here)
 const pingSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
@@ -691,16 +710,14 @@ pingSound.volume = 0.5;
     
 // 3. INITIALIZATION (The "Expert" Way)
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Verify the official session first
-    const { data: { session } } = await _supabase.auth.getSession();
-    
-    if (!session) {
+    if (!myId || myId === "null") {
         window.location.replace("login.html");
         return;
     }
 
-    myId = session.user.id; 
-
+    // NEW: Detect where they are physically located right now
+    await detectLocation();
+    
     // 2. Fire off the messenger setup
     initMessenger();
     startMessageListener(); 
@@ -801,52 +818,46 @@ async function switchTab(type) {
 // 4. NEW CHAT & FOLLOWING (UPGRADED PRO VERSION)
 async function switchNC(type) {
     const listArea = document.getElementById('nc-list-content');
-    const searchWrapper = document.getElementById('nc-search-wrapper');
     const followingCountLabel = document.getElementById('following-count');
     
-    // UI: Toggle Active Tab Classes
+    // UI Setup
     document.getElementById('nc-tab-following').classList.toggle('active', type === 'following');
     document.getElementById('nc-tab-recommended').classList.toggle('active', type === 'recommended');
-    
-    // UI: Only show search bar for the Following list
-    if (searchWrapper) searchWrapper.style.visibility = (type === 'following') ? 'visible' : 'hidden';
     listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
 
     try {
         if (type === 'following') {
-            // PRO UPGRADE: Explicit Join via following_id to pull friend profiles
-            const { data, error } = await _supabase
+            // FIX: Pulls your live following count and list
+            const { data, error, count } = await _supabase
                 .from('follows')
-                .select('profiles!following_id(*)') 
+                .select('profiles!following_id(id, username, avatar_url, verified)', { count: 'exact' })
                 .eq('follower_id', myId);
 
             if (error) throw error;
+            if (followingCountLabel) followingCountLabel.innerText = count || 0;
+            renderNCList(data.map(f => f.profiles).filter(u => u !== null));
 
-            // Map results and filter out any null profiles
-            const users = data.map(f => f.profiles).filter(u => u !== null);
-            
-            // Update the Following counter label
-            if (followingCountLabel) {
-                followingCountLabel.innerText = users.length;
-            }
-            
-            followingData = users;
-            renderNCList(users);
-        } else {
-            // PRO UPGRADE: Pull from the shuffled 'pro_recommendations' view
-            // This prioritizes verified accounts like BBC News or Taylor Swift
-            const { data, error } = await _supabase
-                .from('pro_recommendations')
-                .select('*')
-                .neq('id', myId) // Exclude the current user
-                .limit(15);
+            } else {
+    // TRIPLE LAYER LOGIC: Home + Current Location + Global
+    const { data, error } = await _supabase
+        .from('profiles')
+        .select('id, username, avatar_url, verified, country_code')
+        .neq('id', myId)
+        .eq('status', 'active')
+        // Filter: Match Home Country OR Current Physical Country OR Global
+        .or(`country_code.eq.${myHome},country_code.eq.${currentCountry},country_code.eq.Global`)
+        .limit(30);
 
-            if (error) throw error;
-            renderNCList(data);
-        }
+    if (error) throw error;
+    
+      // Sort logic: Prioritize verified users, then shuffle
+      const sorted = data.sort((a, b) => (b.verified === a.verified) ? 0.5 - Math.random() : b.verified ? 1 : -1);
+      renderNCList(sorted);
+    }
+        
     } catch (e) {
         console.error("NC Switch Error:", e);
-        listArea.innerHTML = '<p style="text-align:center; color:red; padding:20px;">Connection failed.</p>';
+        listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">Connection failed.</p>';
     }
 }
     
@@ -854,7 +865,7 @@ async function switchNC(type) {
 function renderNCList(users) {
     const listArea = document.getElementById('nc-list-content');
     if (!users || users.length === 0) {
-        listArea.innerHTML = '<p style="text-align:center; padding:20px;">No accounts found.</p>';
+        listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">No users found.</p>';
         return;
     }
 
@@ -862,16 +873,19 @@ function renderNCList(users) {
         <div class="nc-user-item" onclick="openChat('${user.id}', '${user.username}', '${user.avatar_url}')">
             <div class="nc-pfp-wrapper" style="position:relative;">
                 <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
-                <!-- PRO CHECKMARK: Only shows if is_verified is true -->
-                ${user.is_verified ? '<i class="fa-solid fa-circle-check" style="color:#007bff; position:absolute; bottom:0; right:0; background:white; border-radius:50%; font-size:14px;"></i>' : ''}
+                ${user.verified ? '<i class="fa-solid fa-circle-check" style="color:#007bff; position:absolute; bottom:0; right:0; background:white; border-radius:50%; font-size:12px;"></i>' : ''}
             </div>
-            <div class="nc-user-details" style="margin-left:10px;">
-                <span class="nc-user-name" style="font-weight:600; display:block;">${user.username}</span>
-                <span class="nc-user-category" style="font-size:11px; color:#888;">${user.category || 'Member'}</span>
+            <div class="nc-user-details" style="margin-left:12px;">
+                <span class="nc-user-name" style="font-weight:600; display:block; color:#fff;">${user.username}</span>
+                <span class="nc-user-category" style="font-size:10px; color:#1DA1F2;">
+                ${user.country_code === myHome ? 'From your region' : 
+                user.country_code === currentCountry ? `Nearby in ${currentCity}` : 
+              'Global Trend'}
+             </span>
             </div>
         </div>
     `).join('');
-    }
+}
 
 
 // 2. UTILITY: THE TOAST SYSTEM
