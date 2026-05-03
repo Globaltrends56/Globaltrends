@@ -260,13 +260,13 @@ video {
         /* OVERLAY (User Info) */
         .overlay { 
     position: absolute; 
-    bottom: 75px; 
+    bottom: 65px; 
     left: 15px; 
     right: 80px; 
     pointer-events: none; 
     z-index: 100;
    }
-        .user-info { display: flex; align-items: center; gap: 10px; pointer-events: auto; margin-bottom: 1px; }
+        .user-info { display: flex; align-items: center; gap: 10px; pointer-events: auto; margin-bottom: 8px; }
         .avatar { width: 45px; height: 45px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
         .username-link { color: #fff; text-decoration: none; font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 4px; }
         .verify-badge { color: #1DA1F2; font-size: 14px; }
@@ -286,7 +286,7 @@ video {
 .actions { 
     position: absolute; 
     right: 12px; 
-    bottom: 10px; /* Ensures they sit above the menu bar */
+    bottom: 5px; /* Ensures they sit above the menu bar */
     display: flex; 
     flex-direction: column; 
     gap: 25px; 
@@ -904,7 +904,7 @@ async function detectLocation() {
         </div>  
         <div class="video-shield"></div>  
         <div class="ui-layer">  
-            <div class="overlay" style="display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; width: 100%; min-height: 120px; padding-bottom: 10px;">
+            <div class="overlay" style="display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; width: 100%; min-height: 120px; padding-bottom: 20px;">
                 <div class="user-info" style="display: flex; align-items: center; gap: 10px; pointer-events: auto;"> 
                  <div style="position: relative; flex-shrink: 0;">
                         <a href="profile.html?id=${post.user_id}">
