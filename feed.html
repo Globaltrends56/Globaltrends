@@ -266,7 +266,7 @@ video {
     pointer-events: none; 
     z-index: 100;
    }
-        .user-info { display: flex; align-items: center; gap: 10px; pointer-events: auto; margin-bottom: 5px; }
+        .user-info { display: flex; align-items: center; gap: 10px; pointer-events: auto; margin-bottom: 8px; }
         .avatar { width: 45px; height: 45px; border-radius: 50%; border: 1.5px solid #fff; object-fit: cover; }
         .username-link { color: #fff; text-decoration: none; font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 4px; }
         .verify-badge { color: #1DA1F2; font-size: 14px; }
@@ -286,7 +286,7 @@ video {
 .actions { 
     position: absolute; 
     right: 12px; 
-    bottom: 60px; /* Ensures they sit above the menu bar */
+    bottom: 90px; /* Ensures they sit above the menu bar */
     display: flex; 
     flex-direction: column; 
     gap: 25px; 
@@ -904,10 +904,9 @@ async function detectLocation() {
         </div>  
         <div class="video-shield"></div>  
         <div class="ui-layer">  
-            <div class="overlay" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-                
-                <div class="user-info" style="display: flex; align-items: center; gap: 10px; pointer-events: auto;">
-                    <div style="position: relative; flex-shrink: 0;">
+            <div class="overlay" style="display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; width: 100%; min-height: 120px; padding-bottom: 20px;">
+                <div class="user-info" style="display: flex; align-items: center; gap: 10px; pointer-events: auto;"> 
+                 <div style="position: relative; flex-shrink: 0;">
                         <a href="profile.html?id=${post.user_id}">
                             <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff;">
                         </a>
@@ -936,8 +935,8 @@ async function detectLocation() {
                 </div>
 
                 <!-- LINE 2: Caption Row -->
-<div class="caption" style="pointer-events: auto; padding-left: 5px; max-width: 75%; overflow-wrap: break-word; word-wrap: break-word;">
-    <span id="caption-tk-${post.id}" style="color: #fff; font-size: 14px; line-height: 1.4; display: block;">
+<div class="caption" style="pointer-events: auto; padding-left: 5px;">              
+<span id="caption-tk-${post.id}" style="color: #fff; font-size: 14px; line-height: 1.4; display: block;">
         ${displayCaption}
     </span>
     ${isLong ? `<span id="toggle-tk-${post.id}" style="color: #1DA1F2; cursor: pointer; font-weight: bold;" onclick="toggleCaption('${post.id}', '${rawCaption.replace(/'/g, "\\'")}', 'tk')"> More</span>` : ''}
