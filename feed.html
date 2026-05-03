@@ -819,61 +819,52 @@ async function detectLocation() {
 
         const div = document.createElement("div");  
         if (isTrending) {
-    // --- TRENDING / POSTS (TWITTER STYLE) ---
     div.className = "twitter-card";  
     div.innerHTML = `  
-    <!-- LINE 1: Top Row (Avatar + Name + Badges + Follow) -->
-    <div class="twitter-user-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 15px;">
-        <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1;">
-            <a href="profile.html?id=${post.user_id}">
-                <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px; border-radius:50%; flex-shrink: 0;">
-            </a>
-            
-            <!-- Identity Container -->
-            <div class="user-meta" style="display: flex; align-items: center; gap: 4px; overflow: hidden;">
-                <!-- Truncated Username -->
-                <a href="profile.html?id=${post.user_id}" style="text-decoration:none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; flex-shrink: 1;">
-                    <span class="name" style="color: #fff; font-weight: bold;">${post.profiles?.username}</span>
+        <div class="twitter-user-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 15px;">
+            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; flex: 1;">
+                <a href="profile.html?id=${post.user_id}">
+                    <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width:38px; height:38px; border-radius:50%; flex-shrink: 0;">
                 </a>
                 
-                <!-- Status Badges Group -->
-                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                    ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 14px;"></i>' : ''}
+                <div class="user-meta" style="display: flex; align-items: center; gap: 4px; overflow: hidden;">
+                    <a href="profile.html?id=${post.user_id}" style="text-decoration:none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; flex-shrink: 1;">
+                        <span class="name" style="color: #fff; font-weight: bold;">${post.profiles?.username}</span>
+                    </a>
                     
-                    <!-- THE GEO ICON (White Dot, Pin, or Globe) -->
-                    <span style="display: flex; align-items: center; justify-content: center; min-width: 12px; flex-shrink: 0;">
-                        ${regionIcon}
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                        ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 14px;"></i>' : ''}
+                        
+                        <!-- THE GEO LOGIC (White Dot, Pin, or Globe) -->
+                        <span style="display: flex; align-items: center; justify-content: center; min-width: 10px;">
+                            ${regionIcon}
+                        </span>
+                    </div>
                 </div>
             </div>
+
+            ${post.user_id !== myId ? `
+                <button class="trending-follow-btn ${isFollowed ? 'following' : ''}" 
+                        onclick="handleFollow('${post.user_id}', this)" 
+                        style="flex-shrink: 0; margin-left: 10px;">
+                    ${isFollowed ? 'Following' : 'Follow'}
+                </button>
+            ` : ''}
         </div>
 
-        <!-- Follow Button -->
-        ${post.user_id !== myId ? `
-            <button class="trending-follow-btn ${isFollowed ? 'following' : ''}" 
-                    onclick="handleFollow('${post.user_id}', this)" 
-                    style="flex-shrink: 0; margin-left: 10px;">
-                ${isFollowed ? 'Following' : 'Follow'}
-            </button>
-        ` : ''}
-    </div>
+        <div class="post-text" style="padding: 5px 15px 10px 15px; color: #eff3f4; font-size: 15px; line-height: 1.4;">
+            <span id="caption-tw-${post.id}">${displayCaption}</span>
+            ${isLong ? `<span id="toggle-tw-${post.id}" style="color: #1DA1F2; cursor: pointer; font-weight: bold;" onclick="toggleCaption('${post.id}', '${rawCaption.replace(/'/g, "\\'")}', 'tw')"> More</span>` : ''}
+        </div>
 
-    <!-- LINE 2: Caption (Expanded or Shortened) -->
-    <div class="post-text" style="padding: 5px 15px 10px 15px; color: #eff3f4; font-size: 15px; line-height: 1.4;">
-        <span id="caption-tw-${post.id}">${displayCaption}</span>
-        ${isLong ? `<span id="toggle-tw-${post.id}" style="color: #1DA1F2; cursor: pointer; font-weight: bold;" onclick="toggleCaption('${post.id}', '${rawCaption.replace(/'/g, "\\'")}', 'tw')"> More</span>` : ''}
-    </div>
+        <div class="trending-media-box" style="margin: 0 15px;">
+            ${mediaUrl ? (
+                isVid 
+                ? `<video src="${mediaUrl}" controls style="width:100%; border-radius:16px; border:1px solid #2f3336; background:#000;"></video>` 
+                : `<img src="${mediaUrl}" onerror="this.style.display='none'" style="width:100%; border-radius:16px; border:1px solid #2f3336;" loading="lazy">`
+            ) : ''}
+        </div>
 
-    <!-- LINE 3: Media Content -->
-    <div class="trending-media-box" style="margin: 0 15px;">
-        ${mediaUrl ? (
-            isVid 
-            ? `<video src="${mediaUrl}" controls style="width:100%; border-radius:16px; border:1px solid #2f3336; background:#000;"></video>` 
-            : `<img src="${mediaUrl}" onerror="this.style.display='none'" style="width:100%; border-radius:16px; border:1px solid #2f3336;" loading="lazy">`
-        ) : ''}
-    </div>`;
-
-        <!-- LINE 4: Actions -->
         <div class="twitter-actions" style="display: flex; justify-content: space-around; padding: 12px 15px;">
             <div class="action-item" onclick="likePostGlobal('${post.id}', this)">
                 <i class="heart-icon ${isLiked ? 'fa-solid liked' : 'fa-regular'} fa-heart"></i>
@@ -890,82 +881,74 @@ async function detectLocation() {
                 </div>
             </div>
         </div>`;
-       
-        
-        } else {
-            // --- FOR YOU / FOLLOWING (TIKTOK STYLE) ---
-            div.className = "tiktok-post";  
-div.innerHTML = `  
-    <div class="video-wrapper">
-        ${isVid 
-            ? `<video loop playsinline src="${mediaUrl}"></video>` 
-            : `<img src="${mediaUrl}" style="width:100%; height:100%; object-fit:cover;">`
-        }
-    </div>  
-    <div class="video-shield"></div>  
-    <div class="ui-layer">  
-        <div class="overlay" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-            
-            <!-- LINE 1: User Info Row -->
-            <div class="user-info" style="display: flex; align-items: center; gap: 10px; pointer-events: auto;">
+     }
+                        
+  } else {
+    div.className = "tiktok-post";  
+    div.innerHTML = `  
+        <div class="video-wrapper">
+            ${isVid 
+                ? `<video loop playsinline src="${mediaUrl}"></video>` 
+                : `<img src="${mediaUrl}" style="width:100%; height:100%; object-fit:cover;">`
+            }
+        </div>  
+        <div class="video-shield"></div>  
+        <div class="ui-layer">  
+            <div class="overlay" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
                 
-                <!-- Profile Picture (Clean, No Floating Badge) -->
-                <div style="position: relative; flex-shrink: 0;">
-                    <a href="profile.html?id=${post.user_id}">
-                        <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff;">
-                    </a>
-                </div>
-
-                <!-- Name, Badges, and Follow Button -->
-                <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1;">
-                    <a href="profile.html?id=${post.user_id}" class="username-link" style="text-decoration: none; color: #fff; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px; flex-shrink: 1;">
-                        ${post.profiles?.username}
-                    </a>
-                    
-                    <!-- Status Group: Verification and Geo Icon -->
-                    <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                        ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 14px;"></i>' : ''}
-                        
-                        <!-- THE GEO ICON (White Dot, Pin, or Globe) -->
-                        <span style="display: flex; align-items: center; justify-content: center; min-width: 10px;">
-                            ${regionIcon}
-                        </span>
+                <div class="user-info" style="display: flex; align-items: center; gap: 10px; pointer-events: auto;">
+                    <div style="position: relative; flex-shrink: 0;">
+                        <a href="profile.html?id=${post.user_id}">
+                            <img class="avatar" src="${post.profiles?.avatar_url || ''}" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff;">
+                        </a>
                     </div>
 
-                    ${post.user_id !== myId ? `
-                        <button class="follow-btn" onclick="handleFollow('${post.user_id}', this)" style="flex-shrink: 0; margin-left: 5px;">
-                            ${isFollowed ? 'Following' : 'Follow'}
-                        </button>
-                    ` : ''}
+                    <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; flex: 1;">
+                        <a href="profile.html?id=${post.user_id}" class="username-link" style="text-decoration: none; color: #fff; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px; flex-shrink: 1;">
+                            ${post.profiles?.username}
+                        </a>
+                        
+                        <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                            ${isVerified ? '<i class="fa-solid fa-circle-check verify-badge" style="color: #1DA1F2; font-size: 14px;"></i>' : ''}
+                            
+                            <!-- THE GEO LOGIC (White Dot, Pin, or Globe) -->
+                            <span style="display: flex; align-items: center; justify-content: center; min-width: 10px;">
+                                ${regionIcon}
+                            </span>
+                        </div>
+
+                        ${post.user_id !== myId ? `
+                            <button class="follow-btn" onclick="handleFollow('${post.user_id}', this)" style="flex-shrink: 0; margin-left: 5px;">
+                                ${isFollowed ? 'Following' : 'Follow'}
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="caption" style="pointer-events: auto; padding-left: 5px;">
+                    <span id="caption-tk-${post.id}" style="color: #fff; font-size: 14px; line-height: 1.4;">${displayCaption}</span>
+                    ${isLong ? `<span id="toggle-tk-${post.id}" style="color: #1DA1F2; cursor: pointer; font-weight: bold;" onclick="toggleCaption('${post.id}', '${rawCaption.replace(/'/g, "\\'")}', 'tk')"> More</span>` : ''}
+                </div>
+            </div>  
+
+            <div class="actions">  
+                <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
+                    <i class="fa-solid fa-heart heart-icon ${isLiked ? 'liked' : ''}"></i>  
+                    <div class="action-count">${nFormatter(post.likes)}</div>  
+                </div>  
+                <div class="action-item">  
+                    <i class="fa-solid fa-eye"></i>  
+                    <div class="action-count">${nFormatter(post.views)}</div>  
+                </div>
+                <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
+                    <i class="fa-solid fa-ellipsis"></i>
+                    <div id="reportPopup-${post.id}" class="report-popup">
+                        <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
+                    </div>
                 </div>
             </div>
-
-            <!-- LINE 2: Caption Row -->
-            <div class="caption" style="pointer-events: auto; padding-left: 5px;">
-                <span id="caption-tk-${post.id}" style="color: #fff; font-size: 14px; line-height: 1.4;">${displayCaption}</span>
-                ${isLong ? `<span id="toggle-tk-${post.id}" style="color: #1DA1F2; cursor: pointer; font-weight: bold;" onclick="toggleCaption('${post.id}', '${rawCaption.replace(/'/g, "\\'")}', 'tk')"> More</span>` : ''}
-            </div>
-        </div>
-    </div>`;
-                        
-                    <div class="actions">  
-                        <div class="action-item" onclick="likePostGlobal('${post.id}', this)">  
-                            <i class="fa-solid fa-heart heart-icon ${isLiked ? 'liked' : ''}"></i>  
-                            <div class="action-count">${nFormatter(post.likes)}</div>  
-                        </div>  
-                        <div class="action-item">  
-                            <i class="fa-solid fa-eye"></i>  
-                            <div class="action-count">${nFormatter(post.views)}</div>  
-                        </div>
-                        <div class="action-item" style="position: relative;" onclick="toggleReportMenu(event, '${post.id}')">
-                            <i class="fa-solid fa-ellipsis"></i>
-                            <div id="reportPopup-${post.id}" class="report-popup">
-                                <div class="report-option" onclick="handleReport('${post.id}')">Report</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;  
-        }
+        </div>`;  
+     }            
 
         // --- Re-attach video intersection logic (keep this as is) ---
         const video = div.querySelector("video");
