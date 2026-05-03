@@ -800,19 +800,16 @@ async function detectLocation() {
         // NEW GEOGRAPHIC LABEL LOGIC
         const myHome = localStorage.getItem("user_country") || "Global";
         const postRegion = post.country_code;
+        const currentCountry = localStorage.getItem("current_country") || "Global";
         let regionIcon = "";
 
     if (postRegion === myHome) {
-        // 1. Home content -> Small White Dot
-        regionIcon = `<span style="height: 6px; width: 6px; background-color: #fff; border-radius: 50%; display: inline-block; margin-left: 4px; flex-shrink: 0;"></span>`;
+        regionIcon = `<span style="height: 6px; width: 6px; background-color: #fff; border-radius: 50%; display: inline-block;"></span>`;
     } else if (postRegion === currentCountry) {
-        // 2. Travel logic -> Location Pin
-        regionIcon = `<i class="fa-solid fa-location-dot" style="color: #1DA1F2; font-size: 11px; flex-shrink: 0;"></i>`;
+        regionIcon = `<i class="fa-solid fa-location-dot" style="color: #1DA1F2; font-size: 11px;"></i>`;
     } else {
-        // 3. Global content -> White Globe
-        regionIcon = `<i class="fa-solid fa-globe" style="color: #fff; font-size: 11px; flex-shrink: 0;"></i>`;
+        regionIcon = `<i class="fa-solid fa-globe" style="color: #fff; font-size: 11px;"></i>`;
     }
-    
    
 
         // --- CAPTION LOGIC ---
