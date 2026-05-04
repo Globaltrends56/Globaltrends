@@ -691,6 +691,7 @@ async function getUser() {
 let currentChatId = null;
 let followingData = [];
 let typingTimeout; // <--- KEEP THIS HERE
+let toastTimer;
 let myHome = localStorage.getItem("user_country") || "Global";
 let currentCity = "Global";
 let currentCountry = "Global";
@@ -1214,21 +1215,29 @@ function toggleNewChatMenu() {
     menu.style.display = isOpening ? 'flex' : 'none';
     if (isOpening) switchNC('following'); 
 }
+    
 
 function filterFollowing(query) {
     const filtered = followingData.filter(u => 
         u.username && u.username.toLowerCase().includes(query.toLowerCase())
-);
+    );
+
+    renderNCList(filtered);
+  }
 
 
 //*UPLOAD LOGIC*//
 let selectedFileBlob = null;
 
 // 1. Toggle the dropdown
-document.getElementById('story-menu-trigger').onclick = (e) => {
-    const dropdown = document.getElementById('story-dropdown');
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-};
+const storyTrigger = document.getElementById('story-menu-trigger');
+if (storyTrigger) {
+    storyTrigger.onclick = () => {
+        const dropdown = document.getElementById('story-dropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    };
+}
+    
 
 // 2. Open file picker
 function triggerFilePicker() {
