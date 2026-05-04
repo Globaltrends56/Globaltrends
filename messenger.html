@@ -841,103 +841,158 @@ async function switchNC(type) {
     const listArea = document.getElementById('nc-list-content');
     const followingCountLabel = document.getElementById('following-count');
     
-    // UI Setup
     const tabFollowing = document.getElementById('nc-tab-following');
     const tabRecommended = document.getElementById('nc-tab-recommended');
     const searchBox = document.getElementById('nc-search-container');
 
-// Reset both tabs first
-tabFollowing.classList.remove('active');
-tabRecommended.classList.remove('active');
+    // Reset UI
+    tabFollowing.classList.remove('active');
+    tabRecommended.classList.remove('active');
 
-// Activate correct tab
-if (type === 'following') {
-    tabFollowing.classList.add('active');
-    if (searchBox) searchBox.style.display = 'block'; // ✅ show search
-} else {
-    tabRecommended.classList.add('active');
-    if (searchBox) searchBox.style.display = 'none'; // ✅ hide search
-}
+    // Toggle search box visibility for "Following" vs "Global Discovery"
+    if (type === 'following') {
+        tabFollowing.classList.add('active');
+        if (searchBox) searchBox.style.display = 'block'; 
+    } else {
+        tabRecommended.classList.add('active');
+        // We now keep search visible if you want to search 'Global people' as discussed
+        if (searchBox) searchBox.style.display = 'block'; 
+    }
 
-// Clear and show loading
-listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
+    listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
     
     try {
         if (type === 'following') {
-            // FIX: Pulls your live following count and list
+            // Fetch from 'follows' table
             const { data, error, count } = await _supabase
                 .from('follows')
                 .select(`
-                 user_id,
-                 profiles:user_id (
-                 id,
-                 username,
-                 avatar_url,
-                 is_verified
-                 )
+                    user_id,
+                    profiles:user_id (
+                        id,
+                        username,
+                        avatar_url,
+                        is_verified,
+                        country_code
+                    )
                 `, { count: 'exact' }) 
                 .eq('follower_id', myId);
 
             if (error) throw error;
             if (followingCountLabel) followingCountLabel.innerText = count || 0;
-            followingData = data
-            .map(f => f.profiles)
-            .filter(u => u !== null);
-
-            listArea.innerHTML = ''; // 🔥 force UI reset
-            renderNCList(followingData);
             
-            } else {
-    // TRIPLE LAYER LOGIC: Home + Current Location + Global
-    const { data, error } = await _supabase
-        .from('profiles')
-        .select('id, username, avatar_url, is_verified, country_code')
-        .neq('id', myId)
-        .eq('status', 'active')
-        // Filter: Match Home Country OR Current Physical Country OR Global
-        .or(`country_code.eq.${myHome},country_code.eq.${currentCountry},country_code.eq.Global`)
-        .limit(30);
+            const followingData = data.map(f => f.profiles).filter(u => u !== null);
+            listArea.innerHTML = '';
+            // Pass 'true' to indicate these are people you follow (for Unfollow buttons)
+            renderNCList(followingData, true);
+            
+        } else {
+            // Global Discovery: Fetch from 'profiles' (or smart_recommendations)
+            const { data, error } = await _supabase
+                .from('profiles')
+                .select('id, username, avatar_url, is_verified, country_code')
+                .neq('id', myId)
+                .eq('status', 'active')
+                .limit(40);
 
-    if (error) throw error;
-    
-      // Sort logic: Prioritize verified users, then shuffle
-      const sorted = data.sort((a, b) => (b.is_verified === a.is_verified) ? 0.5 - Math.random() : b.is_verified ? 1 : -1 );
-      listArea.innerHTML = ''; // 🔥 force UI reset
-      renderNCList(sorted);
-    }
-        
+            if (error) throw error;
+            
+            const sorted = data.sort((a, b) => (b.is_verified === a.is_verified) ? 0.5 - Math.random() : b.is_verified ? 1 : -1 );
+            listArea.innerHTML = ''; 
+            // Pass 'false' to indicate these are discovery profiles (for Black Follow buttons)
+            renderNCList(sorted, false);
+        }
     } catch (e) {
         console.error("NC Switch Error:", e);
         listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">Connection failed.</p>';
     }
+  }
+
+
+    // --- NEW SYNC FOLLOW LOGIC ---
+async function handleSyncFollow(targetId, btn) {
+    try {
+        // 1. Database Update: Match your exact Follows table columns
+        const { error } = await _supabase
+            .from('follows')
+            .insert([{ 
+                user_id: targetId,     // The person being followed
+                follower_id: myId      // You
+            }]);
+
+        if (error) throw error;
+
+        // 2. UI Feedback: Change Black button to a "Following" state
+        btn.innerText = "Following";
+        btn.style.background = "#333";
+        btn.style.color = "#ccc";
+        btn.style.border = "none";
+        btn.disabled = true; // Prevent double-clicks
+
+        // 3. Count Sync: Update the (x) label in the UI
+        updateCount(1);
+
+    } catch (e) {
+        console.error("Follow Sync Error:", e);
+        alert("Could not follow user. Please try again.");
+    }
+}
+
+// Helper to keep the Following (x) label accurate
+function updateCount(val) {
+    const label = document.getElementById('following-count');
+    if (label) {
+        let current = parseInt(label.innerText) || 0;
+        label.innerText = Math.max(0, current + val);
+    }
 }
     
-
-function renderNCList(users) {
+    
+function renderNCList(users, isFollowingTab) {
     const listArea = document.getElementById('nc-list-content');
-    if (!users || users.length === 0) {
-        listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">No users found.</p>';
-        return;
-    }
+    
+    users.forEach(user => {
+        const div = document.createElement('div');
+        div.className = "user-row";
+        div.id = `user-row-${user.id}`;
+        div.style = "display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #222;";
 
-    listArea.innerHTML = users.map(user => `
-        <div class="nc-user-item" onclick="openChat('${user.id}', '${user.username}', '${user.avatar_url}')">
-            <div class="nc-pfp-wrapper" style="position:relative;">
-                <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
-                ${user.is_verified ? '<i class="fa-solid fa-circle-check" style="color:#007bff; position:absolute; bottom:0; right:0; background:white; border-radius:50%; font-size:12px;"></i>' : ''}
+        // Logic for which button to show
+        let actionButton = "";
+        if (isFollowingTab) {
+            // GREY UNFOLLOW BUTTON
+            actionButton = `
+                <button onclick="handleSyncUnfollow('${user.id}')" 
+                    style="background: #333; color: #ccc; border: none; padding: 6px 12px; border-radius: 18px; font-size: 13px; font-weight: bold; cursor: pointer;">
+                    Unfollow
+                </button>`;
+        } else {
+            // BLACK FOLLOW BUTTON (Syncs to your following list)
+            actionButton = `
+                <button onclick="handleSyncFollow('${user.id}', this)" 
+                    style="background: #000; color: #fff; border: 1px solid #444; padding: 6px 16px; border-radius: 18px; font-size: 13px; font-weight: bold; cursor: pointer;">
+                    Follow
+                </button>`;
+        }
+
+        div.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${user.avatar_url || 'default-avatar.png'}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="color: #fff; font-weight: 600;">${user.username}</span>
+                        ${user.is_verified ? '<i class="fa-solid fa-circle-check" style="color: #1DA1F2; font-size: 12px;"></i>' : ''}
+                        <span style="display: flex; align-items: center; margin-left: 2px;">
+                            ${getGeoIcon(user.country_code)} <!-- Your white dot logic -->
+                        </span>
+                    </div>
+                </div>
             </div>
-            <div class="nc-user-details" style="margin-left:12px;">
-                <span class="nc-user-name" style="font-weight:600; display:block; color:#fff;">${user.username}</span>
-                <span class="nc-user-category" style="font-size:10px; color:#1DA1F2;">
-                ${user.country_code === myHome ? 'From your region' : 
-                user.country_code === currentCountry ? `Nearby in ${currentCity}` : 
-              'Global Trend'}
-             </span>
-            </div>
-        </div>
-    `).join('');
+            ${actionButton}
+        `;
+        listArea.appendChild(div);
+    });
 }
-
 
 // 2. UTILITY: THE TOAST SYSTEM
 function showToast(message) {
