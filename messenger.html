@@ -723,15 +723,34 @@ pingSound.volume = 0.5;
     
 // 3. INITIALIZATION (The "Expert" Way)
 document.addEventListener("DOMContentLoaded", async () => {
-    const isLoggedIn = await getUser();
+    // 1. Force Supabase to check the current session immediately
+    const { data: { session }, error } = await _supabase.auth.getSession();
 
-if (!isLoggedIn) {
-    window.location.replace("login.html");
-    return;
-}
-    
+    // 2. If no session, wait a split second to see if it's just loading (Vercel lag)
+    if (!session) {
+        // Optional: Small delay to let Supabase Auth recover the session
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const retry = await _supabase.auth.getSession();
+        
+        if (!retry.data.session) {
+            console.log("No session found after retry. Redirecting to login.");
+            window.location.replace("login.html");
+            return;
+        }
+        // If retry works, assign the session
+        myId = retry.data.session.user.id;
+    } else {
+        // Session found immediately
+        myId = session.user.id;
+    }
+
+    console.log("Authenticated! myId is:", myId);
+
+    // 3. Setup the Global Sign-Out Listener
     _supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') {
+            console.log("User signed out globally. Redirecting...");
+            localStorage.clear(); // Wipe Messenger data
             window.location.replace("login.html");
         }
     });
@@ -844,26 +863,31 @@ async function switchNC(type) {
     const tabFollowing = document.getElementById('nc-tab-following');
     const tabRecommended = document.getElementById('nc-tab-recommended');
     const searchBox = document.getElementById('nc-search-container');
+    
+    // Target the actual input field to change the "Search..." text
+    const searchInput = searchBox ? searchBox.querySelector('input') : null;
 
     // Reset UI
     tabFollowing.classList.remove('active');
     tabRecommended.classList.remove('active');
 
-    // Toggle search box visibility for "Following" vs "Global Discovery"
+    // --- TAB & SEARCH CONFIGURATION ---
     if (type === 'following') {
         tabFollowing.classList.add('active');
         if (searchBox) searchBox.style.display = 'block'; 
+        if (searchInput) searchInput.placeholder = "Search friends..."; // logic for Following
     } else {
         tabRecommended.classList.add('active');
-        // We now keep search visible if you want to search 'Global people' as discussed
         if (searchBox) searchBox.style.display = 'block'; 
+        if (searchInput) searchInput.placeholder = "Search..."; // logic for Discovery
     }
 
+    // Clear and show loading
     listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
     
     try {
         if (type === 'following') {
-            // Fetch from 'follows' table
+            // FETCH FROM FOLLOWS TABLE
             const { data, error, count } = await _supabase
                 .from('follows')
                 .select(`
@@ -883,11 +907,11 @@ async function switchNC(type) {
             
             const followingData = data.map(f => f.profiles).filter(u => u !== null);
             listArea.innerHTML = '';
-            // Pass 'true' to indicate these are people you follow (for Unfollow buttons)
+            // Render with Grey Unfollow Buttons
             renderNCList(followingData, true);
             
         } else {
-            // Global Discovery: Fetch from 'profiles' (or smart_recommendations)
+            // FETCH GLOBAL DISCOVERY
             const { data, error } = await _supabase
                 .from('profiles')
                 .select('id, username, avatar_url, is_verified, country_code')
@@ -897,9 +921,10 @@ async function switchNC(type) {
 
             if (error) throw error;
             
+            // Sort: Verified users first, then random
             const sorted = data.sort((a, b) => (b.is_verified === a.is_verified) ? 0.5 - Math.random() : b.is_verified ? 1 : -1 );
             listArea.innerHTML = ''; 
-            // Pass 'false' to indicate these are discovery profiles (for Black Follow buttons)
+            // Render with Black Follow Buttons
             renderNCList(sorted, false);
         }
     } catch (e) {
@@ -907,6 +932,7 @@ async function switchNC(type) {
         listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">Connection failed.</p>';
     }
   }
+    
 
 
     // --- NEW SYNC FOLLOW LOGIC ---
@@ -946,6 +972,45 @@ function updateCount(val) {
         label.innerText = Math.max(0, current + val);
     }
 }
+
+    
+    async function handleSyncUnfollow(targetId) {
+    try {
+        // 1. Database Update: Remove the row from 'follows'
+        const { error } = await _supabase
+            .from('follows')
+            .delete()
+            .match({ 
+                user_id: targetId,     // The person you are unfollowing
+                follower_id: myId      // You
+            });
+
+        if (error) throw error;
+
+        // 2. UI Feedback: Fade out and remove the user row immediately
+        const row = document.getElementById(`user-row-${targetId}`);
+        if (row) {
+            row.style.transition = "opacity 0.3s ease";
+            row.style.opacity = '0';
+            setTimeout(() => {
+                row.remove();
+                
+                // If the list is now empty, show a small message
+                const listArea = document.getElementById('nc-list-content');
+                if (listArea && listArea.children.length === 0) {
+                    listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">No friends found.</p>';
+                }
+            }, 300);
+        }
+
+        // 3. Count Sync: Decrease the (x) label in the UI
+        updateCount(-1);
+
+    } catch (e) {
+        console.error("Unfollow Sync Error:", e);
+        // We don't usually alert for unfollow unless it's a hard crash
+    }
+  }
     
     
 function renderNCList(users, isFollowingTab) {
