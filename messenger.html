@@ -680,7 +680,14 @@ const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Global State
-let myId = rawId ? rawId.replace(/['"]+/g, '') : null; // Fixed in Step 1
+let myId = null;
+
+async function getUser() {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (user) {
+        myId = user.id;
+    }
+}
 let currentChatId = null;
 let followingData = [];
 let typingTimeout; // <--- KEEP THIS HERE
@@ -710,7 +717,9 @@ pingSound.volume = 0.5;
     
 // 3. INITIALIZATION (The "Expert" Way)
 document.addEventListener("DOMContentLoaded", async () => {
-    if (!myId || myId === "null") {
+    await getUser();
+
+    if (!myId) {
         window.location.replace("login.html");
         return;
     }
@@ -830,18 +839,30 @@ async function switchNC(type) {
             // FIX: Pulls your live following count and list
             const { data, error, count } = await _supabase
                 .from('follows')
-                .select('profiles!following_id(id, username, avatar_url, verified)', { count: 'exact' })
+                .select(`
+                 user_id,
+                 profiles:user_id (
+                 id,
+                 username,
+                 avatar_url,
+                 is_verified
+                 )
+                `, { count: 'exact' }) 
                 .eq('follower_id', myId);
 
             if (error) throw error;
             if (followingCountLabel) followingCountLabel.innerText = count || 0;
-            renderNCList(data.map(f => f.profiles).filter(u => u !== null));
+            followingData = data
+            .map(f => f.profiles)
+            .filter(u => u !== null);
 
+            renderNCList(followingData);
+            
             } else {
     // TRIPLE LAYER LOGIC: Home + Current Location + Global
     const { data, error } = await _supabase
         .from('profiles')
-        .select('id, username, avatar_url, verified, country_code')
+        .select('id, username, avatar_url, is_verified, country_code')
         .neq('id', myId)
         .eq('status', 'active')
         // Filter: Match Home Country OR Current Physical Country OR Global
@@ -851,7 +872,7 @@ async function switchNC(type) {
     if (error) throw error;
     
       // Sort logic: Prioritize verified users, then shuffle
-      const sorted = data.sort((a, b) => (b.verified === a.verified) ? 0.5 - Math.random() : b.verified ? 1 : -1);
+      const sorted = data.sort((a, b) => (b.is_verified === a.is_verified) ? 0.5 - Math.random() : b.is_verified ? 1 : -1 );
       renderNCList(sorted);
     }
         
@@ -873,7 +894,7 @@ function renderNCList(users) {
         <div class="nc-user-item" onclick="openChat('${user.id}', '${user.username}', '${user.avatar_url}')">
             <div class="nc-pfp-wrapper" style="position:relative;">
                 <img src="${user.avatar_url || 'https://via.placeholder.com/50'}" class="nc-user-pfp">
-                ${user.verified ? '<i class="fa-solid fa-circle-check" style="color:#007bff; position:absolute; bottom:0; right:0; background:white; border-radius:50%; font-size:12px;"></i>' : ''}
+                ${user.is_verified ? '<i class="fa-solid fa-circle-check" style="color:#007bff; position:absolute; bottom:0; right:0; background:white; border-radius:50%; font-size:12px;"></i>' : ''}
             </div>
             <div class="nc-user-details" style="margin-left:12px;">
                 <span class="nc-user-name" style="font-weight:600; display:block; color:#fff;">${user.username}</span>
@@ -1195,9 +1216,9 @@ function toggleNewChatMenu() {
 }
 
 function filterFollowing(query) {
-    const filtered = followingData.filter(u => u.username.toLowerCase().includes(query.toLowerCase()));
-    renderNCList(filtered);
-}
+    const filtered = followingData.filter(u => 
+        u.username && u.username.toLowerCase().includes(query.toLowerCase())
+);
 
 
 //*UPLOAD LOGIC*//
