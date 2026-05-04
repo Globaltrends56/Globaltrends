@@ -857,16 +857,15 @@ async function switchTab(type) {
 
 // 4. NEW CHAT & FOLLOWING (UPGRADED PRO VERSION)
 async function switchNC(type) {
-    async function switchNC(type) {
     const listArea = document.getElementById('nc-list-content');
     const followingCountLabel = document.getElementById('following-count');
     
     const tabFollowing = document.getElementById('nc-tab-following');
     const tabRecommended = document.getElementById('nc-tab-recommended');
-    const searchBox = document.getElementById('nc-search-container');
     
-    // DEBUG: Let's make sure we are actually grabbing the right element
-    const searchInput = document.querySelector('#nc-search-container input') || document.getElementById('nc-search-input');
+    // FIX: Use the correct ID from your HTML
+    const searchWrapper = document.getElementById('nc-search-wrapper');
+    const searchInput = document.getElementById('nc-search-input');
 
     // Reset UI
     tabFollowing.classList.remove('active');
@@ -875,24 +874,25 @@ async function switchNC(type) {
     // --- TAB & SEARCH CONFIGURATION ---
     if (type === 'following') {
         tabFollowing.classList.add('active');
-        if (searchBox) searchBox.style.display = 'block'; 
+        if (searchWrapper) searchWrapper.style.display = 'flex'; // Use flex to keep icon aligned
         if (searchInput) {
-            searchInput.placeholder = ""; // Clear it first
-            searchInput.setAttribute('placeholder', "Search friends..."); 
-            searchInput.value = ""; // Clear any previous search text
+            searchInput.placeholder = "Search friends...";
+            // Sync the search function to only filter friends
+            searchInput.setAttribute('oninput', 'filterFollowing(this.value)');
         }
     } else {
         tabRecommended.classList.add('active');
-        if (searchBox) searchBox.style.display = 'block'; 
+        if (searchWrapper) searchWrapper.style.display = 'flex'; 
         if (searchInput) {
-            searchInput.placeholder = ""; // Clear it first
-            searchInput.setAttribute('placeholder', "Search..."); 
-            searchInput.value = ""; // Clear any previous search text
+            searchInput.placeholder = "Search...";
+            // Sync the search function to search global people
+            searchInput.setAttribute('oninput', 'filterGlobal(this.value)');
         }
     }
-    
 
-    // Clear and show loading
+    // Reset search value when switching tabs
+    if (searchInput) searchInput.value = "";
+
     listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
     
     try {
@@ -1386,6 +1386,47 @@ function filterFollowing(query) {
 
     renderNCList(filtered);
 }
+
+    async function filterGlobal(val) {
+    const listArea = document.getElementById('nc-list-content');
+    const searchVal = val.trim().toLowerCase();
+
+    // 1. Clear previous timer to wait for user to finish typing
+    clearTimeout(typingTimeout);
+
+    // 2. If the search is empty, just reload the default discovery list
+    if (!searchVal) {
+        switchNC('recommended'); 
+        return;
+    }
+
+    // 3. Wait 500ms before searching (saves database costs)
+    typingTimeout = setTimeout(async () => {
+        try {
+            const { data, error } = await _supabase
+                .from('profiles')
+                .select('id, username, avatar_url, is_verified, country_code')
+                .ilike('username', `%${searchVal}%`) // Search for usernames containing the text
+                .neq('id', myId) // Don't show yourself
+                .limit(20);
+
+            if (error) throw error;
+
+            listArea.innerHTML = ''; // Clear "Searching..."
+            
+            if (data.length === 0) {
+                listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">No users found.</p>';
+                return;
+            }
+
+            // Render results with Black Follow buttons (since this is discovery)
+            renderNCList(data, false);
+
+        } catch (e) {
+            console.error("Global Search Error:", e);
+        }
+    }, 500);
+  }
 
 
 //*UPLOAD LOGIC*//
