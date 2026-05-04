@@ -842,10 +842,26 @@ async function switchNC(type) {
     const followingCountLabel = document.getElementById('following-count');
     
     // UI Setup
-    document.getElementById('nc-tab-following').classList.toggle('active', type === 'following');
-    document.getElementById('nc-tab-recommended').classList.toggle('active', type === 'recommended');
-    listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
+    const tabFollowing = document.getElementById('nc-tab-following');
+    const tabRecommended = document.getElementById('nc-tab-recommended');
+    const searchBox = document.getElementById('nc-search-container');
 
+// Reset both tabs first
+tabFollowing.classList.remove('active');
+tabRecommended.classList.remove('active');
+
+// Activate correct tab
+if (type === 'following') {
+    tabFollowing.classList.add('active');
+    if (searchBox) searchBox.style.display = 'block'; // ✅ show search
+} else {
+    tabRecommended.classList.add('active');
+    if (searchBox) searchBox.style.display = 'none'; // ✅ hide search
+}
+
+// Clear and show loading
+listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
+    
     try {
         if (type === 'following') {
             // FIX: Pulls your live following count and list
@@ -868,6 +884,7 @@ async function switchNC(type) {
             .map(f => f.profiles)
             .filter(u => u !== null);
 
+            listArea.innerHTML = ''; // 🔥 force UI reset
             renderNCList(followingData);
             
             } else {
@@ -885,6 +902,7 @@ async function switchNC(type) {
     
       // Sort logic: Prioritize verified users, then shuffle
       const sorted = data.sort((a, b) => (b.is_verified === a.is_verified) ? 0.5 - Math.random() : b.is_verified ? 1 : -1 );
+      listArea.innerHTML = ''; // 🔥 force UI reset
       renderNCList(sorted);
     }
         
@@ -1229,12 +1247,15 @@ function toggleNewChatMenu() {
     
 
 function filterFollowing(query) {
+    const activeTab = document.querySelector('#nc-tab-following.active');
+    if (!activeTab) return; // ❌ stop if not on following
+
     const filtered = followingData.filter(u => 
         u.username && u.username.toLowerCase().includes(query.toLowerCase())
     );
 
     renderNCList(filtered);
-  }
+}
 
 
 //*UPLOAD LOGIC*//
