@@ -857,6 +857,7 @@ async function switchTab(type) {
 
 // 4. NEW CHAT & FOLLOWING (UPGRADED PRO VERSION)
 async function switchNC(type) {
+    async function switchNC(type) {
     const listArea = document.getElementById('nc-list-content');
     const followingCountLabel = document.getElementById('following-count');
     
@@ -864,8 +865,8 @@ async function switchNC(type) {
     const tabRecommended = document.getElementById('nc-tab-recommended');
     const searchBox = document.getElementById('nc-search-container');
     
-    // Target the actual input field to change the "Search..." text
-    const searchInput = searchBox ? searchBox.querySelector('input') : null;
+    // DEBUG: Let's make sure we are actually grabbing the right element
+    const searchInput = document.querySelector('#nc-search-container input') || document.getElementById('nc-search-input');
 
     // Reset UI
     tabFollowing.classList.remove('active');
@@ -875,12 +876,21 @@ async function switchNC(type) {
     if (type === 'following') {
         tabFollowing.classList.add('active');
         if (searchBox) searchBox.style.display = 'block'; 
-        if (searchInput) searchInput.placeholder = "Search friends..."; // logic for Following
+        if (searchInput) {
+            searchInput.placeholder = ""; // Clear it first
+            searchInput.setAttribute('placeholder', "Search friends..."); 
+            searchInput.value = ""; // Clear any previous search text
+        }
     } else {
         tabRecommended.classList.add('active');
         if (searchBox) searchBox.style.display = 'block'; 
-        if (searchInput) searchInput.placeholder = "Search..."; // logic for Discovery
+        if (searchInput) {
+            searchInput.placeholder = ""; // Clear it first
+            searchInput.setAttribute('placeholder', "Search..."); 
+            searchInput.value = ""; // Clear any previous search text
+        }
     }
+    
 
     // Clear and show loading
     listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
