@@ -683,11 +683,16 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 let myId = null;
 
 async function getUser() {
-    const { data: { user } } = await _supabase.auth.getUser();
-    if (user) {
-        myId = user.id;
+    const { data: { session } } = await _supabase.auth.getSession();
+
+    if (session?.user) {
+        myId = session.user.id;
+        return true;
     }
-}
+
+    return false;
+}    
+
 let currentChatId = null;
 let followingData = [];
 let typingTimeout; // <--- KEEP THIS HERE
@@ -718,12 +723,18 @@ pingSound.volume = 0.5;
     
 // 3. INITIALIZATION (The "Expert" Way)
 document.addEventListener("DOMContentLoaded", async () => {
-    await getUser();
+    const isLoggedIn = await getUser();
 
-    if (!myId) {
-        window.location.replace("login.html");
-        return;
-    }
+if (!isLoggedIn) {
+    window.location.replace("login.html");
+    return;
+}
+    
+    _supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
+            window.location.replace("login.html");
+        }
+    });
 
     // NEW: Detect where they are physically located right now
     await detectLocation();
