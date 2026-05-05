@@ -91,11 +91,22 @@
 
         .story-item { display: flex; flex-direction: column; align-items: center; min-width: 75px; gap: 8px; }
         .story-avatar { width: 70px; height: 70px; border-radius: 50%; padding: 3px; border: 3px solid #f0f2f5; }
-        .story-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
+        .story-avatar img {
+         display: block;
+         width: 100%;
+         height: 100%;
+         border-radius: 50%;
+         object-fit: cover; /* This prevents the photo from looking squashed */
+         background: #eee;  /* Shows while the image is loading */
+         border: 2px solid #fff; /* This creates the white "inner gap" */
+        } 
+        
         .section-title {
          margin-top: 18px !important; /* Forces the text itself to move away from the header */
          margin-bottom: 10px;        /* Adds a little space between the text and the bubbles */
         }
+
+      
 
 /* TABS */
 .tabs {
@@ -296,15 +307,6 @@
 }
 
 
-
-/* Ensure the image stays perfectly round inside the ring */
-.story-avatar img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: #eee;
- }
 
  /* MOBILE-OPTIMIZED TOAST */
 #toast-container {
@@ -1494,6 +1496,7 @@ function goToPhotoB() {
     reader.readAsDataURL(selectedFileBlob);
 }
 
+
 // 5. Final Upload (Share)
 async function finalUpload() {
     if (!selectedFileBlob) return;
@@ -1502,24 +1505,35 @@ async function finalUpload() {
     const filePath = `${myId}/${Date.now()}_story.jpg`;
     const { error: uploadError } = await _supabase.storage.from('story-images').upload(filePath, selectedFileBlob);
 
-    if (uploadError) return showToast("Upload failed!");
+    if (uploadError) {
+        showToast("Upload failed!");
+        return;
+    }
 
     const { data: urlData } = _supabase.storage.from('story-images').getPublicUrl(filePath);
-    await _supabase.from('stories').insert([{ 
+    
+    // Insert into database
+    const { error: insertError } = await _supabase.from('stories').insert([{ 
         user_id: myId, 
         image_url: urlData.publicUrl,
         expires_at: new Date(Date.now() + 24*60*60*1000).toISOString() 
     }]);
 
-    
+    if (insertError) {
+        showToast("Database error!");
+        return;
+    }
+
+    // 1. Close the UI first
     closeStoryFlow();
     showToast("Shared successfully!");
     
-    // Refresh the story bar immediately without reloading the whole page
-    setTimeout(async () => {
-        await loadStories(); 
-    }, 500);
-}
+    // 2. REFRESH LOGIC (Removed setTimeout for instant update)
+    // We call initMessenger because it handles both stories and UI state
+    await initMessenger(); 
+    
+   }
+    
     
 function closeStoryFlow() {
     document.querySelectorAll('.story-overlay').forEach(el => el.style.display = 'none');
