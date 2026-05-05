@@ -734,44 +734,30 @@ pingSound.volume = 0.5;
     
 // 3. INITIALIZATION (The "Expert" Way)
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Force Supabase to check the current session immediately
-    const { data: { session }, error } = await _supabase.auth.getSession();
+    // 1. Get the session, but don't panic if it's null for a second
+    const { data: { session } } = await _supabase.auth.getSession();
 
-    // 2. If no session, wait a split second to see if it's just loading (Vercel lag)
-    if (!session) {
-        // Optional: Small delay to let Supabase Auth recover the session
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const retry = await _supabase.auth.getSession();
-        
-        if (!retry.data.session) {
-            console.log("No session found after retry. Redirecting to login.");
-            window.location.replace("login.html");
-            return;
-        }
-        // If retry works, assign the session
-        myId = retry.data.session.user.id;
-    } else {
-        // Session found immediately
-        myId = session.user.id;
+    // 2. ONLY redirect if there is truly no session AND no user_id in storage
+    // This acts as a double-check "safety net"
+    if (!session && !localStorage.getItem("supabase.auth.token")) {
+        console.log("No session found. Redirecting...");
+        window.location.replace("login.html");
+        return;
     }
 
-    console.log("Authenticated! myId is:", myId);
+    if (session) {
+        myId = session.user.id;
+        // Save it to localStorage as a backup for your other functions
+        localStorage.setItem("user_id", myId); 
+    }
 
-    // 3. Setup the Global Sign-Out Listener
-    _supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT') {
-            console.log("User signed out globally. Redirecting...");
-            localStorage.clear(); // Wipe Messenger data
-            window.location.replace("login.html");
-        }
-    });
-
-    // NEW: Detect where they are physically located right now
+    // 3. Update the rest of the app
     await detectLocation();
-    
-    // 2. Fire off the messenger setup
     initMessenger();
     startMessageListener(); 
+    
+}); 
+ 
 
     // 3. Update your PFP
     const { data: profile } = await _supabase
