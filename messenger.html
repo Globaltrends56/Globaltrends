@@ -1,108 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GT Messenger</title>
-    
-    <!-- External Tools -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://kit.fontawesome.com/your-font-awesome-key.js" crossorigin="anonymous"></script>
-
-    <style>
-        :root { --gt-blue: #007bff; --bg-gray: #f0f2f5; }
-        body { margin: 0; font-family: sans-serif; background: var(--bg-gray); }
-
-        /* Header & Stories Area */
-        header { background: #fff; padding: 15px; border-bottom: 1px solid #ddd; }
-        .stories-wrapper { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
         
-        .story-item { text-align: center; cursor: pointer; min-width: 75px; }
-        .story-avatar { 
-            width: 70px; height: 70px; border-radius: 50%; 
-            border: 3px solid #ddd; padding: 2px; position: relative;
-        }
-        .story-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .active-story { border-color: var(--gt-blue); }
-        .add-icon-badge { 
-            position: absolute; bottom: 0; right: 0; 
-            background: var(--gt-blue); color: #fff; 
-            border-radius: 50%; width: 20px; height: 20px; font-size: 12px;
-        }
-
-        /* Chat Container */
-        #talkjs-container { height: 75vh; width: 100%; max-width: 1000px; margin: 20px auto; }
-    </style>
-</head>
-<body>
-
-<header>
-    <div class="stories-wrapper">
-        <div id="my-story-slot"></div>
-        <div id="stories-area" style="display: flex; gap: 15px;"></div>
-    </div>
-</header>
-
-<!-- TALKJS INBOX LOADS HERE -->
-<div id="talkjs-container"><i>Initializing messenger...</i></div>
-
-<!-- TalkJS Library -->
-<script>
-(function(t,a,l,k,j,s){
-s=a.createElement('script');s.async=1;s.src="https://cdn.talkjs.com/talk.js";
-a.head.appendChild(s);k=t.Promise;t.Talk={v:3,ready:{then:function(f){if(k)return k.resolve(new t.Talk(f));this.push(f);},push:[]}};
-})(window,document);
-</script>
-
-<script>
-    // --- PART 1: SUPABASE CONFIG ---
-    const _supabase = supabase.createClient('https://spnvgymmrlyqtfrbjjsg.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwbnZneW1tcmx5cXRmcmJqanNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM4ODMsImV4cCI6MjA4MzUwOTg4M30.EAgw94HZsHa21YLcTuV0GLAlUeRZN-ixKA0QeD5oPNI');
-    let myId, myUsername, myPfp;
-
-    // --- PART 2: INITIALIZE APP ---
-    async function initApp() {
-        const { data: { session } } = await _supabase.auth.getSession();
-        if (!session) {
-            window.location.href = "login.html";
-            return;
-        }
-
-        myId = session.user.id;
-        myUsername = session.user.user_metadata?.username || "User";
-        myPfp = session.user.user_metadata?.avatar_url || "https://via.placeholder.com/70";
-
-        loadTalkJS();
-        renderStories(); 
-    }
-
-    // --- PART 3: TALKJS LOGIC ---
-    function loadTalkJS() {
-        Talk.ready.then(function () {
-            const me = new Talk.User({
-                id: myId,
-                name: myUsername,
-                photoUrl: myPfp,
-                role: 'default'
-            });
-
-            const session = new Talk.Session({
-                appId: 'tOHa0rVX', // <--- PASTE YOUR TEST ID HERE
-                me: me,
-            });
-
-            const inbox = session.createInbox();
-            inbox.mount(document.getElementById('talkjs-container'));
-        });
-    }
-
-    // --- PART 4: STORY LOGIC ---
-    async function renderStories() {
-        // Here we can reuse your existing renderStoryBar logic 
-        // to show the "Plus" or "Blue Ring" based on Supabase stories.
-    }
-
-    initApp();
-</script>
-
-</body>
+        <script src="script.js" async defer></script>
+        <script>
+            (function(t,a,l,k,j,s){
+            s=a.createElement('script');s.async=1;s.src="https://cdn.talkjs.com/talk.js";a.head.appendChild(s)
+            ;k=t.Promise;t.Talk={v:3,ready:{then:function(f){if(k)return new k(function(r,e){l.push([f,r,e])});l
+            .push([f])},catch:function(){return k&&new k()},c:l}};})(window,document,[]);
+            </script>
+            
+            <!-- container element in which TalkJS will display a chat UI -->
+            <div id="talkjs-container" style="width: 90%; margin: 30px; height: 500px">
+                <i>Loading chat...</i>
+            </div>
+    </body>
 </html>
