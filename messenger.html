@@ -579,22 +579,18 @@
     <i class="fa-solid fa-chevron-down" id="stories-chevron" style="transition: transform 0.3s ease; font-size: 14px; color: #888;"></i>
 </div>
 
+<!-- STORY CLEAN VERSION -->
 <div id="stories-collapsible">
     <div class="stories-wrapper">
-        <div id="my-story-slot">
-            <div class="story-item" onclick="openAddStory()">
-                <div class="story-avatar add-story">
-                    <img src="https://via.placeholder.com/70" class="user-pfp-source">
-                    <div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div>
-                </div>
-                <span class="story-name">Your story</span>
-            </div>
-        </div>
+        
+        <!-- This is the empty 'hook' for your bubble -->
+        <div id="my-story-slot"></div>
 
+        <!-- This is the empty 'hook' for your friends' bubbles -->
         <div id="stories-area" style="display: flex; gap: 15px;"></div>
     </div>
-</div>
-
+</div> 
+    
     <div class="tabs">
     <div id="tab-chats" class="tab active" onclick="switchTab('chats')">
         Chats
