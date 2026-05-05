@@ -109,46 +109,48 @@
     };
 
     document.getElementById('saveBtn').onclick = async () => {
-        const btn = document.getElementById('saveBtn');
-        btn.innerText = "Saving...";
-        btn.disabled = true;
+    const btn = document.getElementById('saveBtn');
+    btn.innerText = "Saving...";
+    btn.disabled = true;
 
-        let avatarUrl = document.getElementById('preview').src;
-        const file = document.getElementById('fIn').files[0];
+    let avatarUrl = document.getElementById('preview').src;
+    const file = document.getElementById('fIn').files[0];
 
-        if (file) {
-            const path = `avatar_${myId}_${Date.now()}.png`;
-            const { error: upErr } = await supabase.storage.from('avatars').upload(path, file);
-            if (!upErr) {
-                avatarUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
-            }
+    // Handle Image Upload
+    if (file) {
+        const path = `avatar_${myId}_${Date.now()}.png`;
+        const { error: upErr } = await supabase.storage.from('avatars').upload(path, file);
+        if (!upErr) {
+            avatarUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
         }
+    }
 
-        // PRO UPDATE: Capture the country selection
-        const selectedCountry = document.getElementById('country').value;
+    const selectedCountry = document.getElementById('country').value;
 
-        const { error } = await supabase.from('profiles').upsert({
-            id: myId,
-            username: document.getElementById('user').value,
-            bio: document.getElementById('bio').value,
-            avatar_url: avatarUrl,
-            country_code: selectedCountry // <--- SAVE TO DATABASE
+    // --- UPSERT BLOCK ---
+    const { error } = await supabase.from('profiles').upsert({
+        id: myId,
+        username: document.getElementById('user').value,
+        bio: document.getElementById('bio').value,
+        avatar_url: avatarUrl,
+        country_code: selectedCountry 
+    });
 
-            if (!error) {
-                // --- ADD THIS LINE BELOW ---
-                localStorage.setItem("user_country", selectedCountry); 
-                // ---------------------------
-        });
-
-        if (!error) {
-            showToast("Profile updated");
-            setTimeout(() => location.href = './profile.html', 800);
-        } else {
-            showToast(error.message);
-            btn.disabled = false;
-            btn.innerText = "Save Changes";
-        }
-    };
+    if (!error) {
+        // Update local storage so the rest of the app knows the new country
+        localStorage.setItem("user_country", selectedCountry); 
+        showToast("Profile updated");
+        
+        // Wait for the toast, then redirect
+        setTimeout(() => {
+            window.location.href = './profile.html';
+        }, 1000);
+    } else {
+        showToast(error.message);
+        btn.disabled = false;
+        btn.innerText = "Save Changes";
+    }
+};
 
     // DELETE ACCOUNT
     document.getElementById('delAccBtn').onclick = async () => {
