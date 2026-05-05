@@ -734,42 +734,54 @@ pingSound.volume = 0.5;
     
 // 3. INITIALIZATION (The "Expert" Way)
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. Get the session, but don't panic if it's null for a second
-    const { data: { session } } = await _supabase.auth.getSession();
+    try {
+        // 1. SESSION & SAFETY REDIRECT (Fixes login loop)
+        const { data: { session } } = await _supabase.auth.getSession();
 
-    // 2. ONLY redirect if there is truly no session AND no user_id in storage
-    // This acts as a double-check "safety net"
-    if (!session && !localStorage.getItem("supabase.auth.token")) {
-        console.log("No session found. Redirecting...");
-        window.location.replace("login.html");
-        return;
+        if (!session && !localStorage.getItem("supabase.auth.token")) {
+            console.log("No session. Redirecting to login.");
+            window.location.replace("login.html");
+            return;
+        }
+
+        if (session) {
+            myId = session.user.id;
+            localStorage.setItem("user_id", myId); 
+        }
+
+        // 2. RUN APP ENGINE (Location, Chats, and Following-only Stories)
+        await detectLocation();
+        await initMessenger(); 
+        await loadStories();    
+
+        // 3. UPDATE PROFILE PICTURE (Ensures your avatar shows in the story ring)
+        const { data: profile } = await _supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', myId)
+            .single();
+
+        if (profile?.avatar_url) {
+            const myAvatarImg = document.querySelector('.user-pfp-source');
+            if (myAvatarImg) {
+                myAvatarImg.src = profile.avatar_url;
+            }
+        }
+
+        // 4. AUTH STATE CHANGE LISTENER
+        _supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                localStorage.clear();
+                window.location.replace("login.html");
+            }
+        });
+
+        console.log("GT Messenger fully initialized.");
+
+    } catch (err) {
+        console.error("Initialization Error:", err);
     }
-
-    if (session) {
-        myId = session.user.id;
-        // Save it to localStorage as a backup for your other functions
-        localStorage.setItem("user_id", myId); 
-    }
-
-    // 3. Update the rest of the app
-    await detectLocation();
-    initMessenger();
-    startMessageListener(); 
-    
-}); 
- 
-
-    // 3. Update your PFP
-    const { data: profile } = await _supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', myId)
-        .single();
-
-    if (profile?.avatar_url) {
-        const myAvatar = document.querySelector('.user-pfp-source');
-        if (myAvatar) myAvatar.src = profile.avatar_url;
-    }
+});
 
     // 4. GLOBAL PRESENCE SETUP
     const userStatusChannel = _supabase.channel('online-users');
