@@ -234,10 +234,26 @@
     border: 3px solid #f0f2f5 !important;
 }
 
+/* NEW & IMPROVED RING LOGIC */
+.story-avatar.active-story {
+    border: 3px solid var(--gt-blue) !important;
+    padding: 2px; /* This creates the professional "gap" */
+    background: #fff;
+    display: flex;
+}
+
+.story-avatar.no-story {
+    border: 3px solid #e4e6eb !important; /* Subtle grey when no story exists */
+    padding: 2px;
+    background: #fff;
+    position: relative;
+}
+
+/* Make sure the '+' badge is positioned correctly inside the no-story ring */
 .add-icon-badge {
     position: absolute;
-    bottom: 0;
-    right: 0;
+    bottom: -2px;
+    right: -2px;
     background: var(--gt-blue);
     width: 22px;
     height: 22px;
@@ -248,12 +264,10 @@
     justify-content: center;
     color: #fff;
     font-size: 10px;
-}
+    z-index: 10;
+    }
 
-/* The style for when YOU have an active story */
-.story-avatar.active-story {
-    border: 3px solid var(--gt-blue) !important;
-}
+
 /* The class that hides the stories */
 .stories-hidden {
     display: none !important;
@@ -281,10 +295,7 @@
     text-overflow: ellipsis;
 }
 
-/* When NO story is active, make the ring grey/subtle */
-.story-avatar.no-story {
-    border: 3px solid #f0f2f5 !important;
-}
+
 
 /* Ensure the image stays perfectly round inside the ring */
 .story-avatar img {
@@ -1107,40 +1118,46 @@ function renderStoryBar(activeStories) {
     const mySlot = document.getElementById('my-story-slot');
     if (!storyArea || !mySlot) return;
 
+    // 1. Find your own active story
     const myActiveStory = activeStories.find(s => s.user_id === myId);
+    
+    // Get your current profile picture from the existing UI source
+    const myPfp = document.querySelector('.user-pfp-source')?.src || 'https://via.placeholder.com/70';
 
-    // YOUR STORY SLOT
+    // 2. RENDER YOUR STORY SLOT (The far left circle)
     if (myActiveStory) {
+        // BLUE RING STATE: You have an active story
         mySlot.innerHTML = `
             <div class="story-item" onclick='openStory(${JSON.stringify(myActiveStory).replace(/'/g, "&apos;")})'>
                 <div class="story-avatar active-story">
-                    <img src="${myActiveStory.image_url}">
+                    <img src="${myPfp}">
                 </div>
                 <span class="story-name">Your story</span>
             </div>`;
     } else {
+        // PLUS BADGE STATE: No active story
         mySlot.innerHTML = `
-            <div class="story-item" onclick="showToast('Your story will appear here')">
-                <div class="story-avatar add-story">
-                    <img src="https://via.placeholder.com/70">
+            <div class="story-item" onclick="triggerFilePicker()">
+                <div class="story-avatar no-story" style="position:relative;">
+                    <img src="${myPfp}">
                     <div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div>
                 </div>
                 <span class="story-name">Your story</span>
             </div>`;
     }
 
-    // OTHER PEOPLE'S STORIES
+    // 3. RENDER OTHER PEOPLE'S STORIES
     const otherStories = activeStories.filter(s => s.user_id !== myId);
     storyArea.innerHTML = otherStories.map(s => `
         <div class="story-item" onclick='openStory(${JSON.stringify(s).replace(/'/g, "&apos;")})'>
             <div class="story-avatar active-story">
-                <img src="${s.image_url}">
+                <img src="${s.profiles?.avatar_url || 'https://via.placeholder.com/70'}">
             </div>
             <span class="story-name">${s.profiles?.username || 'User'}</span>
         </div>
     `).join('');
-}
-
+    }
+    
 async function openStory(story) {
     const viewer = document.getElementById('story-viewer');
     const img = document.getElementById('story-img-display');
@@ -1485,11 +1502,16 @@ async function finalUpload() {
         expires_at: new Date(Date.now() + 24*60*60*1000).toISOString() 
     }]);
 
+    
     closeStoryFlow();
     showToast("Shared successfully!");
-    setTimeout(() => location.reload(), 1000);
+    
+    // Refresh the story bar immediately without reloading the whole page
+    setTimeout(async () => {
+        await loadStories(); 
+    }, 500);
 }
-
+    
 function closeStoryFlow() {
     document.querySelectorAll('.story-overlay').forEach(el => el.style.display = 'none');
     selectedFileBlob = null;
