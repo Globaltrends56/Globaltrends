@@ -1101,17 +1101,32 @@ function showToast(message) {
 // 4. STORY LOGIC (Horizontal Swiping Bar)
 async function loadStories() {
     try {
+        // 1. Get the list of people you are following
+        const { data: following } = await _supabase
+            .from('follows')
+            .select('user_id')
+            .eq('follower_id', myId);
+
+        // Create an array of IDs (including your own so you see your story)
+        const followingIds = following.map(f => f.user_id);
+        followingIds.push(myId); 
+
+        // 2. Fetch stories ONLY from those IDs
         const { data: stories, error } = await _supabase
             .from('stories')
             .select('*, profiles(username, avatar_url)')
-            .gt('expires_at', new Date().toISOString());
+            .in('user_id', followingIds) // <--- THIS IS THE FILTER
+            .gt('expires_at', new Date().toISOString())
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
+        
         renderStoryBar(stories || []);
     } catch (err) {
-        console.error("Story Error:", err);
+        console.error("Story Filtering Error:", err);
     }
-}
+  } 
+
 
 function renderStoryBar(activeStories) {
     const storyArea = document.getElementById('stories-area');
