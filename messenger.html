@@ -929,16 +929,60 @@ async function switchNC(type) {
             // Render with Grey Unfollow Buttons
             renderNCList(followingData, true);
             
-        } else {
-            // FETCH GLOBAL DISCOVERY
-            const { data, error } = await _supabase
-                .from('profiles')
-                .select('id, username, avatar_url, is_verified, country_code')
-                .neq('id', myId)
-                .eq('status', 'active')
-                .limit(40);
+           } else {
 
-            if (error) throw error;
+    // 1. GET PEOPLE I ALREADY FOLLOW
+    const { data: following } = await _supabase
+        .from('follows')
+        .select('user_id')
+        .eq('follower_id', myId);
+
+    const followingIds = (following || []).map(f => f.user_id);
+
+    // 2. FETCH SMART DISCOVERY USERS
+    const { data, error } = await _supabase
+    .from('profiles')
+    .select(`
+        id,
+        username,
+        avatar_url,
+        is_verified,
+        country_code
+    `)
+    .neq('id', myId)
+    .eq('status', 'active')
+    .limit(100);
+
+    if (error) throw error;
+    const filteredData = data.filter(
+    u => !followingIds.includes(u.id)
+);         
+
+    // 3. PRIORITIZE SAME COUNTRY USERS
+        const localUsers = filteredData.filter(
+        u => u.country_code === currentCountry
+    );
+
+    // 4. GLOBAL DISCOVERY USERS
+       const globalUsers = filteredData.filter(
+        u => u.country_code !== currentCountry
+    );
+
+    // 5. BOOST VERIFIED USERS
+    localUsers.sort((a, b) => b.is_verified - a.is_verified);
+    globalUsers.sort((a, b) => b.is_verified - a.is_verified);
+
+    // 6. FINAL SMART ORDER
+    const smartSuggestions = [
+        ...localUsers,
+        ...globalUsers
+    ];
+
+    // 7. CLEAR LOADING
+    listArea.innerHTML = '';
+
+    // 8. RENDER USERS
+    renderNCList(smartSuggestions, false);
             
             // Sort: Verified users first, then random
             const sorted = data.sort((a, b) => (b.is_verified === a.is_verified) ? 0.5 - Math.random() : b.is_verified ? 1 : -1 );
@@ -1202,47 +1246,102 @@ function renderStoryBar(activeStories) {
 
  
     
-
 async function openStory(story) {
+
     const viewer = document.getElementById('story-viewer');
     const img = document.getElementById('story-img-display');
     const viewCountSpan = document.getElementById('view-count');
     const tracker = document.getElementById('view-tracker');
-    const list = document.getElementById('viewers-list');
+    const viewersList = document.getElementById('viewers-list');
 
-    img.src = story.image_url;
+    // Open fullscreen
     viewer.style.display = 'flex';
 
-    if (story.user_id === myId) {
-        tracker.style.display = 'flex';
+    // Story image
+    img.src = story.image_url;
 
-        const { data: views, count } = await _supabase
+    // =========================
+    // IF THIS IS MY STORY
+    // =========================
+    if (story.user_id === myId) {
+
+        tracker.style.display = 'flex';
+        viewersList.style.display = 'block';
+
+        const { data: views, count, error } = await _supabase
             .from('story_views')
-            .select('viewer_id, profiles(username, avatar_url)', { count: 'exact' })
+            .select(`
+                viewer_id,
+                profiles (
+                    username,
+                    avatar_url
+                )
+            `, { count: 'exact' })
             .eq('story_id', story.id);
 
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        // Total views
         viewCountSpan.innerText = count || 0;
 
-        list.style.display = 'block';
-        list.innerHTML = (views || []).map(v => `
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                <img src="${v.profiles?.avatar_url || 'https://via.placeholder.com/30'}"
-                     style="width:30px;height:30px;border-radius:50%;">
-                <span>${v.profiles?.username || 'User'}</span>
+        // Render viewers
+        viewersList.innerHTML = (views || []).map(v => `
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:10px;
+                margin-top:12px;
+                color:white;
+                padding:0 20px;
+            ">
+                <img src="${v.profiles?.avatar_url || 'https://via.placeholder.com/40'}"
+                     style="
+                        width:40px;
+                        height:40px;
+                        border-radius:50%;
+                        object-fit:cover;
+                     ">
+
+                <span style="font-size:15px;">
+                    ${v.profiles?.username || 'User'}
+                </span>
             </div>
         `).join('');
 
+                  // =========================
+             //  SOMEONE ELSE'S STORY
+                 // =========================  
     } else {
-        tracker.style.display = 'none';
-        list.style.display = 'none';
 
-        await _supabase.from('story_views').insert([{
-            story_id: story.id,
-            viewer_id: myId,
-            viewed_at: new Date().toISOString()
-        }]);
+        tracker.style.display = 'none';
+        viewersList.style.display = 'none';
+
+        // Prevent duplicate views
+        const { data: existing } = await _supabase
+            .from('story_views')
+            .select('id')
+            .eq('story_id', story.id)
+            .eq('viewer_id', myId)
+            .maybeSingle();
+
+        // Insert only once
+        if (!existing) {
+
+            await _supabase
+                .from('story_views')
+                .insert([{
+                    story_id: story.id,
+                    viewer_id: myId,
+                    viewed_at: new Date().toISOString()
+                }]);
+
+        }
     }
-  }    
+    }
+   
     
 
 function playNotificationSound() {
