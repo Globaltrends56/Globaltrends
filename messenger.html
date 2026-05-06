@@ -295,15 +295,15 @@
 }
 
 
-
-/* Ensure the image stays perfectly round inside the ring */
 .story-avatar img {
-    display: block;
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: #eee;
- }
+    object-fit: cover;
+    border: 2px solid #fff;
+    
+} 
+
 
  /* MOBILE-OPTIMIZED TOAST */
 #toast-container {
@@ -550,6 +550,9 @@
     <header class="header">
         <div class="header-left">
               <h1>GT Messenger</h1>
+            <img class="user-pfp-source" 
+            src="https://via.placeholder.com/70" 
+               style="display:none;">
         </div>
         <div class="header-right">
     <input type="file" id="story-upload-input" accept="image/*" style="display: none;">
@@ -1165,14 +1168,14 @@ function renderStoryBar(activeStories) {
 
     // 2. RENDER YOUR STORY SLOT (The far left circle)
     if (myActiveStory) {
-        // BLUE RING STATE: You have an active story
-        mySlot.innerHTML = `
-             <div class="story-item" data-story='${encodeURIComponent(JSON.stringify(s))}'>
-             <div class="story-avatar active-story">
-                    <img src="${myPfp}">
-                </div>
-                <span class="story-name">Your story</span>
-            </div>`;
+    mySlot.innerHTML = `
+        <div class="story-item" onclick='openStory(${JSON.stringify(myActiveStory).replace(/'/g, "&apos;")})'>
+            <div class="story-avatar active-story">
+                <img src="${myPfp}">
+            </div>
+            <span class="story-name">Your story</span>
+        </div>`;
+   
     } else {
         // PLUS BADGE STATE: No active story
         mySlot.innerHTML = `
@@ -1197,53 +1200,50 @@ function renderStoryBar(activeStories) {
     `).join('');
     }
 
-    document.querySelectorAll('.story-item').forEach(el => {
-    el.onclick = () => {
-        const story = JSON.parse(decodeURIComponent(el.dataset.story));
-        openStory(story);
-    };
-});
+ 
     
+
 async function openStory(story) {
     const viewer = document.getElementById('story-viewer');
     const img = document.getElementById('story-img-display');
     const viewCountSpan = document.getElementById('view-count');
     const tracker = document.getElementById('view-tracker');
+    const list = document.getElementById('viewers-list');
 
     img.src = story.image_url;
     viewer.style.display = 'flex';
 
     if (story.user_id === myId) {
-    tracker.style.display = 'flex';
+        tracker.style.display = 'flex';
 
-    const { data: views, count } = await _supabase
-        .from('story_views')
-        .select('viewer_id, profiles(username, avatar_url)', { count: 'exact' })
-        .eq('story_id', story.id);
+        const { data: views, count } = await _supabase
+            .from('story_views')
+            .select('viewer_id, profiles(username, avatar_url)', { count: 'exact' })
+            .eq('story_id', story.id);
 
-    viewCountSpan.innerText = count || 0;
+        viewCountSpan.innerText = count || 0;
 
-    // show viewer list
-    const list = document.getElementById('viewers-list');
-    list.style.display = 'block';
-    list.innerHTML = (views || []).map(v => `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <img src="${v.profiles?.avatar_url || 'https://via.placeholder.com/30'}"
-                 style="width:30px;height:30px;border-radius:50%;">
-            <span>${v.profiles?.username || 'User'}</span>
-        </div>
-    `).join('');
-        
-    else {
-    tracker.style.display = 'none';
-    document.getElementById('viewers-list').style.display = 'none';
+        list.style.display = 'block';
+        list.innerHTML = (views || []).map(v => `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <img src="${v.profiles?.avatar_url || 'https://via.placeholder.com/30'}"
+                     style="width:30px;height:30px;border-radius:50%;">
+                <span>${v.profiles?.username || 'User'}</span>
+            </div>
+        `).join('');
 
-    await _supabase.from('story_views').insert([{
-        story_id: story.id,
-        viewer_id: myId,
-        viewed_at: new Date().toISOString()
-    }]);
-   }
+    } else {
+        tracker.style.display = 'none';
+        list.style.display = 'none';
+
+        await _supabase.from('story_views').insert([{
+            story_id: story.id,
+            viewer_id: myId,
+            viewed_at: new Date().toISOString()
+        }]);
+    }
+  }    
+    
 
 function playNotificationSound() {
     if (!pingSound) return;
