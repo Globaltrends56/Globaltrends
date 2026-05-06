@@ -645,7 +645,9 @@
     <div id="view-tracker" style="display:none; position:absolute; bottom:30px; background:rgba(255,255,255,0.15); backdrop-filter:blur(10px); padding:8px 15px; border-radius:20px; color:white; align-items:center; gap:8px; font-family:sans-serif; font-size:14px;">
         <i class="fa-solid fa-eye"></i>
         <span><span id="view-count">0</span> views</span>
+       
     </div>
+        <div id="viewers-list"></div>
     </div>
     
     
@@ -1096,45 +1098,60 @@ function showToast(message) {
 async function loadStories() {
     try {
         // 1. people I follow
-        const { data: following } = await _supabase
+        const { data: following, error: fErr } = await _supabase
             .from('follows')
             .select('user_id')
             .eq('follower_id', myId);
 
         // 2. people who follow me
-        const { data: followers } = await _supabase
+        const { data: followers, error: frErr } = await _supabase
             .from('follows')
             .select('follower_id')
             .eq('user_id', myId);
 
-        const followingIds = following.map(f => f.user_id);
-        const followerIds = followers.map(f => f.follower_id);
+        if (fErr || frErr) {
+            console.error("Follow fetch error:", fErr || frErr);
+            return;
+        }
+
+        // safety fallback (VERY IMPORTANT to prevent freezes)
+        const followingIds = (following || []).map(f => f.user_id);
+        const followerIds = (followers || []).map(f => f.follower_id);
 
         // 3. mutual users only
         const mutualIds = followingIds.filter(id =>
             followerIds.includes(id)
         );
 
-        // include myself
+        // include myself (for "Your story")
         mutualIds.push(myId);
 
-        // 4. fetch stories
+        // 4. fetch stories WITH profile country info
         const { data: stories, error } = await _supabase
             .from('stories')
-            .select('*, profiles(username, avatar_url)')
+            .select('*, profiles(id, username, avatar_url, country_code)')
             .in('user_id', mutualIds)
             .gt('expires_at', new Date().toISOString())
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        renderStoryBar(stories || []);
+        // 5. COUNTRY PRIORITY SORT (IMPORTANT FOR YOUR SYSTEM)
+        const localStories = (stories || []).filter(
+            s => s.profiles?.country_code === currentCountry
+        );
+
+        const globalStories = (stories || []).filter(
+            s => s.profiles?.country_code !== currentCountry
+        );
+
+        renderStoryBar([...localStories, ...globalStories]);
 
     } catch (err) {
         console.error("Story load error:", err);
     }
   }
-
+    
 function renderStoryBar(activeStories) {
     const storyArea = document.getElementById('stories-area');
     const mySlot = document.getElementById('my-story-slot');
