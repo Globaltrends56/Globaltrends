@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -704,7 +705,7 @@
 
             <div class="top-action" id="story-menu-trigger" style="position: relative;">
                 <div class="icon-bg"><i class="fa-solid fa-plus"></i></div>
-                <span>STORY</span>
+                <span></span>
                 
                 <div id="story-dropdown" class="story-dropdown-content" style="display: none; position: absolute; top: 45px; right: 0; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.15 ); border-radius: 10px; width: 150px; z-index: 2001;">
                     <div class="dropdown-item" onclick="triggerFilePicker()" style="padding: 12px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; cursor: pointer;">
@@ -716,7 +717,7 @@
 
             <div class="top-action">
                 <div class="icon-bg"><i class="fa-solid fa-gear"></i></div>
-                <span>MENU</span>
+                <span></span>
             </div>
         </div>
     </header>
@@ -945,16 +946,11 @@ async function switchNC(type) {
     
     try {
         if (type === 'following') {
-            const { data, error } = await _supabase
+            const { data } = await _supabase
                 .from('follows')
                 .select(`user_id, profiles:user_id (id, username, avatar_url, bio, is_verified, country_code)`)
                 .eq('follower_id', myId)
                 .limit(50);
-
-            if (error) {
-                console.error("Following fetch error:", error);
-                throw error;
-            }
 
             followingData = (data || []).map(f => f.profiles).filter(Boolean);
             followingCountLabel.innerText = followingData.length;
@@ -965,29 +961,12 @@ async function switchNC(type) {
                 renderNCList(followingData, true);
             }
         } else {
-            // Try fetching from smart_recommendation first
-            let { data, error } = await _supabase
+            const { data } = await _supabase
                 .from('smart_recommendation')
                 .select('id, username, avatar_url, bio, is_verified, country_code, ranking_weight')
                 .neq('id', myId)
                 .order('ranking_weight', { ascending: false })
                 .limit(50);
-
-            // Fallback to profiles table if smart_recommendation is empty or fails
-            if (error || !data || data.length === 0) {
-                console.warn("Smart recommendation empty or failed, falling back to profiles.");
-                const { data: fallbackData, error: fallbackError } = await _supabase
-                    .from('profiles')
-                    .select('id, username, avatar_url, bio, is_verified, country_code')
-                    .neq('id', myId)
-                    .limit(50);
-                
-                if (fallbackError) {
-                    console.error("Fallback profiles fetch error:", fallbackError);
-                    throw fallbackError;
-                }
-                data = fallbackData;
-            }
 
             if (!data || data.length === 0) {
                 listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">No recommendations available.</p>';
@@ -996,8 +975,8 @@ async function switchNC(type) {
             }
         }
     } catch (e) {
-        console.error("SwitchNC Exception:", e);
-        listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">Connection failed. Check console for details.</p>';
+        console.error(e);
+        listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">Connection failed.</p>';
     }
 }
 
@@ -1256,7 +1235,7 @@ async function filterGlobal(val) {
     if (!searchVal) return switchNC('recommended'); 
     typingTimeout = setTimeout(async () => {
         try {
-            const { data } = await _supabase.from('profiles').select('id, username, avatar_url, is_verified, country_code, bio').ilike('username', `%${searchVal}%`).neq('id', myId).limit(20);
+            const { data } = await _supabase.from('smart_recommendation').select('id, username, avatar_url, is_verified, country_code, bio').ilike('username', `%${searchVal}%`).neq('id', myId).limit(20);
             listArea.innerHTML = '';
             if (!data || data.length === 0) return listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">No users found.</p>';
             renderNCList(data, false);
