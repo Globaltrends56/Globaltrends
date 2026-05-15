@@ -845,10 +845,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             localStorage.setItem("user_id", myId); 
         }
 
-        await detectLocation();
-        await initMessenger(); 
-        await loadStories();    
-
+        // 1. Fetch Profile First (Ensures Avatar is ready)
         const { data: profile } = await _supabase
             .from('profiles')
             .select('avatar_url')
@@ -861,6 +858,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 myAvatarImg.src = profile.avatar_url;
             }
         }
+
+        // 2. Render "Your story" immediately with current profile pic
+        renderStoryBar([]); 
+
+        // 3. Detect Location & Load Data
+        await detectLocation();
+        await initMessenger(); 
+        await loadStories();    
 
         _supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_OUT') {
@@ -883,7 +888,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function initMessenger() {
     try {
-        await loadStories();
         await loadChats();
     } catch (err) {
         console.error("Failed to initialize messenger data:", err);
@@ -915,10 +919,8 @@ async function switchTab(type) {
 async function switchNC(type) {
     const listArea = document.getElementById('nc-list-content');
     const followingCountLabel = document.getElementById('following-count');
-    
     const tabFollowing = document.getElementById('nc-tab-following');
     const tabRecommended = document.getElementById('nc-tab-recommended');
-    
     const searchInput = document.getElementById('nc-search-input');
 
     tabFollowing.classList.remove('active');
@@ -939,28 +941,15 @@ async function switchNC(type) {
     }
 
     if (searchInput) searchInput.value = "";
-
     listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Searching...</p>';
     
     try {
         if (type === 'following') {
-            const { data, error } = await _supabase
+            const { data } = await _supabase
                 .from('follows')
-                .select(`
-                    user_id,
-                    profiles:user_id (
-                        id,
-                        username,
-                        avatar_url,
-                        bio,
-                        is_verified,
-                        country_code
-                    )
-                `)
+                .select(`user_id, profiles:user_id (id, username, avatar_url, bio, is_verified, country_code)`)
                 .eq('follower_id', myId)
                 .limit(50);
-
-            if (error) throw error;
 
             followingData = (data || []).map(f => f.profiles).filter(Boolean);
             followingCountLabel.innerText = followingData.length;
@@ -970,16 +959,13 @@ async function switchNC(type) {
             } else {
                 renderNCList(followingData, true);
             }
-
         } else {
-            const { data, error } = await _supabase
+            const { data } = await _supabase
                 .from('smart_recommendation')
                 .select('id, username, avatar_url, bio, is_verified, country_code, ranking_weight')
                 .neq('id', myId)
                 .order('ranking_weight', { ascending: false })
                 .limit(50);
-
-            if (error) throw error;
 
             if (!data || data.length === 0) {
                 listArea.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">No recommendations available.</p>';
@@ -987,9 +973,8 @@ async function switchNC(type) {
                 renderNCList(data, false);
             }
         }
-
     } catch (e) {
-        console.error("Switch NC Error:", e);
+        console.error(e);
         listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">Connection failed.</p>';
     }
 }
@@ -998,34 +983,19 @@ async function handleSyncFollow(targetId, btn) {
     try {
         btn.disabled = true;
         btn.innerText = "Following...";
-        
-        const { error } = await _supabase
-            .from('follows')
-            .insert([{ 
-                user_id: targetId,
-                follower_id: myId
-            }]);
-
+        const { error } = await _supabase.from('follows').insert([{ user_id: targetId, follower_id: myId }]);
         if (error) throw error;
-
         btn.innerText = "Following";
         btn.classList.remove('follow');
         btn.classList.add('unfollow');
         btn.style.background = "#e4e6eb";
         btn.style.color = "#000";
-
         updateCount(1);
         showToast("User followed successfully!");
-        
-        btn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleSyncUnfollow(targetId);
-        };
-
+        btn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); handleSyncUnfollow(targetId); };
     } catch (e) {
-        console.error("Follow Sync Error:", e);
-        showToast("Could not follow user. Please try again.");
+        console.error(e);
+        showToast("Could not follow user.");
         btn.disabled = false;
         btn.innerText = "Follow";
     }
@@ -1041,16 +1011,8 @@ function updateCount(val) {
 
 async function handleSyncUnfollow(targetId) {
     try {
-        const { error } = await _supabase
-            .from('follows')
-            .delete()
-            .match({ 
-                user_id: targetId,
-                follower_id: myId
-            });
-
+        const { error } = await _supabase.from('follows').delete().match({ user_id: targetId, follower_id: myId });
         if (error) throw error;
-
         const row = document.getElementById(`user-row-${targetId}`);
         if (row) {
             row.style.transition = "opacity 0.3s ease";
@@ -1058,82 +1020,44 @@ async function handleSyncUnfollow(targetId) {
             setTimeout(() => {
                 row.remove();
                 const listArea = document.getElementById('nc-list-content');
-                if (listArea && listArea.children.length === 0) {
-                    listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">No friends found.</p>';
-                }
+                if (listArea && listArea.children.length === 0) listArea.innerHTML = '<p style="text-align:center; color:#555; padding:20px;">No friends found.</p>';
             }, 300);
         }
-
         updateCount(-1);
         showToast("User unfollowed!");
-
-    } catch (e) {
-        console.error("Unfollow Sync Error:", e);
-        showToast("Could not unfollow user.");
-    }
+    } catch (e) { console.error(e); showToast("Could not unfollow user."); }
 }
 
 function getGeoIcon(countryCode) {
     if (!countryCode) return '';
-    if (countryCode === currentCountry) {
-        return '<i class="fa-solid fa-location-dot" style="color: #FF6B6B; font-size: 10px;"></i>';
-    }
-    return '<i class="fa-solid fa-globe" style="color: #999; font-size: 10px;"></i>';
+    return countryCode === currentCountry ? '<i class="fa-solid fa-location-dot" style="color: #FF6B6B; font-size: 10px;"></i>' : '<i class="fa-solid fa-globe" style="color: #999; font-size: 10px;"></i>';
 }
     
 function renderNCList(users, isFollowingTab) {
     const listArea = document.getElementById('nc-list-content');
     listArea.innerHTML = '';
-    
     users.forEach(user => {
         const div = document.createElement('div');
         div.className = "user-row";
         div.id = `user-row-${user.id}`;
-
         const leftSide = document.createElement('div');
         leftSide.className = 'user-row-left';
-        leftSide.onclick = (e) => {
-            e.stopPropagation();
-            openChat(user.id, user.username, user.avatar_url || '');
-            toggleNewChatMenu();
-        };
-        
+        leftSide.onclick = (e) => { e.stopPropagation(); openChat(user.id, user.username, user.avatar_url || ''); toggleNewChatMenu(); };
         leftSide.innerHTML = `
             <img src="${user.avatar_url || 'https://via.placeholder.com/40'}" alt="${user.username}">
             <div class="user-info">
-                <div class="user-info-name">
-                    <span>${user.username}</span>
-                    ${user.is_verified ? '<i class="fa-solid fa-circle-check" style="color: #1DA1F2; font-size: 12px;"></i>' : ''}
-                    ${getGeoIcon(user.country_code )}
-                </div>
+                <div class="user-info-name"><span>${user.username}</span>${user.is_verified ? '<i class="fa-solid fa-circle-check" style="color: #1DA1F2; font-size: 12px;"></i>' : ''}${getGeoIcon(user.country_code )}</div>
                 ${user.bio ? `<div class="user-info-bio">${user.bio}</div>` : ''}
-            </div>
-        `;
-
+            </div>`;
         const rightSide = document.createElement('div');
         rightSide.className = 'user-row-right';
-        
         let actionButton = document.createElement('button');
         actionButton.className = isFollowingTab ? 'action-btn unfollow' : 'action-btn follow';
         actionButton.innerText = isFollowingTab ? 'Unfollow' : 'Follow';
         actionButton.type = 'button';
-        
-        if (isFollowingTab) {
-            actionButton.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleSyncUnfollow(user.id);
-            };
-        } else {
-            actionButton.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleSyncFollow(user.id, actionButton);
-            };
-        }
-        
+        if (isFollowingTab) { actionButton.onclick = (e) => { e.preventDefault(); e.stopPropagation(); handleSyncUnfollow(user.id); }; }
+        else { actionButton.onclick = (e) => { e.preventDefault(); e.stopPropagation(); handleSyncFollow(user.id, actionButton); }; }
         rightSide.appendChild(actionButton);
-
         div.appendChild(leftSide);
         div.appendChild(rightSide);
         listArea.appendChild(div);
@@ -1143,54 +1067,28 @@ function renderNCList(users, isFollowingTab) {
 function showToast(message) {
     const toast = document.getElementById('toast-container');
     if (!toast) return;
-
     toast.innerText = message;
     toast.classList.remove("show");
     clearTimeout(toastTimer);
-
     void toast.offsetWidth;
     toast.classList.add("show");
-
-    toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
-    }, 3000);
+    toastTimer = setTimeout(() => { toast.classList.remove("show"); }, 3000);
 }
 
 async function loadStories() {
     try {
-        const { data: following } = await _supabase
-            .from('follows')
-            .select('user_id')
-            .eq('follower_id', myId);
-
-        const { data: followers } = await _supabase
-            .from('follows')
-            .select('follower_id')
-            .eq('user_id', myId);
-
+        const { data: following } = await _supabase.from('follows').select('user_id').eq('follower_id', myId);
+        const { data: followers } = await _supabase.from('follows').select('follower_id').eq('user_id', myId);
         const followingIds = (following || []).map(f => f.user_id);
         const followerIds = (followers || []).map(f => f.follower_id);
-
         const mutualIds = followingIds.filter(id => followerIds.includes(id));
         mutualIds.push(myId);
 
-        const { data: stories, error } = await _supabase
-            .from('stories')
-            .select('*, profiles(id, username, avatar_url, country_code)')
-            .in('user_id', mutualIds)
-            .gt('expires_at', new Date().toISOString())
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
+        const { data: stories } = await _supabase.from('stories').select('*, profiles(id, username, avatar_url, country_code)').in('user_id', mutualIds).gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false });
         const localStories = (stories || []).filter(s => s.profiles?.country_code === currentCountry);
         const globalStories = (stories || []).filter(s => s.profiles?.country_code !== currentCountry);
-
         renderStoryBar([...localStories, ...globalStories]);
-
-    } catch (err) {
-        console.error("Story load error:", err);
-    }
+    } catch (err) { console.error(err); renderStoryBar([]); }
 }
     
 function renderStoryBar(activeStories) {
@@ -1204,18 +1102,13 @@ function renderStoryBar(activeStories) {
     if (myActiveStory ) {
         mySlot.innerHTML = `
             <div class="story-item" onclick='openStory(${JSON.stringify(myActiveStory).replace(/'/g, "&apos;")})'>
-                <div class="story-avatar active-story">
-                    <img src="${myPfp}">
-                </div>
+                <div class="story-avatar active-story"><img src="${myPfp}"></div>
                 <span class="story-name">Your story</span>
             </div>`;
     } else {
         mySlot.innerHTML = `
             <div class="story-item" onclick="triggerFilePicker()">
-                <div class="story-avatar no-story" style="position:relative;">
-                    <img src="${myPfp}">
-                    <div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div>
-                </div>
+                <div class="story-avatar no-story" style="position:relative;"><img src="${myPfp}"><div class="add-icon-badge"><i class="fa-solid fa-plus"></i></div></div>
                 <span class="story-name">Your story</span>
             </div>`;
     }
@@ -1223,12 +1116,9 @@ function renderStoryBar(activeStories) {
     const otherStories = activeStories.filter(s => s.user_id !== myId);
     storyArea.innerHTML = otherStories.map(s => `
         <div class="story-item" onclick='openStory(${JSON.stringify(s).replace(/'/g, "&apos;")})'>
-            <div class="story-avatar active-story">
-                <img src="${s.profiles?.avatar_url || 'https://via.placeholder.com/70'}">
-            </div>
+            <div class="story-avatar active-story"><img src="${s.profiles?.avatar_url || 'https://via.placeholder.com/70'}"></div>
             <span class="story-name">${s.profiles?.username || 'User'}</span>
-        </div>
-    ` ).join('');
+        </div>` ).join('');
 }
 
 async function openStory(story) {
@@ -1237,94 +1127,40 @@ async function openStory(story) {
     const viewCountSpan = document.getElementById('view-count');
     const tracker = document.getElementById('view-tracker');
     const viewersList = document.getElementById('viewers-list');
-
     viewer.style.display = 'flex';
     img.src = story.image_url;
 
     if (story.user_id === myId) {
         tracker.style.display = 'flex';
         viewersList.style.display = 'block';
-
-        const { data: views, count } = await _supabase
-            .from('story_views')
-            .select(`
-                viewer_id,
-                profiles (
-                    username,
-                    avatar_url
-                )
-            `, { count: 'exact' })
-            .eq('story_id', story.id);
-
+        const { data: views, count } = await _supabase.from('story_views').select(`viewer_id, profiles (username, avatar_url)`, { count: 'exact' }).eq('story_id', story.id);
         viewCountSpan.innerText = count || 0;
-
         viewersList.innerHTML = (views || []).map(v => `
             <div style="display:flex; align-items:center; gap:10px; margin-top:12px; color:white; padding:0 20px;">
                 <img src="${v.profiles?.avatar_url || 'https://via.placeholder.com/40'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
                 <span style="font-size:15px;">${v.profiles?.username || 'User'}</span>
-            </div>
-        ` ).join('');
-
+            </div>` ).join('');
     } else {
         tracker.style.display = 'none';
         viewersList.style.display = 'none';
-
-        const { data: existing } = await _supabase
-            .from('story_views')
-            .select('id')
-            .eq('story_id', story.id)
-            .eq('viewer_id', myId)
-            .maybeSingle();
-
-        if (!existing) {
-            await _supabase
-                .from('story_views')
-                .insert([{
-                    story_id: story.id,
-                    viewer_id: myId,
-                    viewed_at: new Date().toISOString()
-                }]);
-        }
+        const { data: existing } = await _supabase.from('story_views').select('id').eq('story_id', story.id).eq('viewer_id', myId).maybeSingle();
+        if (!existing) await _supabase.from('story_views').insert([{ story_id: story.id, viewer_id: myId, viewed_at: new Date().toISOString() }]);
     }
 }
 
 async function loadChats() {
     const chatBox = document.getElementById("chat-list-container");
     try {
-        const { data: messages, error } = await _supabase
-            .from('messages')
-            .select(`
-                *,
-                sender_profile:sender_id(id, username, avatar_url),
-                receiver_profile:receiver_id(id, username, avatar_url)
-            `)
-            .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        if (!messages || messages.length === 0) {
-            chatBox.innerHTML = `<div class="empty-welcome"><i class="fa-solid fa-comment-dots"></i><h2>No messages yet</h2></div>`;
-        } else {
-            const groupedChats = filterUniqueChats(messages);
-            renderChats(groupedChats);
-        }
-    } catch (error) {
-        console.error("Fetch Error:", error);
-        chatBox.innerHTML = `<p style="text-align:center; padding:20px;">Error loading conversations.</p>`;
-    }
+        const { data: messages } = await _supabase.from('messages').select(`*, sender_profile:sender_id(id, username, avatar_url), receiver_profile:receiver_id(id, username, avatar_url)`).or(`sender_id.eq.${myId},receiver_id.eq.${myId}`).order('created_at', { ascending: false });
+        if (!messages || messages.length === 0) chatBox.innerHTML = `<div class="empty-welcome"><i class="fa-solid fa-comment-dots"></i><h2>No messages yet</h2></div>`;
+        else renderChats(filterUniqueChats(messages));
+    } catch (error) { console.error(error); chatBox.innerHTML = `<p style="text-align:center; padding:20px;">Error loading conversations.</p>`; }
 }
 
 async function loadMessages(otherUserId) {
     const container = document.getElementById('message-container');
     container.innerHTML = '<div style="text-align:center;color:#888;">Loading history...</div>';
-
-    const { data } = await _supabase
-        .from('messages')
-        .select('*')
-        .or(`and(sender_id.eq.${myId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${myId})`)
-        .order('created_at', { ascending: true });
-
+    const { data } = await _supabase.from('messages').select('*').or(`and(sender_id.eq.${myId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${myId})`).order('created_at', { ascending: true });
     container.innerHTML = ''; 
     (data || []).forEach(msg => {
         const isMe = msg.sender_id === myId;
@@ -1332,14 +1168,7 @@ async function loadMessages(otherUserId) {
         div.className = `message ${isMe ? 'sent' : 'received'}`;
         const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         let statusHtml = isMe ? (msg.is_read ? '<span class="status-text" style="color:#4ade80;">Seen</span>' : '<span class="status-text">Sent</span>') : '';
-
-        div.innerHTML = `
-            <div class="msg-content">${msg.content}</div>
-            <div class="msg-footer" style="display:flex; justify-content:flex-end; gap:5px; font-size:10px; margin-top:4px; opacity:0.6;">
-                <span class="msg-time">${time}</span>
-                ${statusHtml}
-            </div>
-        `;
+        div.innerHTML = `<div class="msg-content">${msg.content}</div><div class="msg-footer" style="display:flex; justify-content:flex-end; gap:5px; font-size:10px; margin-top:4px; opacity:0.6;"><span class="msg-time">${time}</span>${statusHtml}</div>`;
         container.appendChild(div);
     });
     setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
@@ -1349,27 +1178,17 @@ async function sendMessage() {
     const input = document.getElementById('message-input');
     const content = input.value.trim();
     if (!content || !currentChatId) return;
-
     const { data: { user } } = await _supabase.auth.getUser();
     if (!user) return showToast("Please login to send messages");
-
     input.value = '';
     const { error } = await _supabase.from('messages').insert([{ sender_id: user.id, receiver_id: currentChatId, content: content }]);
-
-    if (error) {
-        showToast("Failed to send message");
-        input.value = content;
-    } else {
-        loadMessages(currentChatId);
-    }
+    if (error) { showToast("Failed to send message"); input.value = content; }
+    else loadMessages(currentChatId);
 }
 
 function filterUniqueChats(messages) {
     const unique = new Map();
-    messages.forEach(m => {
-        const otherId = m.sender_id === myId ? m.receiver_id : m.sender_id;
-        if (!unique.has(otherId)) unique.set(otherId, m);
-    });
+    messages.forEach(m => { const otherId = m.sender_id === myId ? m.receiver_id : m.sender_id; if (!unique.has(otherId)) unique.set(otherId, m); });
     return Array.from(unique.values());
 }
 
@@ -1380,23 +1199,10 @@ function renderChats(chatData) {
         const isUnread = !isMe && chat.is_read === false;
         const textStyle = isUnread ? 'font-weight: 800; color: white;' : 'font-weight: 400; color: #bbb;';
         const time = new Date(chat.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
         return `
         <div class="chat-item" onclick="openChat('${displayUser.id}', '${displayUser.username}', '${displayUser.avatar_url || 'https://via.placeholder.com/60'}' )">
-            <div class="chat-pfp-wrapper">
-                <img src="${displayUser?.avatar_url || 'https://via.placeholder.com/60'}" class="chat-pfp">
-                ${isUnread ? '<span class="unread-dot"></span>' : '<span class="online-status">Now</span>'} 
-            </div>
-            <div class="chat-info">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3>${displayUser?.username || 'User'}</h3>
-                    <span class="chat-time">${time}</span>
-                </div>
-                <div class="chat-msg" style="${textStyle}">
-                    ${isMe ? '<span style="color:var(--gt-blue );">You: </span>' : ''}
-                    ${chat.content}
-                </div>
-            </div>
+            <div class="chat-pfp-wrapper"><img src="${displayUser?.avatar_url || 'https://via.placeholder.com/60'}" class="chat-pfp">${isUnread ? '<span class="unread-dot"></span>' : '<span class="online-status">Now</span>'}</div>
+            <div class="chat-info"><div style="display:flex; justify-content:space-between; align-items:center;"><h3>${displayUser?.username || 'User'}</h3><span class="chat-time">${time}</span></div><div class="chat-msg" style="${textStyle}">${isMe ? '<span style="color:var(--gt-blue );">You: </span>' : ''}${chat.content}</div></div>
             <i class="${chat.is_read ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle-check'}" style="color:var(--gt-blue); font-size: 12px; margin-left: 5px;"></i>
         </div>`;
     }).join('');
@@ -1406,22 +1212,14 @@ function handleTyping() {
     if (!currentChatId) return;
     _supabase.channel(`chat:${currentChatId}`).send({ type: 'broadcast', event: 'typing', payload: { sender_id: myId, isTyping: true } });
     clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
-        _supabase.channel(`chat:${currentChatId}`).send({ type: 'broadcast', event: 'typing', payload: { sender_id: myId, isTyping: false } });
-    }, 2000);
+    typingTimeout = setTimeout(() => { _supabase.channel(`chat:${currentChatId}`).send({ type: 'broadcast', event: 'typing', payload: { sender_id: myId, isTyping: false } }); }, 2000);
 }
 
 function toggleNewChatMenu() {
     const menu = document.getElementById('newChatMenu');
     const isOpening = !menu.classList.contains('active');
-    if (isOpening) {
-        menu.style.display = 'flex';
-        menu.classList.add('active');
-        switchNC('following');
-    } else {
-        menu.style.display = 'none';
-        menu.classList.remove('active');
-    }
+    if (isOpening) { menu.style.display = 'flex'; menu.classList.add('active'); switchNC('following'); }
+    else { menu.style.display = 'none'; menu.classList.remove('active'); }
 }
 
 function filterFollowing(query) {
@@ -1434,7 +1232,6 @@ async function filterGlobal(val) {
     const searchVal = val.trim().toLowerCase();
     clearTimeout(typingTimeout);
     if (!searchVal) return switchNC('recommended'); 
-
     typingTimeout = setTimeout(async () => {
         try {
             const { data } = await _supabase.from('smart_recommendation').select('id, username, avatar_url, is_verified, country_code, bio').ilike('username', `%${searchVal}%`).neq('id', myId).limit(20);
@@ -1447,35 +1244,10 @@ async function filterGlobal(val) {
 
 let selectedFileBlob = null;
 const storyTrigger = document.getElementById('story-menu-trigger');
-if (storyTrigger) {
-    storyTrigger.onclick = () => {
-        const dropdown = document.getElementById('story-dropdown');
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    };
-}
-
-function triggerFilePicker() {
-    document.getElementById('story-upload-input').click();
-    document.getElementById('story-dropdown').style.display = 'none';
-}
-
-document.getElementById('story-upload-input').onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    selectedFileBlob = file;
-    document.getElementById('overlay-photo-a').style.display = 'flex';
-};
-
-function goToPhotoB() {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        document.getElementById('editing-preview-img').src = event.target.result;
-        document.getElementById('overlay-photo-a').style.display = 'none';
-        document.getElementById('overlay-photo-b').style.display = 'flex';
-    };
-    reader.readAsDataURL(selectedFileBlob);
-}
-
+if (storyTrigger) { storyTrigger.onclick = () => { const dropdown = document.getElementById('story-dropdown'); dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block'; }; }
+function triggerFilePicker() { document.getElementById('story-upload-input').click(); document.getElementById('story-dropdown').style.display = 'none'; }
+document.getElementById('story-upload-input').onchange = (e) => { const file = e.target.files[0]; if (!file) return; selectedFileBlob = file; document.getElementById('overlay-photo-a').style.display = 'flex'; };
+function goToPhotoB() { const reader = new FileReader(); reader.onload = (event) => { document.getElementById('editing-preview-img').src = event.target.result; document.getElementById('overlay-photo-a').style.display = 'none'; document.getElementById('overlay-photo-b').style.display = 'flex'; }; reader.readAsDataURL(selectedFileBlob); }
 async function finalUpload() {
     if (!selectedFileBlob) return;
     showToast("Sharing to story...");
@@ -1488,41 +1260,11 @@ async function finalUpload() {
     showToast("Story shared successfully!");
     setTimeout(async () => { await loadStories(); }, 500);
 }
-    
-function closeStoryFlow() {
-    document.querySelectorAll('.story-overlay').forEach(el => el.style.display = 'none');
-    selectedFileBlob = null;
-}
-
-function toggleStories() {
-    const storiesDiv = document.getElementById('stories-collapsible');
-    const chevron = document.getElementById('stories-chevron');
-    const isHidden = storiesDiv.style.display === "none";
-    storiesDiv.style.display = isHidden ? "block" : "none";
-    chevron.style.transform = isHidden ? "rotate(0deg)" : "rotate(-90deg)";
-}
-
-async function markAsRead(otherUserId) {
-    try {
-        await _supabase.from('messages').update({ is_read: true }).eq('receiver_id', myId).eq('sender_id', otherUserId).eq('is_read', false);
-        if (typeof loadChats === "function") loadChats();
-    } catch (error) { console.error(error); }
-}
-
-function openChat(userId, userName, userAvatar) {
-    currentChatId = userId;
-    document.getElementById('chat-user-name').innerText = userName;
-    document.getElementById('chat-user-avatar').src = userAvatar || 'https://via.placeholder.com/40';
-    document.getElementById('chat-overlay' ).style.display = 'flex';
-    loadMessages(userId);
-    markAsRead(userId);
-}
-
-function closeChat() {
-    document.getElementById('chat-overlay').style.display = 'none';
-    currentChatId = null;
-}
-
+function closeStoryFlow() { document.querySelectorAll('.story-overlay').forEach(el => el.style.display = 'none'); selectedFileBlob = null; }
+function toggleStories() { const storiesDiv = document.getElementById('stories-collapsible'); const chevron = document.getElementById('stories-chevron'); const isHidden = storiesDiv.style.display === "none"; storiesDiv.style.display = isHidden ? "block" : "none"; chevron.style.transform = isHidden ? "rotate(0deg)" : "rotate(-90deg)"; }
+async function markAsRead(otherUserId) { try { await _supabase.from('messages').update({ is_read: true }).eq('receiver_id', myId).eq('sender_id', otherUserId).eq('is_read', false); if (typeof loadChats === "function") loadChats(); } catch (error) { console.error(error); } }
+function openChat(userId, userName, userAvatar) { currentChatId = userId; document.getElementById('chat-user-name').innerText = userName; document.getElementById('chat-user-avatar').src = userAvatar || 'https://via.placeholder.com/40'; document.getElementById('chat-overlay' ).style.display = 'flex'; loadMessages(userId); markAsRead(userId); }
+function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; currentChatId = null; }
 function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
 </script> 
     
@@ -1530,10 +1272,7 @@ function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
     <div class="chat-header">
         <i class="fa-solid fa-arrow-left" onclick="closeChat()"></i>
         <img id="chat-user-avatar" src="https://via.placeholder.com/40" class="header-avatar">
-        <div class="chat-user-info">
-            <span id="chat-user-name">Loading...</span>
-            <span class="status-dot">Online</span>
-        </div>
+        <div class="chat-user-info"><span id="chat-user-name">Loading...</span><span class="status-dot">Online</span></div>
     </div>
     <div id="message-container" class="message-container"></div>
     <div class="chat-input-bar">
